@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ManuTrade AI — Manufacturing & Trading AI Architect</title>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- 🗂️ CONFIG: 改呢度就改到全站內容，唔使掂 CSS   -->
+<!-- ═══════════════════════════════════════════════ -->
+<style>
+:root {
+  /* 🎨 顏色主題 — 改呢 3 個色就全站跟住變 */
+  --bg: #0b0f19;
+  --card: #131a2b;
+  --border: #1e2d45;
+  --accent: #06b6d4;
+  --accent2: #10b981;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --free: #10b981;
+  --pro: #f59e0b;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+.container{max-width:1200px;margin:0 auto;padding:0 24px}
+
+/* ═══ Navigation ═══ */
+nav{position:fixed;top:0;width:100%;z-index:100;background:rgba(11,15,25,0.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+nav .container{display:flex;align-items:center;justify-content:space-between;height:64px}
+nav .logo{font-size:1.25rem;font-weight:800;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+nav .links{display:flex;gap:28px;list-style:none}
+nav .links a{color:var(--muted);text-decoration:none;font-size:0.9rem;transition:color .2s}
+nav .links a:hover{color:var(--text)}
+nav .cta-btn{background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.85rem;transition:opacity .2s}
+nav .cta-btn:hover{opacity:0.85}
+@media(max-width:768px){nav .links{display:none}}
+
+/* ═══ Hero ═══ */
+.hero{padding:160px 0 100px;text-align:center;position:relative}
+.hero .avatar{width:140px;height:140px;border-radius:50%;border:3px solid var(--accent);object-fit:cover;margin-bottom:28px;box-shadow:0 0 40px rgba(6,182,212,0.3)}
+.hero .badge{display:inline-block;background:rgba(6,182,212,0.15);color:var(--accent);padding:6px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;letter-spacing:0.5px;margin-bottom:20px}
+.hero h1{font-size:2.8rem;font-weight:800;line-height:1.2;margin-bottom:16px;background:linear-gradient(135deg,#e2e8f0 0%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero h2{font-size:1.25rem;color:var(--muted);font-weight:400;margin-bottom:12px}
+.hero p{max-width:640px;margin:0 auto 36px;color:var(--muted);font-size:1.05rem}
+.hero .btn-group{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;text-decoration:none;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--gradient);color:#fff;box-shadow:0 4px 20px rgba(6,182,212,0.3)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(6,182,212,0.4)}
+.btn-outline{border:1.5px solid var(--border);color:var(--text)}
+.btn-outline:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+
+/* ═══ Stats ═══ */
+.stats{display:flex;justify-content:center;gap:60px;padding:40px 0 80px;flex-wrap:wrap}
+.stat-item{text-align:center}
+.stat-num{font-size:2.8rem;font-weight:800;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{color:var(--muted);font-size:0.9rem;margin-top:4px}
+
+/* ═══ Section Titles ═══ */
+.section{padding:80px 0}
+.section-label{display:inline-block;color:var(--accent);font-size:0.8rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+.section-title{font-size:2rem;font-weight:800;margin-bottom:16px}
+.section-sub{color:var(--muted);max-width:600px;margin-bottom:48px;font-size:1.05rem}
+
+/* ═══ Pain Points ═══ */
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.pain-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;transition:all .2s}
+.pain-card:hover{border-color:#ef444420;transform:translateY(-3px)}
+.pain-card .icon{font-size:2rem;margin-bottom:14px}
+.pain-card h3{font-size:1.1rem;margin-bottom:8px}
+.pain-card p{color:var(--muted);font-size:0.9rem}
+
+/* ═══ SaaS Cards ═══ */
+.saas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
+.saas-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:32px;position:relative;overflow:hidden;transition:all .2s}
+.saas-card:hover{border-color:var(--accent);transform:translateY(-4px)}
+.saas-card.featured{border-color:var(--accent);box-shadow:0 0 30px rgba(6,182,212,0.1)}
+.saas-card .tag{position:absolute;top:16px;right:16px;padding:4px 12px;border-radius:12px;font-size:0.7rem;font-weight:700}
+.saas-card .tag.free{background:rgba(16,185,129,0.15);color:var(--free)}
+.saas-card .tag.pro{background:rgba(245,158,11,0.15);color:var(--pro)}
+.saas-card .saas-icon{font-size:2.5rem;margin-bottom:16px}
+.saas-card h3{font-size:1.2rem;margin-bottom:8px}
+.saas-card p{color:var(--muted);font-size:0.9rem;margin-bottom:16px}
+.saas-card .features{list-style:none;font-size:0.85rem;color:var(--muted)}
+.saas-card .features li{margin-bottom:6px}
+.saas-card .features li::before{content:'✓ ';color:var(--accent2);font-weight:bold}
+
+/* ═══ How It Works ═══ */
+.flow-section{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px;margin-top:20px}
+.flow-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:32px}
+.flow-step{text-align:center;position:relative}
+.flow-step .step-num{width:48px;height:48px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-weight:800;font-size:1.2rem}
+.flow-step h4{font-size:1rem;margin-bottom:8px}
+.flow-step p{color:var(--muted);font-size:0.85rem}
+.flow-arrow{display:none}
+@media(min-width:768px){
+  .flow-arrow{display:block;position:absolute;top:24px;right:-20px;color:var(--accent);font-size:1.5rem}
+}
+
+/* ═══ Pricing Table ═══ */
+.comp-table{width:100%;border-collapse:collapse;font-size:0.9rem;margin-top:20px}
+.comp-table th{text-align:left;padding:14px 16px;background:var(--card);font-weight:600}
+.comp-table th:first-child{border-radius:10px 0 0 0}
+.comp-table th:last-child{border-radius:0 10px 0 0}
+.comp-table td{padding:14px 16px;border-bottom:1px solid var(--border)}
+.comp-table tr:last-child td:first-child{border-radius:0 0 0 10px}
+.comp-table .check{color:var(--accent2);font-weight:bold}
+.comp-table .dash{color:var(--muted)}
+
+/* ═══ Portal Grid ═══ */
+.portal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.portal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;transition:all .2s}
+.portal-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.portal-card .portal-icon{font-size:2.2rem;margin-bottom:10px}
+.portal-card h4{font-size:0.95rem;margin-bottom:4px}
+.portal-card span{color:var(--muted);font-size:0.75rem}
+
+/* ═══ CTA ═══ */
+.cta-section{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:60px;text-align:center;margin:60px 0}
+.cta-section h2{font-size:1.8rem;margin-bottom:12px}
+.cta-section p{color:var(--muted);margin-bottom:28px;max-width:500px;margin-left:auto;margin-right:auto}
+
+/* ═══ Footer ═══ */
+footer{text-align:center;padding:40px 0;color:var(--muted);font-size:0.8rem;border-top:1px solid var(--border)}
+footer a{color:var(--accent);text-decoration:none}
+
+/* ═══ Responsive ═══ */
+@media(max-width:768px){
+  .hero h1{font-size:2rem}
+  .hero{padding:120px 0 60px}
+  .stats{gap:30px}
+  .section{padding:50px 0}
+  .saas-grid{grid-template-columns:1fr}
+  .flow-section{padding:28px}
+  nav .links{display:none}
+}
+
+/* ═══ Animation ═══ */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero,.section{animation:fadeUp 0.6s ease-out}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 🧭 NAVIGATION — 改 menu item 就喺呢度           -->
+<!-- ════════════════════════════════════════════════ -->
+<nav>
+  <div class="container">
+    <div class="logo">🏭 ManuTrade AI</div>
+    <ul class="links">
+      <li><a href="#saas">SaaS 產品</a></li>
+      <li><a href="#how">運作模式</a></li>
+      <li><a href="#about">關於</a></li>
+      <li><a href="#funding">資助</a></li>
+      <li><a href="#training">培訓</a></li>
+      <li><a href="#portals">Portal</a></li>
+      <li><a href="#pricing">定價</a></li>
+    </ul>
+    <a href="#cta" class="cta-btn">預約 Demo</a>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 🦸 HERO — 標題、Tagline、頭像、CTA 按鈕         -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="container">
+    <img src="ac-cartoon-avatar.jpg" alt="AC — AI Architect" class="avatar" onerror="this.style.display='none'">
+    <div class="badge">🎯 製造業 & 貿易公司 AI 架構師</div>
+    <h1>AI 驅動你的<br>製造與貿易流程</h1>
+    <h2>Manufacturing & Trading AI Architect</h2>
+    <p>專注解決香港及內地製造業、貿易公司嘅營運痛點 — 由報價到出貨、由開發到清庫存，一套 AI SaaS 生態系統全面自動化。</p>
+    <div class="btn-group">
+      <a href="#saas" class="btn btn-primary">🆓 免費工具即刻用</a>
+      <a href="#how" class="btn btn-outline">了解運作模式 →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 📊 STATS — 4 個關鍵數字，想改數字就改呢度      -->
+<!-- ════════════════════════════════════════════════ -->
+<div class="stats">
+  <div class="stat-item"><div class="stat-num">20</div><div class="stat-label">SaaS Modules</div></div>
+  <div class="stat-item"><div class="stat-num">10</div><div class="stat-label">專屬 Portals</div></div>
+  <div class="stat-item"><div class="stat-num">60+</div><div class="stat-label">潛在企業用戶</div></div>
+  <div class="stat-item"><div class="stat-num">🇭🇰🇨🇳</div><div class="stat-label">香港 · 內地</div></div>
+</div>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 🤕 PAIN POINTS — 4 個痛點卡，每個係一個 card    -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="section" id="pain">
+  <div class="container">
+    <div class="section-label">解決咩痛點？</div>
+    <h2 class="section-title">日日對住呢啲問題？</h2>
+    <p class="section-sub">做開廠 / trading 嘅你一定好熟悉 — 我哋嘅 AI 就係為咗解決呢啲而生。</p>
+    <div class="pain-grid">
+
+      <div class="pain-card" style="border-left:3px solid #ef4444">
+        <div class="icon">📦</div>
+        <h3>庫存積壓 · 資金凍結</h3>
+        <p>倉庫爆滿，舊貨賣唔出，資金鏈斷裂 — AI 幫你分析邊啲貨要清、點樣清、清俾邊個。</p>
+      </div>
+
+      <div class="pain-card" style="border-left:3px solid #f59e0b">
+        <div class="icon">📧</div>
+        <h3>報價混亂 · 資訊碎片化</h3>
+        <p>WhatsApp / WeChat / Email 海量報價，散落各處 — Message Pool 自動整合、分析、比較。</p>
+      </div>
+
+      <div class="pain-card" style="border-left:3px solid #8b5cf6">
+        <div class="icon">🧩</div>
+        <h3>部門割裂 · 各自為政</h3>
+        <p>Sales 唔知 Purchasing 做緊咩、CEO 睇唔到全局 — 10 個專屬 Portal 打通全公司。</p>
+      </div>
+
+      <div class="pain-card" style="border-left:3px solid #06b6d4">
+        <div class="icon">🚢</div>
+        <h3>貨櫃浪費 · 物流成本高</h3>
+        <p>裝櫃靠估、空間浪費 20-30% — Container Optimizer 用 3D AI 計到盡，每個櫃慳幾千。</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 🧩 SAAS PRODUCTS — 每個 card 一個 SaaS 模組      -->
+<!--    加新產品：copy 一個 saas-card block 改內容    -->
+<!--    刪產品：delete 個 block 就得                  -->
+<!--    改 link：改 onclick="location.href='xxx'"      -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="section" id="saas">
+  <div class="container">
+    <div class="section-label">20-SaaS 生態系統</div>
+    <h2 class="section-title">由免費工具開始試用，到完整自動化方案</h2>
+    <p class="section-sub">由免費工具開始試用，到完整自動化方案 — 一步一步引導你嘅公司進入 AI 時代。</p>
+    <div class="saas-grid">
+
+      <!-- 🔵 Quote Compare -->
+      <div class="saas-card featured" onclick="location.href='quote-compare/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費 · 10秒見效</span>
+        <div class="saas-icon">🆚</div>
+        <h3>Quote Compare 報價對比</h3>
+        <p>Copy-paste 2-5 個供應商 WhatsApp/Email 報價 → AI 10 秒搵出最佳選擇，即時慳錢建議。</p>
+        <ul class="features">
+          <li>支援 WhatsApp / Email / WeChat 文字</li>
+          <li>自動抽出價格 · MOQ · 交期 · 付款條件</li>
+          <li>綜合評分 + 最佳推薦</li>
+          <li>每年慳幾多錢 · 即時計算</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 SOPA -->
+      <div class="saas-card featured" onclick="location.href='sopa/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">📋</div>
+        <h3>SOPA 智能報價分析</h3>
+        <p>Upload PDF / Excel / 圖片報價單，AI 自動抽出產品、價格、供應商。支援 30+ 語言。</p>
+        <ul class="features">
+          <li>OCR + AI 雙引擎提取</li>
+          <li>多 Item 同時處理</li>
+          <li>自動 PII 移除（私隱保護）</li>
+          <li>一鍵導出 Excel 比較表</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 Message Pool -->
+      <div class="saas-card featured" onclick="location.href='message-pool/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">💬</div>
+        <h3>Message Pool 報價池</h3>
+        <p>Forward 報價 Email / WhatsApp / WeChat → AI 自動整合，統一搜尋，歷史追蹤。</p>
+        <ul class="features">
+          <li>Email Forward 自動擷取</li>
+          <li>WhatsApp / WeChat 截圖 OCR</li>
+          <li>全公司共享搜尋</li>
+          <li>自動報價歷史記錄</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 Container Optimizer -->
+      <div class="saas-card featured" onclick="location.href='container-optimizer/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">📦</div>
+        <h3>Container Optimizer</h3>
+        <p>3D 裝櫃優化 — 輸入產品尺寸，AI 計出最佳擺法，空間使用率提升 20-30%。</p>
+        <ul class="features">
+          <li>3D 可視化裝櫃方案</li>
+          <li>支援 20ft / 40ft / HQ</li>
+          <li>多產品混合裝載</li>
+          <li>即時空間使用率報告</li>
+        </ul>
+      </div>
+
+      <!-- 🟠 NPDS -->
+      <div class="saas-card">
+        <span class="tag pro">🔒 Pro</span>
+        <div class="saas-icon">🔍</div>
+        <h3>NPDS 新產品開發系統</h3>
+        <p>由 idea → 供應商 sourcing → 報價整合 → 樣品追蹤，一條龍產品開發管理。</p>
+        <ul class="features">
+          <li>Product Spec OCR + AI 解析</li>
+          <li>供應商自動匹配</li>
+          <li>開發進度 Dashboard</li>
+          <li>合規文件自動生成</li>
+        </ul>
+      </div>
+
+      <!-- 🟠 CEO Dashboard -->
+      <div class="saas-card">
+        <span class="tag pro">🔒 Pro</span>
+        <div class="saas-icon">📊</div>
+        <h3>CEO Dashboard</h3>
+        <p>全公司數據一 page 睇晒 — 實時銷售、庫存、利潤、業務趨勢，決策唔再靠估。</p>
+        <ul class="features">
+          <li>Real-time KPI 追蹤</li>
+          <li>多品牌銷售對比</li>
+          <li>庫存健康度分析</li>
+          <li>AI 業務預測</li>
+        </ul>
+      </div>
+
+      <!-- 🟠 Business Forecast -->
+      <div class="saas-card">
+        <span class="tag pro">🔒 Pro</span>
+        <div class="saas-icon">📈</div>
+        <h3>Business Analysis & Forecast</h3>
+        <p>歷史銷售數據 + AI 預測模型 → 未來 12 個月銷售走勢、庫存需求、採購建議。</p>
+        <ul class="features">
+          <li>ML 驅動銷售預測</li>
+          <li>季節性趨勢分析</li>
+          <li>自動採購建議</li>
+          <li>異常銷售警報</li>
+        </ul>
+      </div>
+
+      <!-- 🟠 Stock Clearance -->
+      <div class="saas-card">
+        <span class="tag pro">🔒 Pro</span>
+        <div class="saas-icon">🏷️</div>
+        <h3>Stock Clearance AI</h3>
+        <p>AI 分析滯銷庫存 → 推薦清貨渠道 → 自動生成促銷方案 → 庫存變現金。</p>
+        <ul class="features">
+          <li>滯銷品 AI 識別</li>
+          <li>多渠道清貨建議</li>
+          <li>自動促銷文案生成</li>
+          <li>清貨 ROI 追蹤</li>
+        </ul>
+      </div>
+
+      <!-- 🟠 Multi-Language -->
+      <div class="saas-card">
+        <span class="tag pro">🔒 Pro</span>
+        <div class="saas-icon">🌐</div>
+        <h3>Multi-Language Converter</h3>
+        <p>產品目錄、報價單、合約文件 — 一鍵翻譯 20+ 語言，AI 保持專業術語準確。</p>
+        <ul class="features">
+          <li>20+ 語言支援</li>
+          <li>行業術語保留</li>
+          <li>批量文件處理</li>
+          <li>格式保持不變</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 HS Navigator -->
+      <div class="saas-card featured" onclick="location.href='hs-navigator/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">🛃</div>
+        <h3>HS Navigator 海關編碼AI</h3>
+        <p>輸入產品名 → AI 自動建議 HS code + 目標國關稅率 + 反傾銷狀態。</p>
+        <ul class="features">
+          <li>即時 HS code 推薦（含信心度）</li>
+          <li>6 大市場關稅率對比</li>
+          <li>反傾銷/301 條款自動檢測</li>
+          <li>關稅優化建議</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 SnapListing -->
+      <div class="saas-card featured" onclick="location.href='snap-listing/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">📸</div>
+        <h3>SnapListing 一影上架</h3>
+        <p>手機影一張產品相 → AI 生成 Amazon/eBay listing + SEO description + 建議售價。</p>
+        <ul class="features">
+          <li>AI 生成產品標題 + 5 個 bullet points</li>
+          <li>完整產品描述（SEO 優化）</li>
+          <li>建議價格範圍</li>
+          <li>社交媒體 hashtag 建議</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 Smart Catalog -->
+      <div class="saas-card featured" onclick="location.href='smart-catalog/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">🏷️</div>
+        <h3>Smart Catalog 智能目錄</h3>
+        <p>任何格式嘅產品資料 → AI 統一格式 → 一鍵輸出品牌級 catalog。</p>
+        <ul class="features">
+          <li>支援 PDF/Excel/圖片混雜輸入</li>
+          <li>3 款專業 catalog 模板</li>
+          <li>自訂品牌 logo + 配色</li>
+          <li>一鍵輸出 HTML / PDF</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 PricePulse -->
+      <div class="saas-card featured" onclick="location.href='price-pulse/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">📈</div>
+        <h3>PricePulse 原料價格預警</h3>
+        <p>追蹤不鏽鋼/塑膠/銅/鋁等原料價格 → 異動即時 alert → 鎖定最佳採購時機。</p>
+        <ul class="features">
+          <li>8 大原材料價格追蹤</li>
+          <li>30/90 天價格趨勢</li>
+          <li>產品成本影響計算器</li>
+          <li>自訂價格警報 threshold</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 DocuFlow -->
+      <div class="saas-card featured" onclick="location.href='docu-flow/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">📋</div>
+        <h3>DocuFlow 出貨文件自動化</h3>
+        <p>入一次 order data → 自動生成全套 shipping documents（CI/PL/CO），L/C-ready。</p>
+        <ul class="features">
+          <li>Commercial Invoice + Packing List</li>
+          <li>Certificate of Origin 自動填入</li>
+          <li>L/C 銀行格式兼容</li>
+          <li>由 45 分鐘 → 3 分鐘完成</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 LeadSniper -->
+      <div class="saas-card featured" onclick="location.href='lead-sniper/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">🎪</div>
+        <h3>LeadSniper 展會跟進系統</h3>
+        <p>影名片 → AI OCR + LinkedIn enrich → 自動生成個人化 follow-up email。</p>
+        <ul class="features">
+          <li>名片 OCR 自動識別</li>
+          <li>LinkedIn 公司背景 enrichment</li>
+          <li>5 種市場個性化 email 模板</li>
+          <li>排程發送 + 跟進提醒</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 ContractScan -->
+      <div class="saas-card featured" onclick="location.href='contract-scan/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">⚖️</div>
+        <h3>ContractScan 合約風險掃描</h3>
+        <p>Upload 合約 PDF → AI 自動 flag 高風險條款 + 建議修訂方案。</p>
+        <ul class="features">
+          <li>13 類風險自動檢測</li>
+          <li>賠償上限/獨家/仲裁/IP 條款分析</li>
+          <li>協商優先級排序</li>
+          <li>隱藏陷阱 spotlight</li>
+        </ul>
+      </div>
+
+      <!-- 🔵 QC Inspector -->
+      <div class="saas-card featured" onclick="location.href='qc-inspector/index.html'" style="cursor:pointer">
+        <span class="tag free">🆓 免費</span>
+        <div class="saas-icon">🧪</div>
+        <h3>QC Inspector 智能驗貨</h3>
+        <p>Upload 驗貨照片 → AI 自動分類 defect → 一鍵生成 AQL inspection report。</p>
+        <ul class="features">
+          <li>AI 缺陷自動分類（Critical/Major/Minor）</li>
+          <li>AQL ISO 2859-1 標準抽樣</li>
+          <li>工廠績效 scorecard</li>
+          <li>即時 corrective action 建議</li>
+        </ul>
+      </div>
+
+      <!-- 🟠 BOM Wizard -->
+      <div class="saas-card">
+        <span class="tag pro">🔒 Pro</span>
+        <div class="saas-icon">🧵</div>
+        <h3>BOM Wizard 物料清單管理</h3>
+        <p>影 spec sheet → AI 自動拆成 structured BOM → track 每個 component 成本變動。</p>
+        <ul class="features">
+          <li>15+ component 自動拆解</li>
+          <li>成本波動狀態追蹤</li>
+          <li>What-If 成本模擬</li>
+          <li>Single-source 風險標記</li>
+        </ul>
+      </div>
+
+      <!-- 🟠 TradeCredit -->
+      <div class="saas-card">
+        <span class="tag pro">🔒 Pro</span>
+        <div class="saas-icon">🏦</div>
+        <h3>TradeCredit 賒數風險評估</h3>
+        <p>輸入客戶公司名 → AI 分析財務健康度 + 建議信用額度 + 還款風險。</p>
+        <ul class="features">
+          <li>多維度信用評分（0-100）</li>
+          <li>國家/行業風險因子</li>
+          <li>建議信用額度 + 付款條件</li>
+          <li>壞帳 recovery 期估算</li>
+        </ul>
+      </div>
+
+      <!-- 🟠 RouteOptimizer -->
+      <div class="saas-card">
+        <span class="tag pro">🔒 Pro</span>
+        <div class="saas-icon">🚢</div>
+        <h3>RouteOptimizer 海運路線優化</h3>
+        <p>輸入起運港 + 目的港 → AI 比較 10+ shipping lines 即時運費 + 可靠性。</p>
+        <ul class="features">
+          <li>多航線即時費率對比</li>
+          <li>隱藏收費自動揭露</li>
+          <li>碳排估算</li>
+          <li>提前訂艙節省 15-25%</li>
+        </ul>
+      </div>
+
+    </div><!-- /saas-grid -->
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 👤 ABOUT FOUNDER — Andrew 嘅背景、學歷、客戶    -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="section" id="about">
+  <div class="container">
+    <div class="section-label">關於創辦人</div>
+    <h2 class="section-title">20+ 年製造業及貿易實戰經驗</h2>
+    <p class="section-sub">由工廠生產線到 AI 架構師 — 我嘅使命係用 AI 解決真正嘅行業痛點。</p>
+
+    <div style="display:grid;grid-template-columns:250px 1fr;gap:32px;align-items:start">
+      <div style="text-align:center">
+        <div style="width:180px;height:180px;border-radius:50%;background:var(--gradient);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:4rem">👔</div>
+        <h3 style="font-size:1.1rem">Andrew Chan 陳智昌</h3>
+        <p style="color:var(--accent);font-size:0.85rem">Founder & AI Architect</p>
+        <p style="color:var(--muted);font-size:0.8rem;margin-top:8px">📧 andrew@manutradeai.com</p>
+        <p style="color:var(--muted);font-size:0.8rem">📍 香港 · 深圳</p>
+      </div>
+      <div>
+        <div class="pain-grid" style="grid-template-columns:1fr 1fr;margin-bottom:20px">
+          <div class="pain-card" style="border-left:3px solid var(--accent)">
+            <div class="icon">🎓</div>
+            <h3>市場營銷碩士</h3>
+            <p>Master Degree in Marketing — 將學術理論轉化為實戰銷售策略，驅動過億美元營業額。</p>
+          </div>
+          <div class="pain-card" style="border-left:3px solid var(--accent2)">
+            <div class="icon">🏭</div>
+            <h3>20+ 年製造業實戰</h3>
+            <p>由小家電 OEM/ODM 做起，經歷電子模組、矽膠製品、AI 研發商品化，足跡遍及中港越。</p>
+          </div>
+        </div>
+        <div class="pain-grid" style="grid-template-columns:1fr 1fr">
+          <div class="pain-card" style="border-left:3px solid #f59e0b">
+            <div class="icon">🤖</div>
+            <h3>AI 早期採用者</h3>
+            <p>率先將 Agentic AI 應用於市場研究、工作流程自動化、商業決策 — 唔係講理論，係實戰落地。</p>
+          </div>
+          <div class="pain-card" style="border-left:3px solid #3b82f6">
+            <div class="icon">🌍</div>
+            <h3>B2B + B2C 雙引擎</h3>
+            <p>管理過 Walmart、Whirlpool、Tefal、Vitamix 等全球知名品牌帳戶，同時熟悉 Amazon/eBay B2C 渠道。</p>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px">
+          <p style="font-size:0.85rem;color:var(--muted);line-height:1.7">
+            <b style="color:var(--text)">曾服務客戶：</b>Walmart · JC Penney · Kohl's · Whirlpool · Vitamix · GE/Haier · Tefal · Fissler · Tupperware · Zwilling · MTR港鐵 · HK Electric港燈 · 昂坪360 · 有利建築<br>
+            <b style="color:var(--text)">產業經驗：</b>小家電 · 電子模組 · 矽膠製品 · 工業4.0 · AI/Deep Learning 商業化<br>
+            <b style="color:var(--text)">管理經驗：</b>帶領 8 人 marketing 團隊 · 管理年度營業額超過 USD 20M · 3 年連續保持 USD 12M 收入
+          </p>
+        </div>
+        <div style="margin-top:16px">
+          <a href="about/index.html" class="btn btn-outline" style="font-size:0.9rem">📄 完整履歷及背景 →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 💰 FUNDING — 6 個政府資助計劃                   -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="section" id="funding">
+  <div class="container">
+    <div class="section-label">政府資助及基金申請</div>
+    <h2 class="section-title">你嘅數碼轉型 · 政府幫你埋單</h2>
+    <p class="section-sub">香港及大灣區有多項資助計劃，ManuTrade AI 可以協助你申請，由撰寫計劃書到項目執行全程支援。</p>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;margin-bottom:24px">
+      <div class="pain-card" style="border-left:3px solid var(--accent)">
+        <h3>🇭🇰 TVP 科技券計劃</h3>
+        <p style="color:var(--muted);font-size:0.85rem;margin:8px 0">資助上限：<b style="color:var(--accent2)">HK$600,000</b>（政府配對 3:1）</p>
+        <p style="font-size:0.8rem;color:var(--muted)">適合所有香港非上市企業，用於採購科技服務及設備，包括 AI 系統、ERP、自動化方案。</p>
+      </div>
+      <div class="pain-card" style="border-left:3px solid var(--accent2)">
+        <h3>🇭🇰 BUD 專項基金</h3>
+        <p style="color:var(--muted);font-size:0.85rem;margin:8px 0">資助上限：<b style="color:var(--accent2)">HK$7,000,000</b>（最高 50% 配對）</p>
+        <p style="font-size:0.8rem;color:var(--muted)">資助香港企業發展品牌、升級轉型及拓展內銷市場。適用於開發 AI 營銷系統、自動化生產管理、跨境電商平台。</p>
+      </div>
+      <div class="pain-card" style="border-left:3px solid #f59e0b">
+        <h3>🇭🇰 EMF 中小企業市場推廣基金</h3>
+        <p style="color:var(--muted);font-size:0.85rem;margin:8px 0">資助上限：<b style="color:var(--accent2)">HK$1,000,000</b>（最高 50% 配對）</p>
+        <p style="font-size:0.8rem;color:var(--muted)">資助出口推廣活動，包括數碼營銷、展覽參展、網上商貿平台。</p>
+      </div>
+      <div class="pain-card" style="border-left:3px solid #3b82f6">
+        <h3>🇨🇳 大灣區 · 前海補貼</h3>
+        <p style="color:var(--muted);font-size:0.85rem;margin:8px 0">多項針對港企的專項資助</p>
+        <p style="font-size:0.8rem;color:var(--muted)">前海深港合作區提供租金補貼、人才補貼、科技創新資助。最高可達 RMB 5,000,000。</p>
+      </div>
+      <div class="pain-card" style="border-left:3px solid #8b5cf6">
+        <h3>🇭🇰 DTTAS 數碼轉型支援先導計劃</h3>
+        <p style="color:var(--muted);font-size:0.85rem;margin:8px 0">資助上限：<b style="color:var(--accent2)">HK$50,000</b></p>
+        <p style="font-size:0.8rem;color:var(--muted)">針對零售及餐飲業中小企，一對一配對資助數碼轉型方案。</p>
+      </div>
+      <div class="pain-card" style="border-left:3px solid #ef4444">
+        <h3>🇨🇳 廣東省 · 智能製造專項</h3>
+        <p style="color:var(--muted);font-size:0.85rem;margin:8px 0">省/市級多層資助</p>
+        <p style="font-size:0.8rem;color:var(--muted)">廣東省及各市提供智能製造升級補貼，涵蓋自動化設備、工業互聯網、AI 質檢系統。</p>
+      </div>
+    </div>
+    <div style="text-align:center;padding:16px;background:rgba(6,182,212,0.05);border-radius:10px">
+      <p style="font-size:0.9rem">💡 <b>ManuTrade AI 提供免費初步評估</b> — 幫你分析邊個基金最適合你嘅項目，協助撰寫申請計劃書。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 🎓 TRAINING — 培訓課程內容                       -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="section" id="training">
+  <div class="container">
+    <div class="section-label">AI 工作流程培訓課程</div>
+    <h2 class="section-title">你嘅團隊 · 自己建立 AI 自動化系統</h2>
+    <p class="section-sub">唔需要 IT 背景、唔需要識 Coding — 最緊要你熟識自己公司嘅運作流程。</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center">
+      <div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px">
+          <h3 style="font-size:1.2rem;margin-bottom:16px">🎓 ManuTrade AI 工作流程自動化課程</h3>
+          <div style="margin-bottom:20px">
+            <p style="font-size:0.9rem;margin-bottom:12px"><b>適合對象：</b></p>
+            <ul style="list-style:none;font-size:0.85rem;color:var(--muted)">
+              <li style="margin-bottom:6px">✅ 製造業及貿易公司管理層</li>
+              <li style="margin-bottom:6px">✅ 部門主管（銷售/採購/物流/倉庫）</li>
+              <li style="margin-bottom:6px">✅ 資深員工（想提升效率及價值）</li>
+              <li style="margin-bottom:6px">✅ <b>無需 IT 或 Coding 背景</b></li>
+            </ul>
+          </div>
+          <div style="margin-bottom:20px">
+            <p style="font-size:0.9rem;margin-bottom:12px"><b>課程核心：</b></p>
+            <ul style="list-style:none;font-size:0.85rem;color:var(--muted)">
+              <li style="margin-bottom:6px">🔹 如何用 AI 自動化報價流程</li>
+              <li style="margin-bottom:6px">🔹 如何建立公司內部 AI 文件管理系統</li>
+              <li style="margin-bottom:6px">🔹 如何用自然語言控制數據分析</li>
+              <li style="margin-bottom:6px">🔹 如何串聯多個 AI 工具成為自動化流水線</li>
+              <li style="margin-bottom:6px">🔹 實戰工作坊：即場為你公司設計自動化方案</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="pain-card" style="border-left:3px solid var(--accent);margin-bottom:16px">
+          <div class="icon">💡</div>
+          <h3>你最值錢嘅資產唔係 IT 技術</h3>
+          <p style="font-size:0.85rem;color:var(--muted)">而係你對自己公司流程嘅<b>熟悉程度</b>。你知道邊個位 bottleneck、邊個步驟重複、邊個 decision 成日拖慢 — AI 只係幫你將呢啲知識轉化為自動化系統。</p>
+        </div>
+        <div class="pain-card" style="border-left:3px solid var(--accent2)">
+          <div class="icon">⚡</div>
+          <h3>由認識到落地的學習路徑</h3>
+          <p style="font-size:0.85rem;color:var(--muted)"><b>第 1 步：</b>識別你公司 3 個最浪費時間嘅重複性工作<br>
+          <b>第 2 步：</b>學習用 no-code AI 工具建立第一個自動化流程<br>
+          <b>第 3 步：</b>將多個流程串聯成完整自動化系統<br>
+          <b>第 4 步：</b>持續優化及擴展至其他部門</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 🏗️ PORTALS — 10 個專屬 Portal                    -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="section" id="portals">
+  <div class="container">
+    <div class="section-label">多維度 Portal 架構</div>
+    <h2 class="section-title">唔同崗位，專屬 Portal</h2>
+    <p class="section-sub">一個系統，10 個 Portal — Sales、Purchasing、Shipping、Warehouse、CEO 各有專屬介面，但共享同一套數據。</p>
+    <div class="portal-grid">
+      <div class="portal-card"><div class="portal-icon">🤝</div><h4>Sales Portal</h4><span>報價 · 訂單 · 客戶</span></div>
+      <div class="portal-card"><div class="portal-icon">📋</div><h4>Purchasing Portal</h4><span>採購 · 比價 · 供應商</span></div>
+      <div class="portal-card"><div class="portal-icon">🚢</div><h4>Shipping Portal</h4><span>物流 · 裝櫃 · 文件</span></div>
+      <div class="portal-card"><div class="portal-icon">🏭</div><h4>Warehouse Portal</h4><span>庫存 · 出入庫 · 盤點</span></div>
+      <div class="portal-card"><div class="portal-icon">📊</div><h4>CEO Portal</h4><span>KPI · 全局 · 預測</span></div>
+      <div class="portal-card"><div class="portal-icon">💰</div><h4>Accounting Portal</h4><span>發票 · 收款 · 付款</span></div>
+      <div class="portal-card"><div class="portal-icon">🎨</div><h4>Design Portal</h4><span>設計稿 · 審批 · 版本</span></div>
+      <div class="portal-card"><div class="portal-icon">👥</div><h4>HR Portal</h4><span>招聘 · 考勤 · 績效</span></div>
+      <div class="portal-card"><div class="portal-icon">🔔</div><h4>Notification Hub</h4><span>警報 · 提醒 · 審批</span></div>
+      <div class="portal-card"><div class="portal-icon">🔗</div><h4>Integration Hub</h4><span>API · ERP · 第三方</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 🔄 HOW IT WORKS — 4 步驟流程                    -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-label">Freemium → Full Automation</div>
+    <h2 class="section-title">點樣由免費工具變成全面自動化？</h2>
+    <p class="section-sub">唔係賣軟件，係賣轉型。先用免費工具證明價值，再逐步升級。</p>
+    <div class="flow-section">
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <h4>🆓 免費試用</h4>
+          <p>用 SOPA / Message Pool 免費工具處理日常報價，即時見到 AI 效率</p>
+          <span class="flow-arrow">→</span>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <h4>🎯 發掘痛點</h4>
+          <p>我哋分析你嘅使用數據，主動搵出其他可自動化嘅流程</p>
+          <span class="flow-arrow">→</span>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <h4>📋 定制方案</h4>
+          <p>根據你公司規模同需求，提案度身訂造嘅 AI 自動化藍圖</p>
+          <span class="flow-arrow">→</span>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <h4>🚀 全面部署</h4>
+          <p>全公司 Portal 上線 + 數據遷移 + 團隊培訓 + 持續優化</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 💲 PRICING — 4 個 plan 對比表                    -->
+<!-- ════════════════════════════════════════════════ -->
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="section-label">定價模型</div>
+    <h2 class="section-title">由 Free 到 Enterprise</h2>
+    <p class="section-sub">唔需要一次過俾大筆錢，跟住你嘅業務成長逐步升級。</p>
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th style="width:30%">功能</th>
+          <th style="text-align:center">🆓 Free</th>
+          <th style="text-align:center">⭐ Starter</th>
+          <th style="text-align:center">🚀 Pro</th>
+          <th style="text-align:center">🏢 Enterprise</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>SOPA 報價分析</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>Quote Compare 報價對比</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>Message Pool</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>Container Optimizer</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>NPDS 產品開發</td><td class="dash" style="text-align:center">—</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>CEO Dashboard</td><td class="dash" style="text-align:center">—</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>Business Forecast</td><td class="dash" style="text-align:center">—</td><td class="dash" style="text-align:center">—</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>Stock Clearance AI</td><td class="dash" style="text-align:center">—</td><td class="dash" style="text-align:center">—</td><td class="check" style="text-align:center">✅</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>Multi-Portal (10 Portals)</td><td class="dash" style="text-align:center">—</td><td class="dash" style="text-align:center">—</td><td class="dash" style="text-align:center">—</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr><td>Custom Integration</td><td class="dash" style="text-align:center">—</td><td class="dash" style="text-align:center">—</td><td class="dash" style="text-align:center">—</td><td class="check" style="text-align:center">✅</td></tr>
+        <tr style="font-weight:700;background:rgba(6,182,212,0.05)">
+          <td>價錢</td>
+          <td style="text-align:center;color:var(--free)">$0</td>
+          <td style="text-align:center">$299<span style="font-size:0.75rem;color:var(--muted)">/mo</span></td>
+          <td style="text-align:center">$999<span style="font-size:0.75rem;color:var(--muted)">/mo</span></td>
+          <td style="text-align:center">Custom</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- 📬 CTA — 最後 Call to Action                     -->
+<!-- ════════════════════════════════════════════════ -->
+<section id="cta">
+  <div class="container">
+    <div class="cta-section">
+      <h2>準備好將你嘅工廠帶入 AI 時代？</h2>
+      <p>免費試用而家開始。我哋會根據你嘅使用情況，主動提供定制化嘅全面自動化方案。</p>
+      <div class="btn-group">
+        <a href="#" class="btn btn-primary">🆓 即刻免費試用</a>
+        <a href="#" class="btn btn-outline">📧 預約 30 分鐘 Demo</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════ -->
+<!-- ⬇️ FOOTER — 版權、公司名                         -->
+<!-- ════════════════════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <p>© 2026 <a href="#">ManuTrade AI Co. Ltd.</a> — Manufacturing & Trading AI Architect</p>
+    <p style="margin-top:8px">Hong Kong · Shenzhen | AI-powered workflow automation for global trade</p>
+  </div>
+</footer>
+
+</body>
+</html>
