@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Container Optimizer — Smart Carton Loading | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* Gate Overlay */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{color:var(--warn);font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-sm{padding:10px 20px;font-size:0.85rem}
+.btn-success{background:var(--accent2);color:#fff}
+.btn-danger{background:var(--red);color:#fff}
+.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent}
+.btn-outline:hover{border-color:var(--accent)}
+
+/* Validation */
+.valid-box{display:none;align-items:center;gap:8px;margin-bottom:12px;padding:10px 14px;background:rgba(6,182,212,0.08);border-radius:8px;font-size:0.85rem}
+.valid-box.show{display:flex}
+.valid-box input{width:auto;flex:1;margin:0;text-align:center;letter-spacing:4px;font-size:1.1rem}
+.valid-box .send-btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;white-space:nowrap}
+
+/* Main App */
+.app{display:none}
+.app.active{display:block}
+/* Top Bar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+
+/* Content */
+.content{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+/* Section Header */
+.section-header{margin-bottom:28px}
+.section-header h1{font-size:1.7rem;margin-bottom:6px}
+.section-header .subtitle{color:var(--muted);font-size:0.95rem}
+
+/* Product Input Card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:24px}
+.card h2{font-size:1.2rem;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.card h3{font-size:1rem;margin-bottom:12px;color:var(--accent)}
+
+/* Product Table */
+.product-table{width:100%;border-collapse:collapse;font-size:0.85rem;margin-bottom:16px}
+.product-table thead th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px}
+.product-table tbody td{padding:8px 12px;border-bottom:1px solid rgba(30,45,69,0.5);vertical-align:middle}
+.product-table tbody tr:hover{background:rgba(6,182,212,0.03)}
+.product-table input{width:100%;padding:8px 10px;background:#0d1117;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.82rem;text-align:center}
+.product-table input:focus{outline:none;border-color:var(--accent)}
+.product-table .name-input{text-align:left;min-width:180px}
+.product-table .dim-input{width:70px}
+.product-table .qty-input{width:90px}
+.product-table .wt-input{width:80px}
+.product-table .dim-group{display:flex;align-items:center;gap:3px;justify-content:center}
+.product-table .dim-sep{color:var(--muted);font-size:0.7rem}
+.product-table .delete-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:1rem;padding:4px 8px;border-radius:6px;transition:all .2s}
+.product-table .delete-btn:hover{background:rgba(239,68,68,0.12)}
+
+/* Add row btn */
+.add-row-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:rgba(6,182,212,0.08);border:1px dashed var(--accent);border-radius:10px;color:var(--accent);cursor:pointer;font-size:0.85rem;font-weight:600;transition:all .2s}
+.add-row-btn:hover{background:rgba(6,182,212,0.14)}
+
+/* Container Selector */
+.container-selector{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.container-option{flex:1;min-width:150px;padding:16px 20px;background:var(--card);border:2px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s;text-align:center}
+.container-option:hover{border-color:var(--accent);transform:translateY(-2px)}
+.container-option.active{border-color:var(--accent);background:rgba(6,182,212,0.08);box-shadow:0 0 20px rgba(6,182,212,0.12)}
+.container-option .ct-name{font-size:1rem;font-weight:700;margin-bottom:4px}
+.container-option .ct-dims{font-size:0.75rem;color:var(--muted)}
+.container-option .ct-volume{font-size:0.8rem;color:var(--accent);margin-top:4px;font-weight:600}
+
+/* Optimize Button Row */
+.optimize-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:24px}
+.optimize-row .btn{padding:16px 40px;font-size:1.05rem}
+
+/* Preload info */
+.preload-info{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(6,182,212,0.06);border-radius:8px;margin-bottom:16px;font-size:0.8rem;color:var(--muted)}
+.preload-info .pl-icon{font-size:1.2rem}
+
+/* Results Panel */
+.results-panel{display:none;margin-bottom:24px}
+.results-panel.show{display:block}
+
+/* Stats Grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.stat-card .stat-value{font-size:2rem;font-weight:800;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card .stat-label{font-size:0.8rem;color:var(--muted);margin-top:4px}
+.stat-card.warn .stat-value{-webkit-text-fill-color:var(--warn);background:var(--warn)}
+.stat-card.good .stat-value{-webkit-text-fill-color:var(--accent2);background:var(--accent2)}
+
+/* Loading Plan */
+.plan-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:20px}
+.plan-card h3{font-size:1.1rem;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.plan-diagram{background:#0d1117;border:1px solid var(--border);border-radius:10px;padding:24px;font-family:'Courier New',monospace;font-size:0.8rem;line-height:1.4;color:var(--accent);white-space:pre;overflow-x:auto}
+
+/* Carton Details */
+.carton-table{width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:16px}
+.carton-table thead th{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600;font-size:0.75rem;text-transform:uppercase}
+.carton-table tbody td{padding:8px 12px;border-bottom:1px solid rgba(30,45,69,0.4)}
+
+/* Destruct notice */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* Back link */
+.back-link{text-align:center;margin-top:24px;padding-bottom:32px}
+.back-link a{color:var(--muted);text-decoration:none;font-size:0.85rem;transition:color .2s}
+.back-link a:hover{color:var(--accent)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;animation:fadeIn .3s}
+.toast.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Responsive */
+@media(max-width:768px){
+  .gate-box{padding:28px 20px}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .product-table{font-size:0.75rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== GATE OVERLAY ====== -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">📦</div>
+    <h2>Container Optimizer</h2>
+    <p>3D Container Loading AI</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+
+    <div class="note">
+      ⚠️ <span>所有上傳資料將在 24 小時內自動銷毀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MAIN APP ====== -->
+<div class="app" id="mainApp">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="logo">📦 Container Optimizer — Carton Loading Plan</div>
+    <div class="timer">⏳ 資料保留: <span id="countdown">23:59:59</span></div>
+  </div>
+
+  <div class="content">
+    <!-- Section Header -->
+    <div class="section-header">
+      <h1>📦 精準計算貨櫃裝載方案</h1>
+      <p class="subtitle">輸入產品紙箱尺寸 → 自動計算最優裝載方案 → 最大化貨櫃利用率</p>
+    </div>
+
+    <!-- Product Input -->
+    <div class="card">
+      <h2>📋 產品紙箱資料</h2>
+      <p style="font-size:0.8rem;color:var(--muted);margin-bottom:16px">請輸入每個產品嘅外箱尺寸（長 × 寬 × 高 cm），系統會自動計算最優裝載排列</p>
+
+      <div class="preload-info">
+        <span class="pl-icon">💡</span> Demo 已預載 3 個產品作為示例。你可以修改、刪除或新增產品。
+      </div>
+
+      <table class="product-table" id="productTable">
+        <thead>
+          <tr>
+            <th>Product Name</th>
+            <th colspan="3">Dimensions (L × W × H cm)</th>
+            <th>Weight (kg)</th>
+            <th>Qty</th>
+            <th style="width:50px"></th>
+          </tr>
+        </thead>
+        <tbody id="productBody"></tbody>
+      </table>
+
+      <button class="add-row-btn" onclick="addProduct()">➕ Add Product</button>
+    </div>
+
+    <!-- Container Selector -->
+    <div class="card">
+      <h2>🚢 選擇貨櫃類型</h2>
+      <div class="container-selector" id="containerSelector">
+        <div class="container-option active" data-type="20ft" onclick="selectContainer(this)">
+          <div class="ct-name">20ft Standard</div>
+          <div class="ct-dims">Internal: 589 × 235 × 239 cm</div>
+          <div class="ct-volume">Volume: 33.2 m³</div>
+        </div>
+        <div class="container-option" data-type="40ft" onclick="selectContainer(this)">
+          <div class="ct-name">40ft Standard</div>
+          <div class="ct-dims">Internal: 1203 × 235 × 239 cm</div>
+          <div class="ct-volume">Volume: 67.7 m³</div>
+        </div>
+        <div class="container-option" data-type="40hq" onclick="selectContainer(this)">
+          <div class="ct-name">40ft High Cube</div>
+          <div class="ct-dims">Internal: 1203 × 235 × 269 cm</div>
+          <div class="ct-volume">Volume: 76.3 m³</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Optimize -->
+    <div class="optimize-row">
+      <button class="btn btn-success" onclick="optimize()" style="width:auto">⚡ Optimize Loading Plan</button>
+      <button class="btn btn-outline btn-sm" onclick="resetProducts()">🔄 Reset to Demo</button>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="results-panel" id="resultsPanel">
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <!-- Loading Plan Diagram -->
+      <div class="plan-card">
+        <h3>📐 Visual Loading Plan</h3>
+        <div class="plan-diagram" id="planDiagram"></div>
+      </div>
+
+      <!-- Carton Breakdown -->
+      <div class="plan-card">
+        <h3>📊 Carton Breakdown</h3>
+        <table class="carton-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Cartons</th>
+              <th>Per Carton (L×W×H)</th>
+              <th>Total Volume</th>
+              <th>Total Weight</th>
+            </tr>
+          </thead>
+          <tbody id="cartonBreakdown"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Destruct Notice -->
+    <div class="destruct">
+      <div class="dicon">⚠️</div>
+      <div><b>所有輸入資料及計算結果將在 24 小時內從伺服器永久刪除。</b><br>請下載或截圖保存裝載方案。如需再次使用，請重新輸入。</div>
+    </div>
+
+    <!-- Back Link -->
+    <div class="back-link">
+      <a href="../index.html">← 返回主頁</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Gate Logic ──
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) { err.textContent = '請輸入有效電郵'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('mp_gate_passed', 'true');
+  localStorage.setItem('mp_email', email);
+  toast('✅ 歡迎使用 ' + (name === 'message-pool' ? 'Message Pool' : 'Container Optimizer'));
+}
+
+// ── Toast ──
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+// ── Container Selection ──
+let selectedContainer = '20ft';
+const containerSpecs = {
+  '20ft': { L:589, W:235, H:239, name:'20ft Standard', volume:33.2 },
+  '40ft': { L:1203, W:235, H:239, name:'40ft Standard', volume:67.7 },
+  '40hq': { L:1203, W:235, H:269, name:'40ft High Cube', volume:76.3 },
+};
+
+function selectContainer(el) {
+  document.querySelectorAll('.container-option').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  selectedContainer = el.dataset.type;
+}
+
+// ── Product Data ──
+const defaultProducts = [
+  { name:'Air Fryer Box', L:42, W:34, H:36, weight:5.8, qty:2000 },
+  { name:'Kettle Box', L:24, W:20, H:28, weight:2.1, qty:1500 },
+  { name:'Toaster Box', L:32, W:22, H:24, weight:3.4, qty:1000 },
+];
+
+let products = JSON.parse(JSON.stringify(defaultProducts));
+
+function renderProducts() {
+  const tbody = document.getElementById('productBody');
+  tbody.innerHTML = products.map((p,i) => `
+    <tr>
+      <td><input type="text" class="name-input" value="${p.name}" onchange="updateProduct(${i},'name',this.value)"></td>
+      <td><div class="dim-group"><input type="number" class="dim-input" value="${p.L}" min="1" step="1" onchange="updateProduct(${i},'L',parseFloat(this.value)||1)">&nbsp;<span class="dim-sep">×</span></div></td>
+      <td><div class="dim-group"><input type="number" class="dim-input" value="${p.W}" min="1" step="1" onchange="updateProduct(${i},'W',parseFloat(this.value)||1)">&nbsp;<span class="dim-sep">×</span></div></td>
+      <td><input type="number" class="dim-input" value="${p.H}" min="1" step="1" onchange="updateProduct(${i},'H',parseFloat(this.value)||1)"></td>
+      <td><input type="number" class="wt-input" value="${p.weight}" min="0.1" step="0.1" onchange="updateProduct(${i},'weight',parseFloat(this.value)||0.1)"></td>
+      <td><input type="number" class="qty-input" value="${p.qty}" min="1" step="1" onchange="updateProduct(${i},'qty',parseInt(this.value)||1)"></td>
+      <td><button class="delete-btn" onclick="deleteProduct(${i})" title="Remove">🗑</button></td>
+    </tr>
+  `).join('');
+}
+
+function updateProduct(idx, key, val) {
+  products[idx][key] = val;
+}
+
+function addProduct() {
+  products.push({ name:'New Product', L:30, W:30, H:30, weight:1, qty:100 });
+  renderProducts();
+  toast('➕ Product added');
+}
+
+function deleteProduct(idx) {
+  if (products.length <= 1) { toast('❌ At least one product required'); return; }
+  products.splice(idx, 1);
+  renderProducts();
+  toast('🗑 Product removed');
+}
+
+function resetProducts() {
+  products = JSON.parse(JSON.stringify(defaultProducts));
+  renderProducts();
+  document.getElementById('resultsPanel').classList.remove('show');
+  toast('🔄 Reset to demo products');
+}
+
+// ── Optimize ──
+function optimize() {
+  // Gather fresh data from DOM
+  const rows = document.querySelectorAll('#productBody tr');
+  products = Array.from(rows).map((row, i) => {
+    const inputs = row.querySelectorAll('input');
+    return {
+      name: inputs[0].value || products[i]?.name || 'Product',
+      L: parseFloat(inputs[1].value) || products[i]?.L || 30,
+      W: parseFloat(inputs[2].value) || products[i]?.W || 30,
+      H: parseFloat(inputs[3].value) || products[i]?.H || 30,
+      weight: parseFloat(inputs[4].value) || products[i]?.weight || 1,
+      qty: parseInt(inputs[5].value) || products[i]?.qty || 100,
+    };
+  });
+
+  const spec = containerSpecs[selectedContainer];
+  const containerVol = spec.L * spec.W * spec.H; // cm³
+
+  // Calculate cartons needed and total volumes
+  let totalCartons = 0;
+  let totalProdVol = 0;
+  let totalWeight = 0;
+  const cartonData = [];
+
+  products.forEach(p => {
+    const cartonVol = p.L * p.W * p.H; // cm³
+    totalCartons += p.qty;
+    const vol = cartonVol * p.qty;
+    totalProdVol += vol;
+    totalWeight += p.weight * p.qty;
+    cartonData.push({
+      name: p.name,
+      qty: p.qty,
+      L: p.L, W: p.W, H: p.H,
+      cartonVol: cartonVol,
+      totalVol: vol,
+      totalWeight: p.weight * p.qty,
+    });
+  });
+
+  // Calculate utilization
+  const utilization = (totalProdVol / containerVol * 100);
+  const remainingVol = (containerVol - totalProdVol) / 1e6; // m³
+  const remainingVolPct = Math.max(0, 100 - utilization);
+
+  // Compute loading layout
+  const layers = computeLayout(cartonData, spec);
+
+  // Update stats
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card${utilization > 85 ? ' good' : utilization < 55 ? ' warn' : ''}">
+      <div class="stat-value">${utilization.toFixed(1)}%</div>
+      <div class="stat-label">Space Utilization</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${totalCartons.toLocaleString()}</div>
+      <div class="stat-label">Total Cartons</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${(totalProdVol / 1e6).toFixed(2)}</div>
+      <div class="stat-label">Total Volume (m³)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${remainingVol.toFixed(2)}</div>
+      <div class="stat-label">Remaining Space (m³)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${(totalWeight / 1000).toFixed(1)}</div>
+      <div class="stat-label">Total Weight (tonnes)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">${spec.name}</div>
+      <div class="stat-label">Container Type</div>
+    </div>
+  `;
+
+  // Build diagram
+  document.getElementById('planDiagram').textContent = buildDiagram(layers, spec);
+
+  // Carton breakdown
+  document.getElementById('cartonBreakdown').innerHTML = cartonData.map(c => `
+    <tr>
+      <td><strong>${c.name}</strong></td>
+      <td>${c.qty.toLocaleString()}</td>
+      <td>${c.L} × ${c.W} × ${c.H} cm</td>
+      <td>${(c.totalVol / 1e6).toFixed(3)} m³</td>
+      <td>${(c.totalWeight / 1000).toFixed(2)} t</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('resultsPanel').classList.add('show');
+  document.getElementById('resultsPanel').scrollIntoView({ behavior:'smooth', block:'start' });
+  toast('✅ Loading plan optimized!');
+}
+
+function computeLayout(cartonData, spec) {
+  // Simple bin-packing: sort by volume descending, stack in layers
+  const sorted = [...cartonData].sort((a,b) => (b.L*b.W*b.H) - (a.L*a.W*a.H));
+
+  // Calculate how many fit per layer (base = L×W of container floor)
+  let layers = [];
+  let remaining = sorted.map(c => ({ ...c }));
+
+  // Greedy layer packing
+  while (remaining.some(r => r.qty > 0)) {
+    let layerProducts = [];
+    let usedFloorArea = 0;
+    const floorArea = spec.L * spec.W;
+
+    for (let r of remaining) {
+      while (r.qty > 0) {
+        const cartonFloor = r.L * r.W;
+        if (usedFloorArea + cartonFloor <= floorArea * 0.95) {
+          usedFloorArea += cartonFloor;
+          const fitL = Math.floor(spec.L / r.L);
+          const fitW = Math.floor(spec.W / r.W);
+          const fitPerLayer = Math.min(fitL * fitW, r.qty);
+          if (fitPerLayer > 0) {
+            layerProducts.push({ name: r.name, count: fitPerLayer, L: r.L, W: r.W, H: r.H });
+            r.qty -= fitPerLayer;
+            usedFloorArea += cartonFloor * (fitPerLayer - 1);
+          }
+          break; // move to next product type after placing one batch
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (layerProducts.length === 0) break; // no more can fit
+    layers.push(layerProducts);
+  }
+
+  return layers;
+}
+
+function buildDiagram(layers, spec) {
+  let d = '';
+  d += `┌${'─'.repeat(58)}┐\n`;
+  d += `│  CONTAINER LOADING PLAN — ${spec.name.padEnd(33)}│\n`;
+  d += `│  Internal: ${spec.L} × ${spec.W} × ${spec.H} cm${' '.repeat(25)}│\n`;
+  d += `├${'─'.repeat(58)}┤\n`;
+
+  let totalH = 0;
+  layers.forEach((layer, li) => {
+    const maxH = Math.max(...layer.map(p => p.H));
+    totalH += maxH;
+
+    d += `│  LAYER ${li+1} (${totalH - maxH} → ${Math.min(totalH, spec.H)} cm from floor)${' '.repeat(28)}│\n`;
+    d += `│  ├─ Thickness: ${maxH} cm${' '.repeat(39)}│\n`;
+
+    // Render a rough floor layout
+    layer.forEach(p => {
+      const rowsL = Math.floor(spec.L / p.L);
+      const rowsW = Math.floor(spec.W / p.W);
+      const perRow = Math.min(rowsW, Math.ceil(p.count / Math.max(rowsL, 1)));
+      d += `│  │  📦 ${p.name.padEnd(20)} ×${String(p.count).padStart(4)}  (${p.L}×${p.W}×${p.H} cm)${' '.repeat(8)}│\n`;
+
+      // ASCII grid
+      const gridW = Math.min(rowsW, 10);
+      const gridL = Math.min(rowsL, 10);
+      const totalCells = gridL * gridW;
+      const filled = Math.min(p.count, totalCells);
+      let rowStr = '';
+      for (let r = 0; r < gridW; r++) {
+        rowStr += '│  │  ';
+        for (let c = 0; c < gridL; c++) {
+          rowStr += (r * gridL + c < filled) ? '🟫' : '⬜';
+        }
+        rowStr += `  (×${String(gridL).padStart(2)} across)${' '.repeat(24)}│\n`;
+      }
+      d += rowStr;
+    });
+
+    if (li < layers.length - 1) {
+      d += `│  ├${'─'.repeat(57)}┤\n`;
+    }
+  });
+
+  if (totalH < spec.H) {
+    d += `│  ├${'─'.repeat(57)}┤\n`;
+    d += `│  │  ⬜ EMPTY SPACE above ${totalH} cm — ${spec.H - totalH} cm headroom${' '.repeat(10)}│\n`;
+  }
+
+  d += `└${'─'.repeat(58)}┘\n`;
+  d += `\n  Total layers: ${layers.length}  |  Stack height: ${totalH} cm  |  Container height: ${spec.H} cm`;
+  return d;
+}
+
+// ── Init ──
+renderProducts();
+
+if (localStorage.getItem('container_opt_gate_passed')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+</script>
+</body>
+</html>

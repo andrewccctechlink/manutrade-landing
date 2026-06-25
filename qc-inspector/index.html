@@ -1,0 +1,1249 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QC Inspector 智能驗貨報告 — AI-Powered Inspection | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --orange: #f97316; --yellow: #f59e0b; --green: #10b981;
+  --purple: #8b5cf6; --pink: #ec4899;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* ──── Gate Overlay ──── */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:440px;max-width:92vw;text-align:center}
+.gate-box .icon{font-size:3.5rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{color:var(--yellow);font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%;box-shadow:0 4px 20px rgba(6,182,212,0.3)}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* ──── Main App ──── */
+.app{display:none}
+.app.active{display:block}
+
+/* Top Bar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:16px}
+.topbar .logo{font-weight:800;font-size:1rem;color:var(--accent);white-space:nowrap}
+.topbar .timer{color:var(--yellow);font-size:0.8rem;white-space:nowrap}
+.topbar .timer span{font-weight:700;font-variant-numeric:tabular-nums}
+.topbar a{color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color .2s}
+.topbar a:hover{color:var(--accent)}
+
+/* Container */
+.container{max-width:1200px;margin:0 auto;padding:24px}
+
+/* Hero */
+.hero-section{text-align:center;padding:36px 0 28px}
+.hero-section .badge{display:inline-block;background:rgba(6,182,212,0.15);color:var(--accent);padding:6px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;letter-spacing:0.5px;margin-bottom:14px}
+.hero-section h1{font-size:2.2rem;font-weight:800;margin-bottom:8px;background:linear-gradient(135deg,#e2e8f0 0%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-section h2{font-size:1.1rem;color:var(--muted);font-weight:400;margin-bottom:12px}
+.hero-section .desc{color:var(--muted);font-size:0.9rem;max-width:640px;margin:0 auto}
+
+/* ──── Upload Zone ──── */
+.upload-card{background:var(--card);border:2px dashed var(--border);border-radius:16px;padding:40px 28px;text-align:center;cursor:pointer;transition:all .3s;margin-bottom:24px}
+.upload-card:hover,.upload-card.dragover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.upload-card .dz-icon{font-size:2.5rem;margin-bottom:12px}
+.upload-card h3{font-size:1.05rem;margin-bottom:6px}
+.upload-card p{color:var(--muted);font-size:0.85rem}
+.upload-card input[type=file]{display:none}
+.upload-card .file-loaded-bar{display:none;align-items:center;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.upload-card.loaded .file-loaded-bar{display:flex}
+.upload-card.loaded .dz-hint{display:none}
+.upload-card .file-count{background:var(--accent2);color:#fff;padding:4px 12px;border-radius:12px;font-size:0.78rem;font-weight:700}
+.upload-card .file-names{color:var(--muted);font-size:0.78rem}
+
+/* ──── Example Chips ──── */
+.chips-section{margin:24px 0}
+.chips-section .chips-label{color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
+.chip-row{display:flex;gap:10px;flex-wrap:wrap}
+.chip{background:var(--card);border:1.5px solid var(--border);border-radius:24px;padding:10px 18px;font-size:0.82rem;cursor:pointer;transition:all .25s;color:var(--muted);display:flex;align-items:center;gap:8px}
+.chip:hover{border-color:var(--accent);color:var(--text);background:rgba(6,182,212,0.08);transform:translateY(-1px)}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(6,182,212,0.12);font-weight:600;box-shadow:0 0 18px rgba(6,182,212,0.12)}
+.chip .chip-icon{font-size:1.2rem}
+.chip .chip-sub{display:block;font-size:0.68rem;color:var(--muted);font-weight:400;margin-top:1px}
+
+/* ──── Action Row ──── */
+.action-row{display:flex;gap:12px;align-items:center;justify-content:center;margin:24px 0 32px;flex-wrap:wrap}
+.btn-inspect{background:var(--gradient);color:#fff;padding:14px 40px;border-radius:12px;font-weight:700;font-size:1rem;box-shadow:0 4px 24px rgba(6,182,212,0.35)}
+.btn-inspect:hover{transform:translateY(-2px);box-shadow:0 6px 32px rgba(6,182,212,0.45)}
+.btn-inspect:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent;padding:12px 24px;border-radius:10px;font-weight:600;font-size:0.85rem;cursor:pointer}
+.btn-outline:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.btn-sm{padding:10px 18px;font-size:0.8rem}
+
+/* ──── Processing ──── */
+.processing{display:none;text-align:center;padding:28px 0}
+.processing.active{display:block}
+.processing .spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 16px;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.processing p{color:var(--muted);font-size:0.88rem}
+
+/* ──── Results ──── */
+.results{display:none;animation:fadeUp .5s ease}
+.results.show{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Verdict Banner */
+.verdict-banner{display:flex;align-items:center;gap:20px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px;flex-wrap:wrap}
+.verdict-banner.pass{border-color:rgba(16,185,129,0.4);background:linear-gradient(135deg,rgba(16,185,129,0.08) 0%,rgba(16,185,129,0.02) 100%)}
+.verdict-banner.fail{border-color:rgba(239,68,68,0.4);background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.02) 100%)}
+.verdict-banner.warn{border-color:rgba(245,158,11,0.4);background:linear-gradient(135deg,rgba(245,158,11,0.08) 0%,rgba(245,158,11,0.02) 100%)}
+.verdict-badge{width:100px;height:100px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;font-weight:800}
+.verdict-badge.pass{border:4px solid var(--green);color:var(--green);background:rgba(16,185,129,0.08)}
+.verdict-badge.fail{border:4px solid var(--red);color:var(--red);background:rgba(239,68,68,0.08)}
+.verdict-badge.warn{border:4px solid var(--yellow);color:var(--yellow);background:rgba(245,158,11,0.08)}
+.verdict-badge .v-label{font-size:2rem;line-height:1}
+.verdict-badge .v-sublabel{font-size:0.65rem;text-transform:uppercase;letter-spacing:1px}
+.verdict-info{flex:1;min-width:200px}
+.verdict-info h3{font-size:1.2rem;margin-bottom:4px}
+.verdict-info .batch-name{color:var(--muted);font-size:0.85rem;margin-bottom:10px}
+.verdict-info .confidence-bar{display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--muted);margin-top:6px}
+.verdict-info .confidence-fill{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.verdict-info .confidence-fill div{height:100%;border-radius:3px;transition:width .6s ease}
+.confidence-fill div.high{background:var(--green)}
+.confidence-fill div.mid{background:var(--yellow)}
+.confidence-fill div.low{background:var(--red)}
+
+/* Section Title */
+.section-title{margin:36px 0 18px}
+.section-title h2{font-size:1.3rem;font-weight:800;margin-bottom:4px}
+.section-title p{color:var(--muted);font-size:0.82rem}
+
+/* ──── AQL Table ──── */
+.data-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
+.data-card h3{font-size:1.05rem;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.data-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.data-table th{text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600;font-size:0.73rem;text-transform:uppercase;letter-spacing:0.5px}
+.data-table td{padding:12px 14px;border-bottom:1px solid rgba(30,45,69,0.5);vertical-align:top}
+.data-table tbody tr:hover{background:rgba(6,182,212,0.03)}
+.data-table .aql-ref{font-family:monospace;font-size:0.78rem;color:var(--accent)}
+.data-table .highlight-cell{font-weight:700}
+.data-table .pass-cell{color:var(--green);font-weight:700}
+.data-table .fail-cell{color:var(--red);font-weight:700}
+
+/* Defect Classification Pills */
+.defect-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 12px;border-radius:12px;font-size:0.73rem;font-weight:700}
+.defect-pill.critical{background:rgba(239,68,68,0.12);color:var(--red)}
+.defect-pill.major{background:rgba(245,158,11,0.12);color:var(--yellow)}
+.defect-pill.minor{background:rgba(16,185,129,0.1);color:var(--green)}
+
+/* ──── Photo Gallery with AI Annotations ──── */
+.photo-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.photo-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:all .2s}
+.photo-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.photo-card.defect-found{border-color:rgba(239,68,68,0.3)}
+.photo-card.defect-found:hover{border-color:var(--red)}
+.photo-frame{position:relative;background:#0d1117;min-height:200px;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+.photo-frame img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-frame .ai-overlay{position:absolute;inset:0;pointer-events:none}
+.photo-frame .defect-circle{position:absolute;border:2.5px solid var(--red);border-radius:50%;box-shadow:0 0 14px rgba(239,68,68,0.5), inset 0 0 8px rgba(239,68,68,0.15);animation:pulse-ring 2s ease-in-out infinite}
+@keyframes pulse-ring{0%,100%{box-shadow:0 0 14px rgba(239,68,68,0.5),inset 0 0 8px rgba(239,68,68,0.15)}50%{box-shadow:0 0 24px rgba(239,68,68,0.75),inset 0 0 14px rgba(239,68,68,0.25)}}
+.photo-frame .defect-label{position:absolute;background:rgba(239,68,68,0.9);color:#fff;padding:3px 10px;border-radius:10px;font-size:0.65rem;font-weight:700;white-space:nowrap;pointer-events:none;z-index:2}
+.photo-frame .defect-arrow{position:absolute;width:1.5px;background:var(--red);z-index:1;transform-origin:top center}
+.photo-info{padding:14px 16px}
+.photo-info h4{font-size:0.88rem;margin-bottom:4px}
+.photo-info .defect-tag{display:inline-block;font-size:0.7rem;padding:2px 8px;border-radius:8px;margin-bottom:6px}
+.photo-info .defect-tag.found{background:rgba(239,68,68,0.1);color:var(--red)}
+.photo-info .defect-tag.clean{background:rgba(16,185,129,0.1);color:var(--green)}
+.photo-info .defect-desc{color:var(--muted);font-size:0.75rem;line-height:1.5}
+
+/* Simulated Photo SVG — product illustrations */
+.photo-sim{width:100%;height:100%;min-height:200px;background:linear-gradient(135deg,#1a1f2e 0%,#1e2d45 100%);display:flex;align-items:center;justify-content:center;position:relative}
+.photo-sim .sim-object{font-size:5rem;opacity:0.5;filter:grayscale(0.3)}
+.photo-sim .sim-label{position:absolute;bottom:12px;left:0;right:0;text-align:center;font-size:0.7rem;color:var(--muted);opacity:0.6}
+
+/* ──── Stats Grid ──── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;text-align:center}
+.stat-card .stat-value{font-size:1.8rem;font-weight:800}
+.stat-card .stat-value.red{color:var(--red)} .stat-card .stat-value.green{color:var(--green)} .stat-card .stat-value.yellow{color:var(--yellow)}
+.stat-card .stat-label{font-size:0.75rem;color:var(--muted);margin-top:4px;line-height:1.3}
+.stat-card .stat-compare{font-size:0.7rem;margin-top:6px;padding:3px 8px;border-radius:6px;display:inline-block}
+.stat-card .stat-compare.better{background:rgba(16,185,129,0.1);color:var(--green)}
+.stat-card .stat-compare.worse{background:rgba(239,68,68,0.1);color:var(--red)}
+
+/* ──── Scorecard ──── */
+.scorecard{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-bottom:20px}
+.score-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center}
+.score-item .si-icon{font-size:2rem;margin-bottom:8px}
+.score-item .si-name{font-size:0.85rem;font-weight:600;margin-bottom:6px}
+.score-item .si-value{font-size:1.6rem;font-weight:800;margin-bottom:2px}
+.score-item .si-value.good{color:var(--green)}
+.score-item .si-value.ok{color:var(--yellow)}
+.score-item .si-value.bad{color:var(--red)}
+.score-item .si-sub{font-size:0.72rem;color:var(--muted)}
+.score-item .si-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:10px}
+.score-item .si-bar div{height:100%;border-radius:3px;transition:width .6s ease}
+.score-item .si-bar div.good{background:var(--green)}
+.score-item .si-bar div.ok{background:var(--yellow)}
+.score-item .si-bar div.bad{background:var(--red)}
+
+/* ──── Corrective Actions ──── */
+.action-list{list-style:none}
+.action-list li{padding:14px 0;border-bottom:1px solid var(--border);display:flex;gap:14px;align-items:flex-start}
+.action-list li:last-child{border-bottom:none}
+.action-list .action-rank{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.78rem;flex-shrink:0}
+.action-list .action-rank.urgent{background:rgba(239,68,68,0.12);color:var(--red)}
+.action-list .action-rank.standard{background:rgba(245,158,11,0.12);color:var(--yellow)}
+.action-list .action-rank.routine{background:rgba(16,185,129,0.1);color:var(--green)}
+.action-list .action-content{flex:1}
+.action-list .action-title{font-weight:600;font-size:0.9rem;margin-bottom:2px}
+.action-list .action-detail{color:var(--muted);font-size:0.78rem;line-height:1.4}
+.action-list .action-deadline{font-size:0.68rem;color:var(--red);font-weight:600;margin-top:4px}
+
+/* ──── Pro Tip ──── */
+.pro-tip{background:linear-gradient(135deg,rgba(6,182,212,0.08) 0%,rgba(139,92,246,0.05) 100%);border:1px solid rgba(6,182,212,0.25);border-radius:16px;padding:20px 24px;margin:24px 0;position:relative;overflow:hidden}
+.pro-tip::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--gradient);border-radius:4px 0 0 4px}
+.pro-tip .tip-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.pro-tip .tip-icon{font-size:1.5rem}
+.pro-tip .tip-title{font-weight:700;font-size:1rem;color:var(--accent)}
+.pro-tip .tip-body{color:var(--muted);font-size:0.85rem;line-height:1.6}
+.pro-tip .tip-body strong{color:var(--yellow)}
+
+/* ──── Share Button ──── */
+.share-row{display:flex;gap:12px;justify-content:center;margin:24px 0 8px;flex-wrap:wrap}
+.btn-share{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:var(--accent2);color:#fff;border-radius:12px;font-weight:700;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;box-shadow:0 4px 18px rgba(16,185,129,0.2)}
+.btn-share:hover{background:#0ea57e;transform:translateY(-2px);box-shadow:0 6px 24px rgba(16,185,129,0.3)}
+.shared-link{display:none;background:var(--card);border:1px dashed var(--accent2);border-radius:10px;padding:12px 18px;text-align:center;font-size:0.82rem;color:var(--accent2);font-family:monospace;word-break:break-all;margin-top:12px}
+.shared-link.show{display:block}
+
+/* ──── Destruct ──── */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* ──── Toast ──── */
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.4);animation:fadeIn .3s}
+.toast.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ──── Footer ──── */
+footer{text-align:center;padding:32px 0 40px;color:var(--muted);font-size:0.78rem;border-top:1px solid var(--border);margin-top:32px}
+footer a{color:var(--accent);text-decoration:none}
+
+/* ──── Responsive ──── */
+@media(max-width:768px){
+  .hero-section h1{font-size:1.5rem}
+  .verdict-banner{flex-direction:column;text-align:center}
+  .photo-gallery{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .scorecard{grid-template-columns:1fr 1fr}
+  .topbar{flex-wrap:wrap;gap:8px}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ GATE OVERLAY ════════════════════ -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">🔬</div>
+    <h2>QC Inspector 智能驗貨報告</h2>
+    <p>AI-Powered Quality Inspection Report Generator</p>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+    <div class="note">
+      ⚠️ <span>所有上傳資料將在 24 小時內自動銷毀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ MAIN APP ════════════════════ -->
+<div class="app" id="mainApp">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="logo">🔬 QC Inspector <span style="font-size:0.7rem;color:var(--purple);margin-left:4px">智能驗貨報告</span></div>
+    <div class="timer">⏳ 資料保留: <span id="countdown">23:59:59</span></div>
+    <a href="../index.html">🏠 返回主頁</a>
+  </div>
+
+  <div class="container">
+    <!-- Hero -->
+    <div class="hero-section">
+      <div class="badge">🔬 AI 智能驗貨報告系統</div>
+      <h1>一影即出報告 · AI 驗貨無難度</h1>
+      <h2>AI-Powered QC Inspection Report — ISO 2859-1 AQL Sampling</h2>
+      <p class="desc">拍攝檢驗照片 → AI 自動識別瑕疵 → 生成 ISO 2859-1 AQL 標準驗貨報告。支援 Critical / Major / Minor 三級瑕疵分類、缺陷標註圖庫、工廠績效評分。專業驗貨報告，一鍵生成，一鍵分享。</p>
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="upload-card" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="dz-icon">📤</div>
+      <div class="dz-hint">
+        <h3>拖放檢驗照片到此 · 或點擊上傳</h3>
+        <p>AI 會自動識別產品瑕疵並標註 · 支援多檔案上傳</p>
+        <p style="font-size:0.72rem;color:var(--muted);margin-top:8px">支援 JPG / PNG · 每張最大 10MB · 建議清晰拍攝缺陷區域</p>
+      </div>
+      <div class="file-loaded-bar">
+        <span class="file-count" id="fileCount">0 files</span>
+        <span class="file-names" id="fileNames"></span>
+      </div>
+      <input type="file" id="fileInput" accept="image/jpeg,image/png" multiple onchange="handleFiles(this.files)">
+    </div>
+
+    <!-- Example Chips -->
+    <div class="chips-section">
+      <div class="chips-label">🎯 或選擇以下範例檢驗批次試用 Demo：</div>
+      <div class="chip-row">
+        <div class="chip active" data-demo="airfryer" onclick="selectDemo('airfryer',this)">
+          <span class="chip-icon">🍟</span>
+          <div>
+            Air Fryer — Batch AF-2024-06
+            <span class="chip-sub">⚠️ 8 defects found · Conditional Pass</span>
+          </div>
+        </div>
+        <div class="chip" data-demo="kettle" onclick="selectDemo('kettle',this)">
+          <span class="chip-icon">🫖</span>
+          <div>
+            Kettle — Batch KT-2024-03
+            <span class="chip-sub">✅ Clean Pass · Zero defects</span>
+          </div>
+        </div>
+        <div class="chip" data-demo="toaster" onclick="selectDemo('toaster',this)">
+          <span class="chip-icon">🔥</span>
+          <div>
+            Toaster — Batch PT-2024-01
+            <span class="chip-sub">🚨 Critical Fail · Safety hazard</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action -->
+    <div class="action-row">
+      <button class="btn btn-inspect" id="inspectBtn" onclick="runInspection()">🔬 開始 AI 驗貨分析</button>
+      <button class="btn btn-outline btn-sm" id="demoBtn" onclick="runDemoInspection()">🚀 試用 Air Fryer 批次 Demo</button>
+    </div>
+
+    <!-- Processing -->
+    <div class="processing" id="processing">
+      <div class="spinner"></div>
+      <p>🤖 AI 正在分析檢驗照片…</p>
+      <p style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="processStage">載入模型中…</p>
+    </div>
+
+    <!-- ════════════════ RESULTS ════════════════ -->
+    <div class="results" id="results">
+      <!-- Verdict Banner -->
+      <div class="verdict-banner" id="verdictBanner">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="stats-grid" id="quickStats">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- AQL Sampling Table -->
+      <div class="section-title">
+        <h2>📐 AQL 抽樣計劃 (ISO 2859-1:1999)</h2>
+        <p>General Inspection Level II · Single Sampling Plan for Normal Inspection</p>
+      </div>
+      <div class="data-card">
+        <h3>📋 抽樣計劃詳情</h3>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Defect Class</th>
+                <th>AQL Level</th>
+                <th>Lot Size</th>
+                <th>Sample Size<br><span style="font-weight:400;text-transform:none">(Code Letter)</span></th>
+                <th>Accept<br>(Ac)</th>
+                <th>Reject<br>(Re)</th>
+                <th>Actual Found</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody id="aqlTableBody">
+              <!-- filled by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Defect Distribution -->
+      <div class="section-title">
+        <h2>🔍 瑕疵分類詳情</h2>
+        <p>AI-powered defect detection & classification — Critical / Major / Minor</p>
+      </div>
+      <div class="data-card">
+        <h3>📊 瑕疵分佈</h3>
+        <div id="defectDistribution">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- Photo Gallery -->
+      <div class="section-title">
+        <h2>📸 AI 檢驗圖庫</h2>
+        <p>AI-annotated inspection photos with defect highlights</p>
+      </div>
+      <div class="photo-gallery" id="photoGallery">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- Corrective Actions -->
+      <div class="section-title">
+        <h2>🛠️ 整改行動建議</h2>
+        <p>AI-generated corrective action recommendations based on defect analysis</p>
+      </div>
+      <div class="data-card">
+        <ul class="action-list" id="correctiveActions">
+          <!-- filled by JS -->
+        </ul>
+      </div>
+
+      <!-- Factory Performance Scorecard -->
+      <div class="section-title">
+        <h2>🏭 工廠績效評分</h2>
+        <p>Factory Performance Scorecard — based on last 6 months of inspection data</p>
+      </div>
+      <div class="scorecard" id="factoryScorecard">
+        <!-- filled by JS -->
+      </div>
+
+      <!-- Pro Tip -->
+      <div class="pro-tip" id="proTip">
+        <div class="tip-header">
+          <span class="tip-icon">💡</span>
+          <span class="tip-title">Pro Tip: 把握黃金 24 小時 — 觸發品質罰款條款</span>
+        </div>
+        <div class="tip-body">
+          根據大多數 OEM 合約中的 <strong>§4.2 品質保證條款（Quality Penalty Clause）</strong>，買方必須在<span style="color:var(--red);font-weight:700">驗貨後 24 小時內</span>向供應商提交正式 QC 報告以觸發品質罰款機制。逾期提交可能喪失索賠權利。<br><br>
+          <strong>建議立即行動：</strong>點擊下方「分享報告」按鈕，生成共享連結並發送至供應商。系統會自動記錄發送時間戳記。
+        </div>
+      </div>
+
+      <!-- Share -->
+      <div class="share-row">
+        <button class="btn btn-share" onclick="shareReport()">🔗 分享報告 · 生成共享連結</button>
+        <button class="btn btn-outline btn-sm" onclick="resetInsp()">🔄 重新檢驗</button>
+      </div>
+      <div class="shared-link" id="sharedLink"></div>
+
+      <!-- Destruct -->
+      <div class="destruct">
+        <div class="dicon">⚠️</div>
+        <div><b>所有上傳檢驗照片及分析結果將在 24 小時內從伺服器永久刪除。</b><br>請下載或分享報告。如需再次使用，請重新上傳。共享連結有效期同樣為 24 小時。</div>
+      </div>
+    </div>
+
+    <footer>
+      <div class="container">
+        <p>© 2026 <a href="../index.html">Quattro Dynamics</a> — QC Inspector 智能驗貨報告 · AI-Powered Quality Inspection</p>
+        <p style="margin-top:6px">ISO 2859-1 AQL Sampling · Defect Detection & Classification · Factory Performance Analytics</p>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  GATE
+// ═══════════════════════════════════════
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) { err.textContent = '請輸入有效電郵'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('qci_gate_passed', 'true');
+  localStorage.setItem('qci_email', email);
+  toast('✅ 歡迎使用 QC Inspector 智能驗貨報告');
+}
+
+// ═══════════════════════════════════════
+//  COUNTDOWN
+// ═══════════════════════════════════════
+function startCountdown() {
+  let remaining = 24 * 60 * 60;
+  const el = document.getElementById('countdown');
+  setInterval(() => {
+    remaining--;
+    if (remaining <= 0) { el.textContent = '已過期'; return; }
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    const s = remaining % 60;
+    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+// ═══════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════
+function toast(msg, duration) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration || 3000);
+}
+
+// ═══════════════════════════════════════
+//  FILE HANDLING
+// ═══════════════════════════════════════
+function handleFiles(files) {
+  if (!files || !files.length) return;
+  const validFiles = Array.from(files).filter(f => f.type.match(/image\/(jpeg|png)/));
+  if (!validFiles.length) { toast('❌ 只支援 JPG / PNG 格式'); return; }
+
+  document.getElementById('dropZone').classList.add('loaded');
+  document.getElementById('fileCount').textContent = `${validFiles.length} file${validFiles.length>1?'s':''}`;
+  document.getElementById('fileNames').textContent = validFiles.map(f => f.name).join(', ');
+  document.getElementById('inspectBtn').disabled = false;
+  toast(`📸 已載入 ${validFiles.length} 張檢驗照片`);
+}
+
+// ═══════════════════════════════════════
+//  DRAG & DROP
+// ═══════════════════════════════════════
+const dz = document.getElementById('dropZone');
+['dragenter','dragover','dragleave','drop'].forEach(evt => {
+  document.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+});
+['dragover'].forEach(evt => dz.addEventListener(evt, () => dz.classList.add('dragover')));
+['dragleave','drop'].forEach(evt => dz.addEventListener(evt, () => dz.classList.remove('dragover')));
+dz.addEventListener('drop', e => { handleFiles(e.dataTransfer.files); });
+
+// ═══════════════════════════════════════
+//  DEMO SELECTION
+// ═══════════════════════════════════════
+let selectedDemo = 'airfryer';
+function selectDemo(demo, el) {
+  selectedDemo = demo;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('inspectBtn').disabled = false;
+  document.getElementById('results').classList.remove('show');
+  toast('🎯 已選擇: ' + el.textContent.trim().split('\n')[0]);
+}
+
+// ═══════════════════════════════════════
+//  INSPECTION
+// ═══════════════════════════════════════
+function runInspection() {
+  const loaded = document.getElementById('dropZone').classList.contains('loaded');
+  if (!loaded && !selectedDemo) {
+    toast('❌ 請上載檢驗照片或選擇範例批次');
+    return;
+  }
+  runScan();
+}
+
+function runDemoInspection() {
+  selectedDemo = 'airfryer';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-demo="airfryer"]').classList.add('active');
+  document.getElementById('inspectBtn').disabled = false;
+  runScan();
+}
+
+function runScan() {
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('processing').classList.add('active');
+  document.getElementById('inspectBtn').disabled = true;
+  document.getElementById('demoBtn').disabled = true;
+
+  const stages = [
+    '載入 AI 模型…',
+    '檢測產品輪廓與表面區域…',
+    '比對 AQL 瑕疵定義標準…',
+    '標註可疑缺陷位置…',
+    '分類瑕疵等級 (Critical/Major/Minor)…',
+    '生成驗貨報告…'
+  ];
+  let si = 0;
+  const stageEl = document.getElementById('processStage');
+  const stageInt = setInterval(() => { stageEl.textContent = stages[si]; si++; if (si >= stages.length) si = 0; }, 750);
+
+  setTimeout(() => {
+    clearInterval(stageInt);
+    document.getElementById('processing').classList.remove('active');
+    document.getElementById('inspectBtn').disabled = false;
+    document.getElementById('demoBtn').disabled = false;
+
+    if (selectedDemo === 'airfryer') renderAirFryerDemo();
+    else if (selectedDemo === 'kettle') renderKettleDemo();
+    else if (selectedDemo === 'toaster') renderToasterDemo();
+
+    document.getElementById('results').classList.add('show');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('✅ AI 驗貨報告已生成');
+  }, 3200);
+}
+
+// ═══════════════════════════════════════
+//  BUILD: SIMULATED DEFECT PHOTO
+// ═══════════════════════════════════════
+function defectPhoto(id, title, icon, emoji, defects, status) {
+  // defects: [{x, y, w, h, label}] — percentages
+  // status: 'found' (has defects) | 'clean' (no defects)
+  const defectOverlays = (defects || []).map((d, i) => `
+    <div class="defect-circle" style="left:${d.x}%;top:${d.y}%;width:${d.w}px;height:${d.h}px;transform:translate(-50%,-50%)"></div>
+    <div class="defect-label" style="left:${d.labelX||d.x+10}%;top:${d.labelY||d.y-10}%">${d.label}</div>
+    <div class="defect-arrow" style="left:${d.x}%;top:${d.y}%;height:${d.arrowLen||30}px;transform:translate(-50%,-100%) rotate(${d.arrowAngle||0}deg)"></div>
+  `).join('');
+
+  const defectDescs = (defects || []).map(d =>
+    `<div style="margin-bottom:6px;padding-left:12px;border-left:2px solid var(--red);font-size:0.73rem;line-height:1.4">
+      <strong style="color:var(--red)">${d.label}:</strong> ${d.desc}
+    </div>`
+  ).join('');
+
+  return `
+    <div class="photo-card${defects.length > 0 ? ' defect-found' : ''}">
+      <div class="photo-frame">
+        <div class="photo-sim">
+          <span class="sim-object">${emoji}</span>
+          <span class="sim-label">${icon}</span>
+        </div>
+        ${defectOverlays ? `<div class="ai-overlay">${defectOverlays}</div>` : ''}
+      </div>
+      <div class="photo-info">
+        <h4>${title}</h4>
+        <span class="defect-tag ${defects.length > 0 ? 'found' : 'clean'}">${defects.length > 0 ? '🔴 '+defects.length+' defect(s) detected' : '✅ No defects'}</span>
+        ${defectDescs}
+        ${defects.length === 0 ? '<p style="color:var(--muted);font-size:0.73rem">All surfaces, seams, and components within acceptable tolerance. No visible scratches, dents, or finishing defects detected.</p>' : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════
+//  BUILD: SIMPLE STAT CARD
+// ═══════════════════════════════════════
+function statCard(value, label, cls, compare) {
+  return `
+    <div class="stat-card">
+      <div class="stat-value ${cls||''}">${value}</div>
+      <div class="stat-label">${label}</div>
+      ${compare ? `<div class="stat-compare ${compare.cls || ''}">${compare.icon || ''} ${compare.text}</div>` : ''}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════
+//  DEMO: AIR FRYER (8 defects, conditional pass)
+// ═══════════════════════════════════════
+function renderAirFryerDemo() {
+  // Verdict
+  document.getElementById('verdictBanner').className = 'verdict-banner warn';
+  document.getElementById('verdictBanner').innerHTML = `
+    <div class="verdict-badge warn">
+      <span class="v-label">⚠️</span>
+      <span class="v-sublabel">Conditional<br>Pass</span>
+    </div>
+    <div class="verdict-info">
+      <h3>Conditional Pass — 需限期整改</h3>
+      <p class="batch-name">批次: AF-2024-06 · Air Fryer Model AF-5800-D · 深圳 Topman 電子</p>
+      <p style="font-size:0.82rem;line-height:1.5;color:var(--muted)">
+        檢驗 200 件樣品中發現 <strong style="color:var(--yellow)">8 個瑕疵</strong> — 1 Critical（加熱元件燒痕）、3 Major（外殼刮花、塗層不均）、4 Minor（印刷偏移）。AQL 抽樣 Marginally Acceptable，但需供應商在 <strong style="color:var(--red)">7 個工作天內</strong>提交整改報告。建議在整改完成前暫緩出貨。
+      </p>
+      <div class="confidence-bar">
+        <span>AI 置信度:</span>
+        <div class="confidence-fill"><div class="mid" style="width:87%"></div></div>
+        <span>87%</span>
+      </div>
+    </div>
+  `;
+
+  // Quick Stats
+  document.getElementById('quickStats').innerHTML =
+    statCard('4.0%', 'Defect Rate', 'yellow', {cls:'worse', icon:'📈', text:'+1.2% vs prev batch'}) +
+    statCard('Scratch', 'Most Common Defect', 'yellow', {text:'Housing surface scratches'}) +
+    statCard('200', 'Sample Size', '', {text:'Per ISO 2859-1, Code G'}) +
+    statCard('1,500 pcs', 'Lot Size', '', {text:'Production batch total'}) +
+    statCard('87%', 'AI Confidence', 'yellow', {text:'Medium-high confidence'});
+
+  // AQL Table
+  document.getElementById('aqlTableBody').innerHTML = `
+    <tr>
+      <td><span class="defect-pill critical">🔴 Critical</span></td>
+      <td>AQL 0.065</td>
+      <td>1,500</td>
+      <td><span class="aql-ref">G — 32</span></td>
+      <td>0</td>
+      <td>1</td>
+      <td class="highlight-cell fail-cell">1 ⚠️</td>
+      <td><span style="color:var(--red);font-weight:700">FAIL</span> <span style="font-size:0.7rem;color:var(--muted)">(exceeds Ac=0)</span></td>
+    </tr>
+    <tr>
+      <td><span class="defect-pill major">🟡 Major</span></td>
+      <td>AQL 2.5</td>
+      <td>1,500</td>
+      <td><span class="aql-ref">G — 32</span></td>
+      <td>1</td>
+      <td>2</td>
+      <td class="highlight-cell fail-cell">3 ⚠️</td>
+      <td><span style="color:var(--red);font-weight:700">FAIL</span> <span style="font-size:0.7rem;color:var(--muted)">(exceeds Ac=1)</span></td>
+    </tr>
+    <tr>
+      <td><span class="defect-pill minor">🟢 Minor</span></td>
+      <td>AQL 4.0</td>
+      <td>1,500</td>
+      <td><span class="aql-ref">G — 32</span></td>
+      <td>2</td>
+      <td>3</td>
+      <td class="highlight-cell fail-cell">4 ⚠️</td>
+      <td><span style="color:var(--red);font-weight:700">FAIL</span> <span style="font-size:0.7rem;color:var(--muted)">(exceeds Ac=2)</span></td>
+    </tr>
+  `;
+
+  // Defect Distribution
+  document.getElementById('defectDistribution').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
+      <div style="text-align:center;padding:18px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--red)">1</div>
+        <div style="font-size:0.8rem;color:var(--red);font-weight:600">🔴 Critical</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:4px">Heating element scorch mark</div>
+      </div>
+      <div style="text-align:center;padding:18px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--yellow)">3</div>
+        <div style="font-size:0.8rem;color:var(--yellow);font-weight:600">🟡 Major</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:4px">2 housing scratches + 1 coating defect</div>
+      </div>
+      <div style="text-align:center;padding:18px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--green)">4</div>
+        <div style="font-size:0.8rem;color:var(--green);font-weight:600">🟢 Minor</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:4px">Logo print misalignment</div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:12px">
+      📊 <strong>Defect Rate:</strong> 4.0% (8/200) · <strong>Previous batch AF-2024-05:</strong> 2.8% (5/180) · <strong>Trend:</strong> <span style="color:var(--red)">↑ Deteriorating</span>
+    </p>
+  `;
+
+  // Photo Gallery
+  document.getElementById('photoGallery').innerHTML =
+    defectPhoto('Sample #A-047 · Front Housing — Deep Scratch', '🍟 Air Fryer Front', '🍟', [
+      {x:38,y:42,w:50,h:50,label:'Scratch on housing',labelX:48,labelY:28,desc:'Deep linear scratch approximately 4.2 cm in length on the matte black front housing surface. Visible under standard lighting at 50 cm distance. Exceeds AQL cosmetic threshold for Major defects (>2.5 cm on visible surface). Likely caused by improper handling during assembly line transfer.'},
+    ], 'found') +
+    defectPhoto('Sample #A-089 · Rear Panel — Uneven Coating', '🍟 Air Fryer Rear', '🍟', [
+      {x:55,y:38,w:55,h:45,label:'Uneven coating',labelX:58,labelY:18,desc:'Non-uniform matte coating on rear panel with visible texture variation — rough patch approximately 6×4 cm. Coating thickness measured at 45-78 μm (spec: 60±10 μm). Likely paint gun nozzle clog or insufficient curing time. Risk of premature rust/corrosion in humid environments.'},
+    ], 'found') +
+    defectPhoto('Sample #A-112 · Heating Element — Scorch Mark', '🍟 Air Fryer Interior', '🔥', [
+      {x:48,y:55,w:40,h:35,label:'Scorch mark',labelX:52,labelY:70,desc:'CRITICAL: Dark scorch mark on the heating element housing with visible thermal discoloration. Insulation resistance measured at 1.2 MΩ (minimum required: 2 MΩ per IEC 60335-1). Potential electrical safety hazard — risk of short circuit or fire. This unit has been quarantined for root cause analysis.'},
+    ], 'found') +
+    defectPhoto('Sample #A-033 · Control Panel — Logo Print Offset', '🍟 Air Fryer Panel', '🎛️', [
+      {x:50,y:35,w:45,h:35,label:'Print offset',labelX:58,labelY:22,desc:'Silkscreen logo text misaligned by approximately 1.5 mm to the right relative to the control knob centerline. All 4 minor defects in this batch share the same misalignment pattern, suggesting a screen registration error during a single print run.'},
+    ], 'found') +
+    defectPhoto('Sample #A-155 · Complete Unit — Pass', '🍟 Air Fryer Full', '✅', [], 'clean') +
+    defectPhoto('Sample #A-178 · Basket Assembly — Pass', '🍟 Air Fryer Basket', '🧺', [], 'clean');
+
+  // Corrective Actions
+  document.getElementById('correctiveActions').innerHTML = `
+    <li>
+      <div class="action-rank urgent">1</div>
+      <div class="action-content">
+        <div class="action-title">🔥 立即隔離並檢查加熱元件生產批次</div>
+        <div class="action-detail">Scorch mark 顯示可能為加熱元件製造缺陷或組裝過程中絕緣層受損。要求供應商對同一生產批次的全部加熱元件進行 100% 絕緣電阻測試（≥2 MΩ per IEC 60335-1），並提供測試記錄。</div>
+        <div class="action-deadline">⏰ 限期: 3 個工作天內完成</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank urgent">2</div>
+      <div class="action-content">
+        <div class="action-title">🔧 矯正噴塗線塗層不均問題</div>
+        <div class="action-detail">檢查噴塗線的噴嘴狀態、油漆黏度及烘乾爐溫度曲線。塗層厚度偏差（45-78 μm vs spec 60±10 μm）顯示批次穩定性不足。要求供應商實施每小時一次的塗層厚度抽檢（每批至少 5 個點位）。</div>
+        <div class="action-deadline">⏰ 限期: 5 個工作天內提交改善計劃</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank urgent">3</div>
+      <div class="action-content">
+        <div class="action-title">🛡️ 加強組裝線外殼保護措施</div>
+        <div class="action-detail">外殼刮花集中於正面可見區域，推測為組裝線轉運過程中與金屬治具碰撞所致。要求供應商在傳送帶關鍵位置加裝防撞護墊，並對組裝人員進行操作培訓。所有外殼在包裝前必須通過目視檢查。</div>
+        <div class="action-deadline">⏰ 限期: 7 個工作天內完成</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank standard">4</div>
+      <div class="action-content">
+        <div class="action-title">🖨️ 修正絲印網版對位</div>
+        <div class="action-detail">Logo 印刷偏移 1.5 mm — 雖然屬 Minor 級別但影響品牌形象。要求供應商在每次絲印換班時進行首件確認（First Article Inspection），確保印刷位置公差在 ±0.5 mm 內。</div>
+        <div class="action-deadline">⏰ 限期: 下批次生產前完成</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank standard">5</div>
+      <div class="action-content">
+        <div class="action-title">📋 出貨前第三方複檢</div>
+        <div class="action-detail">由於本批次 Critical 及 Major 瑕疵均超出 AQL 接受水平，建議在供應商完成整改後安排第三方檢驗機構（如 SGS/BV/Intertek）進行 Pre-Shipment Inspection (PSI)，確認整改效果後方可放行出貨。</div>
+        <div class="action-deadline">⏰ 建議: 整改完成後立即安排</div>
+      </div>
+    </li>
+  `;
+
+  // Factory Scorecard
+  document.getElementById('factoryScorecard').innerHTML = `
+    <div class="score-item">
+      <div class="si-icon">📦</div>
+      <div class="si-name">On-Time Delivery</div>
+      <div class="si-value good">91%</div>
+      <div class="si-sub">↑ 3% vs last quarter</div>
+      <div class="si-bar"><div class="good" style="width:91%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">🔍</div>
+      <div class="si-name">Quality Consistency</div>
+      <div class="si-value ok">72%</div>
+      <div class="si-sub">↓ 8% vs last quarter</div>
+      <div class="si-bar"><div class="ok" style="width:72%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">💬</div>
+      <div class="si-name">Communication Rating</div>
+      <div class="si-value good">85%</div>
+      <div class="si-sub">Responsive within 24h</div>
+      <div class="si-bar"><div class="good" style="width:85%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">🛠️</div>
+      <div class="si-name">CAPA Closure Rate</div>
+      <div class="si-value ok">68%</div>
+      <div class="si-sub">↓ 12% · Corrective actions not closed on time</div>
+      <div class="si-bar"><div class="ok" style="width:68%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">📝</div>
+      <div class="si-name">Doc Compliance</div>
+      <div class="si-value good">94%</div>
+      <div class="si-sub">Certifications & test reports current</div>
+      <div class="si-bar"><div class="good" style="width:94%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">⭐</div>
+      <div class="si-name">Overall Rating</div>
+      <div class="si-value ok">B+</div>
+      <div class="si-sub">Downgraded from A- due to quality slip</div>
+      <div class="si-bar"><div class="ok" style="width:78%"></div></div>
+    </div>
+  `;
+
+  // Pro Tip
+  document.getElementById('proTip').innerHTML = `
+    <div class="tip-header">
+      <span class="tip-icon">💡</span>
+      <span class="tip-title">Pro Tip: 把握黃金 24 小時 — 觸發品質罰款條款</span>
+    </div>
+    <div class="tip-body">
+      根據大多數 OEM 合約中的 <strong>§4.2 品質保證條款（Quality Penalty Clause）</strong>，買方必須在<span style="color:var(--red);font-weight:700">驗貨後 24 小時內</span>向供應商提交正式 QC 報告以觸發品質罰款機制。<br><br>
+      本批次 Air Fryer AF-2024-06 的 Critical defect（加熱元件燒痕）導致 AQL 抽樣 FAIL — 根據 ISO 2859-1，此批次應全數退回或 100% 篩選。若你簽署的 OEM 協議包含缺陷罰款條款（常見為 defect rate >2% 時每件扣款 USD 2-5），<strong style="color:var(--red)">必須在 24 小時內發送此報告以鎖定索賠權利</strong>。<br><br>
+      <strong>建議立即行動：</strong>點擊下方「分享報告」按鈕，系統會自動記錄發送時間戳記作為合約證據。
+    </div>
+  `;
+
+  document.getElementById('sharedLink').classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+//  DEMO: KETTLE (Clean Pass)
+// ═══════════════════════════════════════
+function renderKettleDemo() {
+  document.getElementById('verdictBanner').className = 'verdict-banner pass';
+  document.getElementById('verdictBanner').innerHTML = `
+    <div class="verdict-badge pass">
+      <span class="v-label">✓</span>
+      <span class="v-sublabel">Pass</span>
+    </div>
+    <div class="verdict-info">
+      <h3>✅ Clean Pass — 無瑕疵 · 批准出貨</h3>
+      <p class="batch-name">批次: KT-2024-03 · Kettle Model KT-1700-SS · 順德華美電器</p>
+      <p style="font-size:0.82rem;line-height:1.5;color:var(--muted)">
+        檢驗 200 件樣品中 <strong style="color:var(--green)">零瑕疵</strong> — 所有 AQL 級別 (Critical 0.065 / Major 2.5 / Minor 4.0) 均為零發現。雙層不鏽鋼壺身焊接完美、底座 360° 旋轉順暢、自動斷電功能 100% 通過測試、包裝標籤準確無誤。<strong>此批次品質優良，批准立即出貨。</strong>
+      </p>
+      <div class="confidence-bar">
+        <span>AI 置信度:</span>
+        <div class="confidence-fill"><div class="high" style="width:96%"></div></div>
+        <span>96%</span>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('quickStats').innerHTML =
+    statCard('0.0%', 'Defect Rate', 'green', {cls:'better', icon:'📉', text:'-1.5% vs prev batch'}) +
+    statCard('None', 'Most Common Defect', 'green', {text:'Zero defects across all tiers'}) +
+    statCard('200', 'Sample Size', '', {text:'Per ISO 2859-1, Code G'}) +
+    statCard('3,000 pcs', 'Lot Size', '', {text:'Production batch total'}) +
+    statCard('96%', 'AI Confidence', 'green', {text:'Very high confidence'});
+
+  document.getElementById('aqlTableBody').innerHTML = `
+    <tr>
+      <td><span class="defect-pill critical">🔴 Critical</span></td>
+      <td>AQL 0.065</td><td>3,000</td><td><span class="aql-ref">G — 32</span></td><td>0</td><td>1</td>
+      <td class="highlight-cell pass-cell">0 ✓</td>
+      <td><span style="color:var(--green);font-weight:700">PASS</span></td>
+    </tr>
+    <tr>
+      <td><span class="defect-pill major">🟡 Major</span></td>
+      <td>AQL 2.5</td><td>3,000</td><td><span class="aql-ref">G — 32</span></td><td>1</td><td>2</td>
+      <td class="highlight-cell pass-cell">0 ✓</td>
+      <td><span style="color:var(--green);font-weight:700">PASS</span></td>
+    </tr>
+    <tr>
+      <td><span class="defect-pill minor">🟢 Minor</span></td>
+      <td>AQL 4.0</td><td>3,000</td><td><span class="aql-ref">G — 32</span></td><td>2</td><td>3</td>
+      <td class="highlight-cell pass-cell">0 ✓</td>
+      <td><span style="color:var(--green);font-weight:700">PASS</span></td>
+    </tr>
+  `;
+
+  document.getElementById('defectDistribution').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
+      <div style="text-align:center;padding:18px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--green)">0</div>
+        <div style="font-size:0.8rem;color:var(--green);font-weight:600">🔴 Critical</div>
+      </div>
+      <div style="text-align:center;padding:18px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--green)">0</div>
+        <div style="font-size:0.8rem;color:var(--green);font-weight:600">🟡 Major</div>
+      </div>
+      <div style="text-align:center;padding:18px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--green)">0</div>
+        <div style="font-size:0.8rem;color:var(--green);font-weight:600">🟢 Minor</div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:12px">
+      📊 <strong>Defect Rate:</strong> 0.0% · <strong>Previous batch KT-2024-02:</strong> 1.5% (3/200) · <strong>Trend:</strong> <span style="color:var(--green)">↑ Improving</span>
+    </p>
+  `;
+
+  document.getElementById('photoGallery').innerHTML =
+    defectPhoto('Sample #K-012 · Full Unit — Pass', '🫖 Kettle Full View', '🫖', [], 'clean') +
+    defectPhoto('Sample #K-045 · Stainless Steel Interior — Pass', '🫖 Kettle Interior', '✨', [], 'clean') +
+    defectPhoto('Sample #K-078 · 360° Base Connector — Pass', '🫖 Kettle Base', '🔄', [], 'clean') +
+    defectPhoto('Sample #K-134 · Auto Shut-Off Test — Pass', '🫖 Kettle Test', '⚡', [], 'clean') +
+    defectPhoto('Sample #K-167 · Packaging & Labels — Pass', '🫖 Kettle Package', '📦', [], 'clean') +
+    defectPhoto('Sample #K-189 · Pouring Test — Pass', '🫖 Kettle Pour', '💧', [], 'clean');
+
+  document.getElementById('correctiveActions').innerHTML = `
+    <li>
+      <div class="action-rank routine">✓</div>
+      <div class="action-content">
+        <div class="action-title">無需整改 — 批准出貨</div>
+        <div class="action-detail">本批次 KT-2024-03 在所有檢驗項目中表現優異，零瑕疵通過全部 AQL 級別測試。批准立即放行出貨。維持現有生產品質控制流程。</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank routine">📋</div>
+      <div class="action-content">
+        <div class="action-title">建議維持定期第三方檢驗</div>
+        <div class="action-detail">雖然本批次品質優良，仍建議每 3 批次安排一次第三方 PSI (Pre-Shipment Inspection)，以確保品質穩定性。順德華美電器已連續 3 個批次表現優異，可考慮將其列入「優先供應商名單」。</div>
+      </div>
+    </li>
+  `;
+
+  document.getElementById('factoryScorecard').innerHTML = `
+    <div class="score-item">
+      <div class="si-icon">📦</div><div class="si-name">On-Time Delivery</div>
+      <div class="si-value good">97%</div><div class="si-sub">↑ 2% vs last quarter</div>
+      <div class="si-bar"><div class="good" style="width:97%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">🔍</div><div class="si-name">Quality Consistency</div>
+      <div class="si-value good">94%</div><div class="si-sub">↑ 4% vs last quarter</div>
+      <div class="si-bar"><div class="good" style="width:94%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">💬</div><div class="si-name">Communication Rating</div>
+      <div class="si-value good">90%</div><div class="si-sub">Responsive within 12h</div>
+      <div class="si-bar"><div class="good" style="width:90%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">⭐</div><div class="si-name">Overall Rating</div>
+      <div class="si-value good">A</div><div class="si-sub">Top-tier supplier</div>
+      <div class="si-bar"><div class="good" style="width:94%"></div></div>
+    </div>
+  `;
+
+  document.getElementById('proTip').innerHTML = `
+    <div class="tip-header">
+      <span class="tip-icon">💡</span>
+      <span class="tip-title">Pro Tip: 零瑕疵批次也可作為談判籌碼</span>
+    </div>
+    <div class="tip-body">
+      連續 3 批次零瑕疵的供應商是談判中的黃金資產。建議利用此報告在下一輪訂單談判中爭取<strong style="color:var(--accent2)">更優付款條件</strong>（如 Deposit 降至 20%）或<strong style="color:var(--accent2)">批量折扣</strong>。同時，將此供應商列為「優先供應商」可作為向其他供應商施壓的槓桿。<br><br>
+      <strong>建議：</strong>將此 Clean Pass 報告存檔作為供應商績效審查 (QBR — Quarterly Business Review) 的重要參考文件。
+    </div>
+  `;
+
+  document.getElementById('sharedLink').classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+//  DEMO: TOASTER (Critical Fail)
+// ═══════════════════════════════════════
+function renderToasterDemo() {
+  document.getElementById('verdictBanner').className = 'verdict-banner fail';
+  document.getElementById('verdictBanner').innerHTML = `
+    <div class="verdict-badge fail">
+      <span class="v-label">✕</span>
+      <span class="v-sublabel">Reject</span>
+    </div>
+    <div class="verdict-info">
+      <h3>🚨 Critical Fail — 批次拒收 · 全數退回</h3>
+      <p class="batch-name">批次: PT-2024-01 · Toaster Model PT-4000-4S · 東莞新世代電器</p>
+      <p style="font-size:0.82rem;line-height:1.5;color:var(--muted)">
+        檢驗 200 件樣品中發現 <strong style="color:var(--red)">14 個瑕疵</strong> — <strong style="color:var(--red)">3 Critical</strong>（裸露電線、內部金屬碎片、加熱管變形）、6 Major（外殼鋒利毛邊、定時器不準、升降機構卡頓）、5 Minor。嚴重安全隱患。<strong style="color:var(--red)">建議立即停止出貨、全數退回並啟動品質調查。</strong>
+      </p>
+      <div class="confidence-bar">
+        <span>AI 置信度:</span>
+        <div class="confidence-fill"><div class="high" style="width:98%"></div></div>
+        <span>98%</span>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('quickStats').innerHTML =
+    statCard('7.0%', 'Defect Rate', 'red', {cls:'worse', icon:'📈', text:'+5.5% vs prev batch'}) +
+    statCard('Exposed Wire', 'Most Critical Defect', 'red', {text:'Electrical safety hazard'}) +
+    statCard('200', 'Sample Size', '', {text:'Per ISO 2859-1, Code G'}) +
+    statCard('2,000 pcs', 'Lot Size', '', {text:'Production batch total'}) +
+    statCard('98%', 'AI Confidence', 'red', {text:'Extremely high confidence'});
+
+  document.getElementById('aqlTableBody').innerHTML = `
+    <tr>
+      <td><span class="defect-pill critical">🔴 Critical</span></td>
+      <td>AQL 0.065</td><td>2,000</td><td><span class="aql-ref">G — 32</span></td><td>0</td><td>1</td>
+      <td class="highlight-cell fail-cell">3 🚨</td>
+      <td><span style="color:var(--red);font-weight:700">CRITICAL FAIL</span> <span style="font-size:0.7rem;color:var(--muted)">(3x over Ac=0)</span></td>
+    </tr>
+    <tr>
+      <td><span class="defect-pill major">🟡 Major</span></td>
+      <td>AQL 2.5</td><td>2,000</td><td><span class="aql-ref">G — 32</span></td><td>1</td><td>2</td>
+      <td class="highlight-cell fail-cell">6 🚨</td>
+      <td><span style="color:var(--red);font-weight:700">FAIL</span> <span style="font-size:0.7rem;color:var(--muted)">(3x over Ac=1)</span></td>
+    </tr>
+    <tr>
+      <td><span class="defect-pill minor">🟢 Minor</span></td>
+      <td>AQL 4.0</td><td>2,000</td><td><span class="aql-ref">G — 32</span></td><td>2</td><td>3</td>
+      <td class="highlight-cell fail-cell">5 🚨</td>
+      <td><span style="color:var(--red);font-weight:700">FAIL</span> <span style="font-size:0.7rem;color:var(--muted)">(exceeds Ac=2)</span></td>
+    </tr>
+  `;
+
+  document.getElementById('defectDistribution').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:16px">
+      <div style="text-align:center;padding:18px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--red)">3</div>
+        <div style="font-size:0.8rem;color:var(--red);font-weight:600">🔴 Critical</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:4px">SAFETY HAZARD</div>
+      </div>
+      <div style="text-align:center;padding:18px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.3);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--yellow)">6</div>
+        <div style="font-size:0.8rem;color:var(--yellow);font-weight:600">🟡 Major</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:4px">Sharp edges, timer, mechanism</div>
+      </div>
+      <div style="text-align:center;padding:18px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:12px">
+        <div style="font-size:2.2rem;font-weight:800;color:var(--green)">5</div>
+        <div style="font-size:0.8rem;color:var(--green);font-weight:600">🟢 Minor</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:4px">Cosmetic & alignment</div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:12px">
+      📊 <strong>Defect Rate:</strong> 7.0% (14/200) · <strong>Previous batch PT-2023-12:</strong> 1.5% (3/200) · <strong>Trend:</strong> <span style="color:var(--red)">🚨 CRITICAL SPIKE — 467% increase</span>
+    </p>
+  `;
+
+  document.getElementById('photoGallery').innerHTML =
+    defectPhoto('Sample #T-023 · Internal Wiring — Exposed Copper', '🍞 Toaster Internal', '🔌', [
+      {x:42,y:48,w:45,h:40,label:'Exposed wire',labelX:48,labelY:68,desc:'CRITICAL: Approximately 3 mm of bare copper wire exposed at the terminal crimp connection inside the toaster body. Insulation has been stripped back beyond the crimp point, creating a direct shock hazard. Unit fails dielectric strength test at 1,000V (IEC 60335-1, Clause 16.3). This is an immediate safety recall-level defect.'},
+    ], 'found') +
+    defectPhoto('Sample #T-056 · Internal Cavity — Metal Fragment', '🍞 Toaster Interior', '🔩', [
+      {x:55,y:52,w:38,h:32,label:'Metal fragment',labelX:62,labelY:74,desc:'CRITICAL: Small metallic fragment (~4×2 mm, ferrous) found loose inside the toaster cavity resting on the heating element guard. Likely a stray screw or stamping debris from the manufacturing line. Risk of short circuit, spark, or fire when toaster operates. Entire production batch must be screened for foreign object debris (FOD).'},
+    ], 'found') +
+    defectPhoto('Sample #T-091 · Heating Tube — Deformation', '🍞 Toaster Heating', '🔥', [
+      {x:48,y:38,w:60,h:35,label:'Bent tube',labelX:52,labelY:20,desc:'CRITICAL: Heating tube visibly deformed — bent approximately 8° from centerline with a 2 mm gap at the mounting bracket. Quartz heating element under mechanical stress; risk of fracture during thermal cycling. Uneven toasting performance confirmed by bread test (right side 40% darker).'},
+    ], 'found') +
+    defectPhoto('Sample #T-108 · Housing Edge — Sharp Burr', '🍞 Toaster Housing', '🗡️', [
+      {x:30,y:38,w:40,h:55,label:'Sharp burr',labelX:36,labelY:22,desc:'Sharp metal burr approximately 1.8 mm in height along the bottom edge of the stainless steel housing. Fails the "sharp edge test" per UL 1026 (30° cone probe). Risk of laceration to consumers during cleaning or handling. Requires deburring process review.'},
+    ], 'found') +
+    defectPhoto('Sample #T-144 · Dial Timer — Inaccurate', '🍞 Toaster Dial', '⏱️', [
+      {x:50,y:45,w:35,h:35,label:'Timer off',labelX:56,labelY:30,desc:'Timer mechanism inaccurate — set to 3 minutes but actual cycle completed in 2 minutes 14 seconds (25% fast). Tested across 5 units from this batch, all showing similar deviation. Likely timer spring assembly calibration error or worn tooling in the timer sub-assembly line.'},
+    ], 'found') +
+    defectPhoto('Sample #T-179 · Carriage Lift — Sticking', '🍞 Toaster Lift', '⬆️', [
+      {x:48,y:56,w:40,h:42,label:'Sticking',labelX:52,labelY:72,desc:'Motorized lift mechanism sticks at mid-height on 3 out of 5 actuations. Toast does not fully rise, requiring manual retrieval. Lubrication appears insufficient on the slide rail assembly. May lead to user burning fingers reaching into hot slots — a safety concern that could escalate to Critical under prolonged use.'},
+    ], 'found');
+
+  document.getElementById('correctiveActions').innerHTML = `
+    <li>
+      <div class="action-rank urgent">1</div>
+      <div class="action-content">
+        <div class="action-title">🚨 立即停止出貨 — 全數退回</div>
+        <div class="action-detail">本批次 PT-2024-01 在多個 AQL 級別嚴重 FAIL，特別是 3 項 Critical 安全缺陷（裸露電線、金屬碎片、加熱管變形）構成即時安全風險。根據 ISO 2859-1 §11.1，當 Critical defect 被發現時，整批貨物應全數退回或進行 100% 篩選。立即通知供應商停止出貨。</div>
+        <div class="action-deadline">⏰ 立即執行 — 不容延遲</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank urgent">2</div>
+      <div class="action-content">
+        <div class="action-title">🔌 展開電氣安全根本原因調查</div>
+        <div class="action-detail">裸露銅線問題指向終端壓接工序（crimping process）失控。要求供應商對壓接模具進行全面檢查、對操作員進行重新培訓，並在生產線上增加 100% 電氣安全測試（Hi-Pot test at 1,500V）。提供過去 30 天的壓接工序品質記錄。</div>
+        <div class="action-deadline">⏰ 5 個工作天內提交調查報告</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank urgent">3</div>
+      <div class="action-content">
+        <div class="action-title">🧹 實施生產線異物控制 (FOD Control)</div>
+        <div class="action-detail">金屬碎片出現在成品腔體內顯示生產線清潔度不足。要求供應商：(1) 所有工作站加裝磁性集屑器；(2) 組裝完成後增加強力吹氣清潔工序；(3) 包裝前每位作業員進行目視檢查；(4) 建立每日開線/收線清點螺絲及零件的制度。</div>
+        <div class="action-deadline">⏰ 10 個工作天內完成整改並提交照片證據</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank urgent">4</div>
+      <div class="action-content">
+        <div class="action-title">✂️ 全面檢查去毛邊工序</div>
+        <div class="action-detail">不鏽鋼外殼鋒利毛邊顯示沖壓後的去毛邊（deburring）工序失效。要求供應商檢查去毛邊機的刀具磨損情況、調整進料速度、並在 QC 檢查站增加「鋒利邊緣測試」（UL 1026 標準 30° 錐形探針）。</div>
+        <div class="action-deadline">⏰ 7 個工作天內完成</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank standard">5</div>
+      <div class="action-content">
+        <div class="action-title">⏱️ 校準定時器組裝線</div>
+        <div class="action-detail">定時器偏差（25% fast）顯示彈簧校準不準。要求供應商對定時器子組裝線進行全部工具檢查，並在 QC 流程中增加每 2 小時一次的定時器精度測試（允許公差 ±5%）。</div>
+        <div class="action-deadline">⏰ 下批次生產前完成</div>
+      </div>
+    </li>
+    <li>
+      <div class="action-rank urgent">6</div>
+      <div class="action-content">
+        <div class="action-title">🏭 考慮更換供應商</div>
+        <div class="action-detail">東莞新世代電器的品控在過去 3 個月內持續下滑（本批次 defect rate 7.0% vs 行業平均 1.5%），且出現此前從未見過的 Critical 安全缺陷。建議啟動備選供應商評估流程（已在 Supplier Database 標註為 "Under Review"），必要時轉移訂單至順德華美電器（當前 A 級供應商）。</div>
+        <div class="action-deadline">⏰ 2 週內完成備選方案評估</div>
+      </div>
+    </li>
+  `;
+
+  document.getElementById('factoryScorecard').innerHTML = `
+    <div class="score-item">
+      <div class="si-icon">📦</div><div class="si-name">On-Time Delivery</div>
+      <div class="si-value ok">74%</div><div class="si-sub">↓ 11% vs last quarter</div>
+      <div class="si-bar"><div class="ok" style="width:74%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">🔍</div><div class="si-name">Quality Consistency</div>
+      <div class="si-value bad">38%</div><div class="si-sub">↓ 42% vs last quarter · CRITICAL</div>
+      <div class="si-bar"><div class="bad" style="width:38%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">💬</div><div class="si-name">Communication Rating</div>
+      <div class="si-value ok">62%</div><div class="si-sub">↓ 18% · Slow to respond to CAPA</div>
+      <div class="si-bar"><div class="ok" style="width:62%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">🛠️</div><div class="si-name">CAPA Closure Rate</div>
+      <div class="si-value bad">31%</div><div class="si-sub">↓ 45% · Most actions overdue</div>
+      <div class="si-bar"><div class="bad" style="width:31%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">📝</div><div class="si-name">Doc Compliance</div>
+      <div class="si-value ok">78%</div><div class="si-sub">Some certs expired</div>
+      <div class="si-bar"><div class="ok" style="width:78%"></div></div>
+    </div>
+    <div class="score-item">
+      <div class="si-icon">⭐</div><div class="si-name">Overall Rating</div>
+      <div class="si-value bad">D+</div><div class="si-sub">DOWNGRADED · Under Review</div>
+      <div class="si-bar"><div class="bad" style="width:35%"></div></div>
+    </div>
+  `;
+
+  document.getElementById('proTip').innerHTML = `
+    <div class="tip-header">
+      <span class="tip-icon">🚨</span>
+      <span class="tip-title">CRITICAL: 立即觸發合約 §8.3 安全缺陷條款 — 保留全部法律權利</span>
+    </div>
+    <div class="tip-body">
+      本批次出現 <strong style="color:var(--red)">3 項 Critical 安全缺陷</strong>（裸露電線、金屬碎片、加熱管變形），觸發大多數 OEM 合約中的 <strong>§8.3 安全缺陷條款（Safety Defect Clause）</strong>。此條款通常賦予買方以下權利：<br><br>
+      • <strong>全額退款</strong>（已支付之定金及貨款）<br>
+      • <strong>召回成本賠償</strong>（若貨物已部分出貨）<br>
+      • <strong>第三方檢驗費用賠償</strong><br>
+      • <strong>訂單取消權</strong>（無需支付違約金）<br><br>
+      <strong style="color:var(--red)">🚨 必須在 24 小時內執行以下步驟：</strong><br>
+      1. 點擊「分享報告」發送正式 QC 報告給供應商（系統記錄時間戳記）<br>
+      2. 書面通知供應商暫停所有未完成訂單的生產<br>
+      3. 聯絡第三方檢驗機構（SGS/BV/Intertek）安排獨立調查<br>
+      4. 通知你的產品責任保險公司備案<br>
+      5. 如貨物已部分出貨至歐美市場，諮詢律師評估是否需要向 CPSC / EU RAPEX 通報
+    </div>
+  `;
+
+  document.getElementById('sharedLink').classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+//  SHARE REPORT
+// ═══════════════════════════════════════
+function shareReport() {
+  const batchNames = { airfryer: 'AF-2024-06', kettle: 'KT-2024-03', toaster: 'PT-2024-01' };
+  const batch = batchNames[selectedDemo] || 'QC-REPORT';
+  const reportId = 'QC-' + batch + '-' + Date.now().toString(36).toUpperCase().slice(-6);
+  const link = `https://quattro-dynamics.com/qc/report/${reportId}`;
+
+  document.getElementById('sharedLink').textContent = `🔗 共享連結: ${link} (有效期 24 小時 · 已記錄時間戳記 ${new Date().toISOString()})`;
+  document.getElementById('sharedLink').classList.add('show');
+  document.getElementById('sharedLink').scrollIntoView({ behavior: 'smooth' });
+
+  // Try copying to clipboard
+  navigator.clipboard.writeText(link).then(() => {
+    toast('🔗 共享連結已生成並複製到剪貼簿！');
+  }).catch(() => {
+    toast('🔗 共享連結已生成 · 請手動複製');
+  });
+}
+
+// ═══════════════════════════════════════
+//  RESET
+// ═══════════════════════════════════════
+function resetInsp() {
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('sharedLink').classList.remove('show');
+  document.getElementById('dropZone').classList.remove('loaded');
+  document.getElementById('fileCount').textContent = '0 files';
+  document.getElementById('fileNames').textContent = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('inspectBtn').disabled = false;
+  selectedDemo = 'airfryer';
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-demo="airfryer"]').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('🔄 已重置 · 可重新選擇檢驗批次');
+}
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+if (localStorage.getItem('qci_gate_passed')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+
+document.getElementById('gateEmail').addEventListener('keydown', e => {
+  if (e.key === 'Enter') enterApp();
+});
+
+document.getElementById('gateEmail').focus();
+</script>
+</body>
+</html>

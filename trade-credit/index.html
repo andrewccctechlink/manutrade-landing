@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeCredit — 賒數風險評估 | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b; --gold: #fbbf24;
+  --low: #10b981; --med: #f59e0b; --high: #ef4444; --vhigh: #dc2626;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* ── GATE ── */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{font-size:0.75rem;margin-top:16px;line-height:1.5;color:var(--muted)}
+.gate-box .note span{display:block;color:var(--red);font-weight:600}
+
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9}
+.btn-sm{background:var(--gradient);color:#fff;padding:10px 22px;font-size:0.82rem;border-radius:8px;cursor:pointer;border:none;font-weight:600}
+.btn-sm:hover{opacity:0.9}
+.btn-outline-sm{border:1.5px solid var(--border);color:var(--text);background:transparent;padding:10px 22px;font-size:0.82rem;border-radius:8px;cursor:pointer;font-weight:500;transition:all .2s}
+.btn-outline-sm:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+
+.app{display:none}
+.app.active{display:block}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+.topbar a{color:var(--muted);text-decoration:none;font-size:0.8rem}
+.topbar a:hover{color:var(--text)}
+
+.container{max-width:1150px;margin:0 auto;padding:28px 24px}
+
+/* ── HEADER ── */
+.page-header{text-align:center;margin-bottom:32px}
+.page-header h1{font-size:2rem;margin-bottom:8px;background:linear-gradient(135deg,#e2e8f0 0%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.page-header p{color:var(--muted);font-size:1rem;max-width:600px;margin:0 auto}
+
+/* ── SEARCH BAR ── */
+.search-bar-wrap{max-width:600px;margin:0 auto 24px;position:relative}
+.search-bar-wrap input{width:100%;padding:14px 48px 14px 20px;background:#0d1117;border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-size:0.95rem;transition:all .25s}
+.search-bar-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(6,182,212,0.1)}
+.search-bar-wrap input::placeholder{color:var(--muted);font-size:0.85rem}
+.search-bar-wrap .search-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none}
+.search-hint{text-align:center;color:var(--muted);font-size:0.72rem;margin-bottom:4px}
+.no-results{display:none;text-align:center;color:var(--muted);font-size:0.85rem;padding:20px;border:1px dashed var(--border);border-radius:12px;margin-bottom:20px}
+.no-results.show{display:block}
+
+/* ── COMPANY CHIPS ── */
+.chips-section{margin-bottom:28px}
+.chips-label{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
+.chips-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:10px 18px;border:1px solid var(--border);border-radius:24px;font-size:0.82rem;cursor:pointer;transition:all .2s;white-space:nowrap;background:var(--card);color:var(--muted);display:flex;align-items:center;gap:8px}
+.chip:hover,.chip.active{border-color:var(--accent);color:var(--text);background:rgba(6,182,212,0.08);transform:translateY(-1px)}
+.chip .chip-flag{font-size:1.1rem}
+.chip .chip-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chip .chip-dot.low{background:var(--low);box-shadow:0 0 6px rgba(16,185,129,0.5)}
+.chip .chip-dot.medium{background:var(--med);box-shadow:0 0 6px rgba(245,158,11,0.5)}
+.chip .chip-dot.high{background:var(--high);box-shadow:0 0 6px rgba(239,68,68,0.5)}
+.chip .chip-dot.vhigh{background:var(--vhigh);box-shadow:0 0 6px rgba(220,38,38,0.5)}
+
+/* ── RISK CARD ── */
+.risk-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:0;overflow:hidden;margin-bottom:20px;display:none}
+.risk-card.active{display:block;animation:fadeUp 0.35s ease-out}
+
+.risk-card-header{padding:22px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.risk-card-header h2{font-size:1.3rem;display:flex;align-items:center;gap:10px}
+.risk-card-header .risk-badge{padding:6px 14px;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.risk-badge.low{background:rgba(16,185,129,0.15);color:var(--low);border:1px solid rgba(16,185,129,0.3)}
+.risk-badge.medium{background:rgba(245,158,11,0.15);color:var(--med);border:1px solid rgba(245,158,11,0.3)}
+.risk-badge.high{background:rgba(239,68,68,0.15);color:var(--high);border:1px solid rgba(239,68,68,0.3)}
+.risk-badge.vhigh{background:rgba(220,38,38,0.15);color:var(--vhigh);border:1px solid rgba(220,38,38,0.3)}
+
+.risk-card-body{padding:0 28px 28px}
+.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+
+/* ── CREDIT SCORE GAUGE ── */
+.score-panel{background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.score-circle{width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:12px}
+.score-circle .score-num{font-size:2.6rem;font-weight:800;z-index:1}
+.score-circle .score-label{font-size:0.7rem;color:var(--muted);margin-top:-6px;z-index:1;position:absolute;bottom:28px}
+.score-ring{position:absolute;inset:0;border-radius:50%;border:6px solid var(--border)}
+.score-ring.fill{clip:rect(0,130px,130px,65px)}
+.score-title{font-weight:700;font-size:0.9rem;margin-bottom:2px}
+.score-sub{color:var(--muted);font-size:0.78rem}
+.score-bar{width:100%;height:5px;border-radius:3px;margin-top:10px;overflow:hidden;background:var(--border)}
+.score-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* ── FINANCIAL INDICATORS ── */
+.fin-panel{background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:20px}
+.fin-panel h4{font-size:0.85rem;margin-bottom:14px;color:var(--accent);display:flex;align-items:center;gap:6px}
+.fin-table{width:100%;font-size:0.8rem}
+.fin-table th{text-align:left;padding:6px 8px;color:var(--muted);font-weight:500;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px}
+.fin-table td{padding:6px 8px;border-bottom:1px solid rgba(30,45,69,0.5)}
+.fin-table tr:last-child td{border-bottom:none}
+.fin-table .trend-up{color:var(--low)}
+.fin-table .trend-down{color:var(--red)}
+.fin-table .trend-flat{color:var(--warn)}
+.fin-table .val-high{color:var(--low)}
+.fin-table .val-med{color:var(--warn)}
+.fin-table .val-low{color:var(--red)}
+
+/* ── PAYMENT HISTORY ── */
+.pay-panel{background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:20px}
+.pay-panel h4{font-size:0.85rem;margin-bottom:14px;color:var(--accent);display:flex;align-items:center;gap:6px}
+.pay-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.pay-bar-month{font-size:0.68rem;color:var(--muted);width:28px;text-align:right}
+.pay-bar-track{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.pay-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.pay-on-time{font-size:1.6rem;font-weight:800;margin:8px 0 2px}
+.pay-sub{color:var(--muted);font-size:0.75rem}
+
+/* ── RECOMMENDATION ── */
+.rec-panel{background:linear-gradient(135deg,rgba(6,182,212,0.08),rgba(6,182,212,0.02));border:1px solid rgba(6,182,212,0.25);border-radius:14px;padding:22px;grid-column:1/-1}
+.rec-panel h4{font-size:0.95rem;margin-bottom:14px;color:var(--accent)}
+.rec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.rec-item{background:rgba(0,0,0,0.3);border-radius:10px;padding:16px}
+.rec-item .rec-val{font-size:1.3rem;font-weight:800;margin-bottom:2px}
+.rec-item .rec-val.success{color:var(--low)}
+.rec-item .rec-val.warn{color:var(--warn)}
+.rec-item .rec-val.danger{color:var(--red)}
+.rec-item .rec-label{color:var(--muted);font-size:0.75rem}
+
+/* ── INSURANCE ── */
+.ins-panel{background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:20px}
+.ins-panel h4{font-size:0.85rem;margin-bottom:10px;color:var(--accent)}
+.ins-premium{font-size:2rem;font-weight:800;margin-bottom:4px}
+.ins-sub{color:var(--muted);font-size:0.78rem;margin-bottom:10px}
+.ins-range{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600}
+.ins-range.low{background:rgba(16,185,129,0.15);color:var(--low)}
+.ins-range.medium{background:rgba(245,158,11,0.15);color:var(--med)}
+.ins-range.high{background:rgba(239,68,68,0.15);color:var(--high)}
+
+/* ── DEFAULT IMPACT CALCULATOR ── */
+.calc-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
+.calc-section h3{font-size:1.15rem;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.calc-section .calc-sub{color:var(--muted);font-size:0.85rem;margin-bottom:20px}
+.calc-form{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px}
+.calc-field{display:flex;flex-direction:column;gap:6px}
+.calc-field label{font-size:0.75rem;color:var(--muted);font-weight:500}
+.calc-field input,.calc-field select{background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:0.9rem;width:180px}
+.calc-field input:focus,.calc-field select:focus{outline:none;border-color:var(--accent)}
+.calc-result{display:none;background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:16px}
+.calc-result.show{display:block;animation:fadeUp 0.3s ease-out}
+.calc-result .cr-head{font-size:0.85rem;color:var(--muted);margin-bottom:4px}
+.calc-result .cr-val{font-size:2rem;font-weight:800;margin-bottom:8px}
+.calc-result .cr-val.danger{color:var(--red)}
+.calc-result .cr-val.warn{color:var(--warn)}
+.calc-result .cr-val.ok{color:var(--low)}
+.calc-result .cr-detail{font-size:0.85rem;color:var(--muted);line-height:1.6}
+.calc-result ul{margin:12px 0 0 18px;font-size:0.85rem;color:var(--muted)}
+.calc-result ul li{margin-bottom:4px}
+
+/* ── TIPS ── */
+.tips-section{margin-bottom:32px}
+.tips-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.tip-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;transition:all .2s}
+.tip-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tip-card .tip-num{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--gradient);font-weight:800;font-size:0.85rem;margin-bottom:12px}
+.tip-card h4{font-size:1rem;margin-bottom:8px}
+.tip-card p{color:var(--muted);font-size:0.85rem;line-height:1.6}
+
+/* ── COMPARISON TABLE ── */
+.comp-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
+.comp-section h3{font-size:1.15rem;margin-bottom:6px}
+.comp-section .comp-sub{color:var(--muted);font-size:0.85rem;margin-bottom:18px}
+.comp-wrap{overflow-x:auto}
+.comp-big-table{width:100%;border-collapse:collapse;font-size:0.78rem;min-width:800px}
+.comp-big-table thead th{padding:12px 10px;text-align:left;background:#0d1117;color:var(--muted);font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid var(--border);position:sticky;top:0}
+.comp-big-table thead th:first-child{border-radius:8px 0 0 0}
+.comp-big-table thead th:last-child{border-radius:0 8px 0 0}
+.comp-big-table tbody td{padding:10px;border-bottom:1px solid rgba(30,45,69,0.5);vertical-align:top}
+.comp-big-table tbody tr:last-child td{border-bottom:none}
+.comp-big-table tbody tr:hover{background:rgba(6,182,212,0.03)}
+.comp-big-table .c-score{padding:3px 8px;border-radius:10px;font-weight:700;font-size:0.78rem}
+.comp-big-table .c-score.low{background:rgba(16,185,129,0.15);color:var(--low)}
+.comp-big-table .c-score.medium{background:rgba(245,158,11,0.15);color:var(--med)}
+.comp-big-table .c-score.high{background:rgba(239,68,68,0.15);color:var(--high)}
+.comp-big-table .c-score.vhigh{background:rgba(220,38,38,0.15);color:var(--vhigh)}
+
+/* ── DESTRUCT ── */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 18px;margin-top:24px;display:flex;align-items:flex-start;gap:10px;font-size:0.82rem;color:var(--red)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid var(--border)}
+.toast.show{display:block;animation:fadeIn .3s}
+
+/* ── SECTION TITLES ── */
+.section-label{display:inline-block;color:var(--accent);font-size:0.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+@media(max-width:768px){
+  .risk-card-header{flex-direction:column;align-items:flex-start}
+  .calc-form{flex-direction:column}
+  .calc-field input,.calc-field select{width:100%}
+  .risk-grid{grid-template-columns:1fr}
+  .tips-grid{grid-template-columns:1fr}
+  .chips-row{gap:6px}
+  .chip{padding:8px 14px;font-size:0.75rem}
+}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:32px 0;color:var(--muted);font-size:0.78rem;border-top:1px solid var(--border)}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ GATE ═══════════════════════════════════════ -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">🛡️</div>
+    <h2>TradeCredit</h2>
+    <p>賒數風險評估 · Trade Credit Risk Assessment</p>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:20px">Enter your email to access the demo</p>
+    <input type="email" id="gateEmail" placeholder="Company email address" autocomplete="email">
+    <p class="err" id="gateErr">Please enter a valid email address</p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ Access TradeCredit</button>
+    <div class="note">⚠️ <span>All data auto-destructs in 24 hours</span><br>No account created. Demo only.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ APP ═══════════════════════════════════════ -->
+<div class="app" id="mainApp">
+  <div class="topbar">
+    <div class="logo">🛡️ TradeCredit <span style="font-size:0.68rem;color:var(--warn);margin-left:4px">v1.0 · Demo</span></div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <div class="timer">⏳ <span id="countdown">23:59:59</span></div>
+      <a href="../index.html">🏠 Main Site</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>🛡️ Trade Credit Risk Assessment</h1>
+      <p>Assess customer creditworthiness before you ship. Simulated demo data — 5 trade scenarios across global markets.</p>
+    </div>
+
+    <!-- ── SEARCH BAR ── -->
+    <div class="search-bar-wrap">
+      <input type="text" id="companySearch" placeholder="Search by company name, country, risk level, or industry..." oninput="filterCompanies()" autocomplete="off">
+      <span class="search-icon">🔍</span>
+    </div>
+    <p class="search-hint" id="searchHint">Try typing "Brazil" or "retail" — search across all fields</p>
+    <div class="no-results" id="noResults">🚫 No companies match your search. Try different keywords.</div>
+
+    <!-- ── COMPANY CHIPS ── -->
+    <div class="chips-section" id="chipsSection">
+      <div class="chips-label" id="chipsLabel">Select a Company to Assess</div>
+      <div class="chips-row" id="chipsRow">
+        <div class="chip active" onclick="selectCompany(0)" id="chip0">
+          <span class="chip-flag">🇺🇸</span> MetroMart
+          <span class="chip-dot low"></span>
+        </div>
+        <div class="chip" onclick="selectCompany(1)" id="chip1">
+          <span class="chip-flag">🇧🇷</span> ElectroPlus
+          <span class="chip-dot medium"></span>
+        </div>
+        <div class="chip" onclick="selectCompany(2)" id="chip2">
+          <span class="chip-flag">🇦🇪</span> GulfTraders
+          <span class="chip-dot high"></span>
+        </div>
+        <div class="chip" onclick="selectCompany(3)" id="chip3">
+          <span class="chip-flag">🇬🇧</span> HomeStyle Ltd
+          <span class="chip-dot low"></span>
+        </div>
+        <div class="chip" onclick="selectCompany(4)" id="chip4">
+          <span class="chip-flag">🇳🇬</span> QuickDeal Imports
+          <span class="chip-dot vhigh"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RISK CARDS (dynamically rendered) ── -->
+    <div id="riskCardContainer"></div>
+
+    <!-- ── DEFAULT IMPACT CALCULATOR ── -->
+    <div class="calc-section">
+      <h3>📉 Default Impact Calculator</h3>
+      <p class="calc-sub">Enter your order value to see how many orders you'd need to place to recover from a customer default.</p>
+      <div class="calc-form">
+        <div class="calc-field">
+          <label>Order Value (USD)</label>
+          <input type="number" id="calcOrderValue" placeholder="e.g. 50000" min="0" value="50000">
+        </div>
+        <div class="calc-field">
+          <label>Profit Margin (%)</label>
+          <input type="number" id="calcMargin" placeholder="e.g. 15" min="0" max="100" value="15">
+        </div>
+        <div class="calc-field">
+          <label>Scenario</label>
+          <select id="calcScenario">
+            <option value="default">Full Default — lose entire order value</option>
+            <option value="partial">Partial Default — lose 60%</option>
+            <option value="recovery">Legal Recovery — recover 30%</option>
+          </select>
+        </div>
+        <button class="btn-sm" onclick="runImpactCalc()">Calculate Impact</button>
+        <button class="btn-outline-sm" onclick="resetCalc()">Reset</button>
+      </div>
+      <div class="calc-result" id="calcResult"></div>
+    </div>
+
+    <!-- ── TIPS ── -->
+    <div class="tips-section">
+      <div class="section-label">Trade Credit Wisdom</div>
+      <h3 style="font-size:1.15rem;margin-bottom:16px">💡 6 Rules for Safer Trade Credit</h3>
+      <div class="tips-grid">
+
+        <div class="tip-card">
+          <div class="tip-num">1</div>
+          <h4>Know Your Customer (KYC) Isn't Optional</h4>
+          <p>Request audited financials, trade references, and bank letters. A company that won't share basic financials is a company you shouldn't extend credit to. Check corporate registries in their jurisdiction — it takes 5 minutes and costs nothing.</p>
+        </div>
+
+        <div class="tip-card">
+          <div class="tip-num">2</div>
+          <h4>Start Small, Scale Credit</h4>
+          <p>Begin with T/T advance or L/C for the first 3 orders. Once they've proven payment reliability, gradually increase credit terms. A customer who demands open account from Day 1 is a red flag — established buyers understand staged trust.</p>
+        </div>
+
+        <div class="tip-card">
+          <div class="tip-num">3</div>
+          <h4>DSO Is Your Early Warning System</h4>
+          <p>Days Sales Outstanding above 60 is a danger zone. If a customer's DSO creeps up month-over-month, freeze shipments until the trend reverses. Late payment isn't just annoying — it's often the first sign of cash flow distress.</p>
+        </div>
+
+        <div class="tip-card">
+          <div class="tip-num">4</div>
+          <h4>Country Risk Compounds Everything</h4>
+          <p>A perfect credit score in a high-risk country is still high-risk. Currency controls, political instability, and weak legal systems can turn a "good" customer into a write-off overnight. Always factor country risk separately from company risk.</p>
+        </div>
+
+        <div class="tip-card">
+          <div class="tip-num">5</div>
+          <h4>Get Trade Credit Insurance</h4>
+          <p>For anything above $50K exposure, TCI is a no-brainer. Premiums are typically 0.2-1.5% of insured turnover. Compare that to losing an entire $80K shipment. The math is simple. Most insurers also provide credit limit recommendations — use them.</p>
+        </div>
+
+        <div class="tip-card">
+          <div class="tip-num">6</div>
+          <h4>Diversify Your Receivables</h4>
+          <p>No single customer should represent more than 20% of your accounts receivable. Concentration risk kills more trading companies than bad products ever do. If one customer going under would sink your business, you're already in trouble.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── COMPARISON TABLE ── -->
+    <div class="comp-section">
+      <h3>📊 Side-by-Side Comparison</h3>
+      <p class="comp-sub">All 5 companies compared across key credit metrics.</p>
+      <div class="comp-wrap">
+        <table class="comp-big-table" id="compTable"></table>
+      </div>
+    </div>
+
+    <div class="destruct"><span>⚠️</span><div><b>All data auto-destructs in 24 hours.</b> Save your analysis. No data is stored on any server.</div></div>
+    <div style="text-align:center;margin:20px 0 40px">
+      <button class="btn-sm" onclick="location.reload()">🔄 Restart Demo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<footer>
+  <p>© 2026 <a href="#">Quattro Dynamics</a> — Trade Credit Risk Assessment · Demo Only — No Real Data</p>
+</footer>
+
+<script>
+// ═══════════════════════════════════════
+// DATA: 5 Companies
+// ═══════════════════════════════════════
+const COMPANIES = [
+  {
+    id: 0,
+    name: "MetroMart",
+    country: "USA",
+    flag: "🇺🇸",
+    description: "Large publicly traded retailer — NYSE listed, $12B market cap, 800+ stores across North America. Public financials audited by Deloitte.",
+    riskLevel: "low",
+    riskLabel: "Low Risk",
+    creditScore: 88,
+    creditLimit: "$500,000",
+    paymentTerms: "Net 60 · Open Account",
+    countryRisk: { level: "Low", score: 85, note: "AAA-rated sovereign, strong rule of law, USD-denominated" },
+    industryRisk: { level: "Low-Medium", score: 72, note: "Retail — competitive but stable; e-commerce pressure offset by omnichannel strength" },
+    financials: [
+      { metric: "Annual Revenue", value: "$12.4B", trend: "↑ 8.2% YoY", cls: "trend-up" },
+      { metric: "Profit Margin", value: "6.8%", trend: "↑ 0.4pp", cls: "trend-up" },
+      { metric: "Debt-to-Equity", value: "0.42", trend: "↓ 0.05", cls: "trend-up" },
+      { metric: "Current Ratio", value: "1.85", trend: "Stable", cls: "trend-flat" },
+      { metric: "DSO (Days)", value: "28", trend: "↓ 3 days", cls: "trend-up" },
+      { metric: "Free Cash Flow", value: "$1.8B", trend: "↑ 14% YoY", cls: "trend-up" },
+    ],
+    paymentHistory: [98, 100, 97, 99, 100, 98, 99, 100, 97, 100, 99, 100],
+    paymentOnTime: 98.9,
+    insurance: { premium: "0.25%", range: "low", note: "Highly insurable — top-tier credit rating" }
+  },
+  {
+    id: 1,
+    name: "ElectroPlus",
+    country: "Brazil",
+    flag: "🇧🇷",
+    description: "Mid-size electronics distributor based in São Paulo. 8 years in business, 120 employees, $45M annual revenue. Family-owned but professionally managed. BRL-denominated finances introduce FX risk.",
+    riskLevel: "medium",
+    riskLabel: "Medium Risk",
+    creditScore: 62,
+    creditLimit: "$80,000",
+    paymentTerms: "Net 30 · T/T with 30% advance on first orders",
+    countryRisk: { level: "Medium-High", score: 48, note: "BRICS economy, BRL volatility, moderate corruption risk, slow court system" },
+    industryRisk: { level: "Medium", score: 65, note: "Consumer electronics — cyclical demand, FX exposure on imports" },
+    financials: [
+      { metric: "Annual Revenue", value: "$45M", trend: "↑ 3.1% YoY", cls: "trend-up" },
+      { metric: "Profit Margin", value: "4.2%", trend: "↓ 0.8pp", cls: "trend-down" },
+      { metric: "Debt-to-Equity", value: "0.88", trend: "↑ 0.12", cls: "trend-down" },
+      { metric: "Current Ratio", value: "1.35", trend: "↓ 0.15", cls: "trend-down" },
+      { metric: "DSO (Days)", value: "52", trend: "↑ 7 days", cls: "trend-down" },
+      { metric: "Free Cash Flow", value: "$1.2M", trend: "↓ 22% YoY", cls: "trend-down" },
+    ],
+    paymentHistory: [92, 88, 94, 90, 85, 91, 89, 93, 87, 92, 90, 88],
+    paymentOnTime: 89.9,
+    insurance: { premium: "0.85%", range: "medium", note: "Insurable with moderate premium — FX risk surcharge applies" }
+  },
+  {
+    id: 2,
+    name: "GulfTraders",
+    country: "UAE",
+    flag: "🇦🇪",
+    description: "Recently established trading company in Dubai Free Zone. 18 months in operation, 12 employees, $8M estimated revenue. No audited financials available. Owners have prior business experience but new entity has no track record.",
+    riskLevel: "high",
+    riskLabel: "High Risk",
+    creditScore: 38,
+    creditLimit: "T/T Advance Recommended",
+    paymentTerms: "100% T/T in advance · No open account",
+    countryRisk: { level: "Medium", score: 72, note: "UAE stable jurisdiction, strong banking, but free-zone entities have limited legal recourse" },
+    industryRisk: { level: "Medium-High", score: 50, note: "General trading — diverse but opaque; commodity exposure" },
+    financials: [
+      { metric: "Annual Revenue", value: "~$8M", trend: "New entity", cls: "trend-flat" },
+      { metric: "Profit Margin", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+      { metric: "Debt-to-Equity", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+      { metric: "Current Ratio", value: "Unverified", trend: "N/A", cls: "trend-flat" },
+      { metric: "DSO (Days)", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+      { metric: "Free Cash Flow", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+    ],
+    paymentHistory: [75, 80, 70, 78, 72, 76],
+    paymentOnTime: 75.2,
+    insurance: { premium: "1.40%", range: "high", note: "Limited insurability — new entity, no track record, higher premium or declinature possible" }
+  },
+  {
+    id: 3,
+    name: "HomeStyle Ltd",
+    country: "UK",
+    flag: "🇬🇧",
+    description: "Established home goods retailer — 15 years operating history, 45 stores across UK & Ireland, £180M annual turnover. Privately held but provides audited financials. Long-standing relationships with Chinese & European suppliers.",
+    riskLevel: "low",
+    riskLabel: "Low Risk",
+    creditScore: 84,
+    creditLimit: "$300,000",
+    paymentTerms: "Net 45 · Open Account with annual review",
+    countryRisk: { level: "Low", score: 88, note: "AAA-rated jurisdiction, strong contract enforcement, GBP stability" },
+    industryRisk: { level: "Low-Medium", score: 70, note: "Home goods — steady demand, recession-resilient, but discretionary spending sensitive" },
+    financials: [
+      { metric: "Annual Revenue", value: "£180M", trend: "↑ 5.5% YoY", cls: "trend-up" },
+      { metric: "Profit Margin", value: "7.5%", trend: "↑ 0.3pp", cls: "trend-up" },
+      { metric: "Debt-to-Equity", value: "0.35", trend: "Stable", cls: "trend-flat" },
+      { metric: "Current Ratio", value: "2.10", trend: "↑ 0.10", cls: "trend-up" },
+      { metric: "DSO (Days)", value: "32", trend: "↓ 2 days", cls: "trend-up" },
+      { metric: "Free Cash Flow", value: "£14M", trend: "↑ 9% YoY", cls: "trend-up" },
+    ],
+    paymentHistory: [99, 100, 98, 100, 99, 100, 100, 97, 100, 99, 100, 99],
+    paymentOnTime: 99.2,
+    insurance: { premium: "0.30%", range: "low", note: "Excellent insurability — preferred rates available" }
+  },
+  {
+    id: 4,
+    name: "QuickDeal Imports",
+    country: "Nigeria",
+    flag: "🇳🇬",
+    description: "Unknown importer operating from Lagos. No verifiable business registration, no audited financials, no trade references. Claims to be a 'major distributor' but has no online presence or industry footprint. Contact is a Gmail address.",
+    riskLevel: "vhigh",
+    riskLabel: "Very High Risk",
+    creditScore: 15,
+    creditLimit: "No Credit — T/T Only",
+    paymentTerms: "100% T/T in advance · Irrevocable L/C at sight if order > $10K",
+    countryRisk: { level: "High", score: 28, note: "Currency controls (NGN), FX shortages, weak contract enforcement, corruption risk" },
+    industryRisk: { level: "Unknown", score: 15, note: "Unverifiable — no industry footprint, no references, no track record" },
+    financials: [
+      { metric: "Annual Revenue", value: "Unverifiable", trend: "N/A", cls: "trend-flat" },
+      { metric: "Profit Margin", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+      { metric: "Debt-to-Equity", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+      { metric: "Current Ratio", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+      { metric: "DSO (Days)", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+      { metric: "Free Cash Flow", value: "Unknown", trend: "N/A", cls: "trend-flat" },
+    ],
+    paymentHistory: [40, 55, 30, 45, 50, 35],
+    paymentOnTime: 42.5,
+    insurance: { premium: "N/A", range: "high", note: "Uninsurable — no insurer will underwrite this counterparty" }
+  }
+];
+
+let selectedIdx = 0;
+
+// ═══════════════════════════════════════
+// GATE
+// ═══════════════════════════════════════
+function enterApp(){
+  const e=document.getElementById('gateEmail').value.trim();
+  if(!e||!e.includes('@')){document.getElementById('gateErr').style.display='block';return;}
+  document.getElementById('gateOverlay').style.display='none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  selectCompany(0);
+  buildCompTable();
+  toast('✅ TradeCredit 已就緒 — 5 company profiles loaded');
+}
+
+function startCountdown(){
+  let r=24*60*60;
+  const el=document.getElementById('countdown');
+  setInterval(()=>{r--;if(r<=0)return;el.textContent=`${String(Math.floor(r/3600)).padStart(2,'0')}:${String(Math.floor((r%3600)/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`;},1000);
+}
+
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+// ═══════════════════════════════════════
+// SEARCH & FILTER
+// ═══════════════════════════════════════
+function filterCompanies(){
+  const query = document.getElementById('companySearch').value.trim().toLowerCase();
+  const chips = document.querySelectorAll('#chipsRow .chip');
+  const hint = document.getElementById('searchHint');
+  const noRes = document.getElementById('noResults');
+  const label = document.getElementById('chipsLabel');
+  let visibleCount = 0;
+
+  chips.forEach(chip=>{
+    const idx = parseInt(chip.onclick?.toString().match(/selectCompany\((\d)\)/)?.[1]);
+    const c = COMPANIES[idx];
+    if(!c){chip.style.display='';return;}
+
+    const searchText = `${c.name} ${c.country} ${c.riskLevel} ${c.riskLabel} ${c.description} ${c.industryRisk?.note||''}`.toLowerCase();
+    const match = !query || searchText.includes(query);
+    chip.style.display = match ? '' : 'none';
+    if(match) visibleCount++;
+  });
+
+  hint.style.display = query ? 'none' : '';
+  noRes.classList.toggle('show', query && visibleCount===0);
+  label.textContent = query ? `Results for "${query}" (${visibleCount})` : 'Select a Company to Assess';
+
+  // Also update comparison table filter indication if search is active
+  const compRows = document.querySelectorAll('#compTable tbody tr');
+  if(compRows.length){
+    compRows.forEach(row=>{
+      const name = row.querySelector('td:first-child')?.textContent?.toLowerCase()||'';
+      const match = !query || name.includes(query);
+      row.style.opacity = match ? '1' : '0.3';
+      row.style.transition = 'opacity 0.2s';
+    });
+  }
+}
+
+// ═══════════════════════════════════════
+// SELECT COMPANY & RENDER CARD
+// ═══════════════════════════════════════
+function selectCompany(idx){
+  selectedIdx=idx;
+  document.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('active',i===idx));
+  renderRiskCard(idx);
+}
+
+function renderRiskCard(idx){
+  const c = COMPANIES[idx];
+  const container = document.getElementById('riskCardContainer');
+
+  function scoreColor(s){
+    if(s>=70) return 'val-high';
+    if(s>=45) return 'val-med';
+    return 'val-low';
+  }
+
+  function scoreBarColor(s){
+    if(s>=70) return 'var(--low)';
+    if(s>=45) return 'var(--med)';
+    if(s>=25) return 'var(--high)';
+    return 'var(--vhigh)';
+  }
+
+  // Payment bars (last 12 months)
+  let payBarsHTML = '';
+  const months = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+  const payData = c.paymentHistory.slice(-12);
+  for(let i=0;i<12;i++){
+    const p = payData[i]||0;
+    const pColor = p>=95?'var(--low)':p>=80?'var(--med)':p>=60?'var(--high)':'var(--vhigh)';
+    payBarsHTML += `<div class="pay-bar-row"><span class="pay-bar-month">${months[i]}</span><div class="pay-bar-track"><div class="pay-bar-fill" style="width:${p}%;background:${pColor}"></div></div><span style="font-size:0.68rem;color:var(--muted);width:32px;text-align:right">${p}%</span></div>`;
+  }
+
+  const recLimitCls = c.riskLevel==='low'?'success':c.riskLevel==='medium'?'warn':'danger';
+  const insCls = c.insurance.range;
+  const insVal = c.insurance.premium;
+
+  const html = `
+    <div class="risk-card active" id="riskCard${idx}">
+      <div class="risk-card-header">
+        <h2>${c.flag} ${c.name} <span style="font-size:0.78rem;color:var(--muted);font-weight:400">${c.country}</span></h2>
+        <span class="risk-badge ${c.riskLevel}">${c.riskLabel}</span>
+      </div>
+      <div class="risk-card-body">
+        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px;line-height:1.6">${c.description}</p>
+        <div class="risk-grid">
+
+          <!-- Credit Score -->
+          <div class="score-panel">
+            <div class="score-title">Credit Score</div>
+            <div class="score-circle" style="background:conic-gradient(${scoreBarColor(c.creditScore)} ${c.creditScore*3.6}deg, var(--border) ${c.creditScore*3.6}deg);padding:6px;border-radius:50%">
+              <div style="width:100%;height:100%;border-radius:50%;background:#0d1117;display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <span class="score-num" style="color:${scoreBarColor(c.creditScore)}">${c.creditScore}</span>
+                <span style="font-size:0.65rem;color:var(--muted)">/ 100</span>
+              </div>
+            </div>
+            <div class="score-sub" style="margin-top:6px">${c.creditScore>=70?'Strong':c.creditScore>=45?'Moderate':c.creditScore>=25?'Weak':'Critical'}</div>
+            <div class="score-bar"><div class="score-bar-fill" style="width:${c.creditScore}%;background:${scoreBarColor(c.creditScore)}"></div></div>
+          </div>
+
+          <!-- Financial Indicators -->
+          <div class="fin-panel">
+            <h4>📈 Financial Indicators</h4>
+            <table class="fin-table">
+              <thead><tr><th>Metric</th><th>Value</th><th>Trend</th></tr></thead>
+              <tbody>
+                ${c.financials.map(f=>`<tr><td>${f.metric}</td><td style="font-weight:600">${f.value}</td><td class="${f.cls}">${f.trend}</td></tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Payment History -->
+          <div class="pay-panel">
+            <h4>💳 Payment History (12-Month)</h4>
+            ${payBarsHTML}
+            <div style="margin-top:12px;text-align:center">
+              <div class="pay-on-time" style="color:${c.paymentOnTime>=95?'var(--low)':c.paymentOnTime>=80?'var(--med)':'var(--red)'}">${c.paymentOnTime.toFixed(1)}%</div>
+              <div class="pay-sub">On-Time Payments</div>
+            </div>
+          </div>
+
+          <!-- Country + Industry Risk -->
+          <div class="fin-panel">
+            <h4>🌍 Country Risk</h4>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+              <span style="font-size:1.5rem;font-weight:800;color:${scoreBarColor(c.countryRisk.score)}">${c.countryRisk.score}</span>
+              <span style="font-size:0.78rem;color:var(--muted)">/ 100</span>
+              <span style="padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;background:rgba(${c.countryRisk.score>=70?'16,185,129':c.countryRisk.score>=45?'245,158,11':'239,68,68'},0.15);color:${scoreBarColor(c.countryRisk.score)}">${c.countryRisk.level}</span>
+            </div>
+            <p style="color:var(--muted);font-size:0.75rem;line-height:1.5;margin-bottom:14px">${c.countryRisk.note}</p>
+            <h4 style="margin-top:4px">🏭 Industry Risk</h4>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+              <span style="font-size:1.5rem;font-weight:800;color:${scoreBarColor(c.industryRisk.score)}">${c.industryRisk.score}</span>
+              <span style="font-size:0.78rem;color:var(--muted)">/ 100</span>
+              <span style="padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;background:rgba(${c.industryRisk.score>=70?'16,185,129':c.industryRisk.score>=45?'245,158,11':'239,68,68'},0.15);color:${scoreBarColor(c.industryRisk.score)}">${c.industryRisk.level}</span>
+            </div>
+            <p style="color:var(--muted);font-size:0.75rem;line-height:1.5">${c.industryRisk.note}</p>
+          </div>
+
+          <!-- Trade Credit Insurance -->
+          <div class="ins-panel">
+            <h4>🛡️ Trade Credit Insurance</h4>
+            <div class="ins-premium" style="color:${insCls==='low'?'var(--low)':insCls==='medium'?'var(--med)':'var(--red)'}">${insVal}</div>
+            <div class="ins-sub">Estimated Premium (% of insured turnover)</div>
+            <span class="ins-range ${insCls}">${insCls==='low'?'Preferred Rate':insCls==='medium'?'Standard Rate':'High Risk / Declined'}</span>
+            <p style="color:var(--muted);font-size:0.78rem;margin-top:10px;line-height:1.5">${c.insurance.note}</p>
+          </div>
+
+          <!-- Recommendation -->
+          <div class="rec-panel">
+            <h4>📋 Recommendation</h4>
+            <div class="rec-grid">
+              <div class="rec-item">
+                <div class="rec-val ${recLimitCls}">${c.creditLimit}</div>
+                <div class="rec-label">Recommended Credit Limit</div>
+              </div>
+              <div class="rec-item">
+                <div class="rec-val" style="font-size:0.95rem;color:var(--text)">${c.paymentTerms}</div>
+                <div class="rec-label">Payment Terms</div>
+              </div>
+              <div class="rec-item">
+                <div class="rec-val" style="color:${scoreBarColor(c.creditScore)}">${c.creditScore}/100</div>
+                <div class="rec-label">Composite Risk Score</div>
+              </div>
+              <div class="rec-item">
+                <div class="rec-val" style="font-size:0.9rem;color:var(--text)">${c.riskLevel==='low'||c.riskLevel==='vhigh'?(c.riskLevel==='low'?'✅ Approve':'🚫 Avoid'):'⚠️ Conditional'}</div>
+                <div class="rec-label">Overall Verdict</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// DEFAULT IMPACT CALCULATOR
+// ═══════════════════════════════════════
+function runImpactCalc(){
+  const orderVal = parseFloat(document.getElementById('calcOrderValue').value)||0;
+  const margin = parseFloat(document.getElementById('calcMargin').value)||0;
+  const scenario = document.getElementById('calcScenario').value;
+  const resultEl = document.getElementById('calcResult');
+
+  if(orderVal<=0||margin<=0){
+    resultEl.classList.add('show');
+    resultEl.innerHTML = '<div class="cr-val danger">⚠️</div><div class="cr-detail">Please enter valid order value and margin.</div>';
+    return;
+  }
+
+  let lossAmount;
+  if(scenario==='default') lossAmount = orderVal;
+  else if(scenario==='partial') lossAmount = orderVal*0.6;
+  else lossAmount = orderVal*0.7;
+
+  const profitPerOrder = orderVal*(margin/100);
+  const ordersNeeded = profitPerOrder>0 ? Math.ceil(lossAmount/profitPerOrder) : Infinity;
+
+  const isOk = ordersNeeded<=3;
+  const isWarn = ordersNeeded>3 && ordersNeeded<=10;
+  const cls = isOk?'ok':isWarn?'warn':'danger';
+
+  const scenarioLabel = scenario==='default'?'Full Default':'Partial Default (60% loss)':'Legal Recovery (30% recovered)';
+  const lossLabel = scenario==='default'?'Full order value lost':scenario==='partial'?'60% of order value lost':'70% of order value lost after recovery';
+
+  resultEl.classList.add('show');
+  resultEl.innerHTML = `
+    <div class="cr-head">${scenarioLabel}</div>
+    <div class="cr-val ${cls}">${ordersNeeded===Infinity?'∞':ordersNeeded} orders</div>
+    <div class="cr-detail">needed to recover from a <strong>$${lossAmount.toLocaleString()}</strong> loss (${lossLabel})</div>
+    <ul>
+      <li>Loss amount: <strong>$${lossAmount.toLocaleString()}</strong> (${scenarioLabel})</li>
+      <li>Profit per order at ${margin}% margin: <strong>$${profitPerOrder.toLocaleString()}</strong></li>
+      <li>Orders needed to break even: <strong>${ordersNeeded===Infinity?'Infinite — you never recover at zero margin':ordersNeeded}</strong></li>
+      ${ordersNeeded>5?`<li style="color:var(--red)">⚠️ This exposure is dangerously high relative to your margin. Consider reducing credit or requiring advance payment.</li>`:''}
+      ${ordersNeeded<=3?`<li style="color:var(--low)">✅ Manageable risk — credit exposure is well within your margin capacity.</li>`:''}
+    </ul>
+  `;
+}
+
+function resetCalc(){
+  document.getElementById('calcOrderValue').value=50000;
+  document.getElementById('calcMargin').value=15;
+  document.getElementById('calcScenario').value='default';
+  document.getElementById('calcResult').classList.remove('show');
+}
+
+// ═══════════════════════════════════════
+// COMPARISON TABLE
+// ═══════════════════════════════════════
+function buildCompTable(){
+  const tbody = COMPANIES.map(c=>{
+    const scCls = c.riskLevel;
+    const insCls = c.insurance.range;
+    const dsoVal = c.financials.find(f=>f.metric==='DSO (Days)')?.value||'N/A';
+    const marginVal = c.financials.find(f=>f.metric==='Profit Margin')?.value||'N/A';
+    const revVal = c.financials.find(f=>f.metric==='Annual Revenue')?.value||'N/A';
+    return `<tr>
+      <td><strong>${c.flag} ${c.name}</strong><br><span style="font-size:0.7rem;color:var(--muted)">${c.country}</span></td>
+      <td><span class="c-score ${scCls}">${c.creditScore}/100</span></td>
+      <td style="font-weight:600">${c.creditLimit}</td>
+      <td>${c.paymentTerms}</td>
+      <td>${c.paymentOnTime.toFixed(1)}%</td>
+      <td>${dsoVal}</td>
+      <td>${marginVal}</td>
+      <td>${revVal}</td>
+      <td style="color:${insCls==='low'?'var(--low)':insCls==='medium'?'var(--med)':'var(--red)'};font-weight:600">${c.insurance.premium}</td>
+      <td>⭐ ${c.countryRisk.score}/100</td>
+      <td>${c.riskLevel==='low'?'✅ Approve':c.riskLevel==='vhigh'?'🚫 Avoid':'⚠️ Conditional'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('compTable').innerHTML = `
+    <thead><tr>
+      <th>Company</th><th>Credit Score</th><th>Credit Limit</th><th>Payment Terms</th>
+      <th>On-Time %</th><th>DSO</th><th>Margin</th><th>Revenue</th>
+      <th>Insurance</th><th>Country Risk</th><th>Verdict</th>
+    </tr></thead>
+    <tbody>${tbody}</tbody>
+  `;
+}
+</script>
+
+</body>
+</html>

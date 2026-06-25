@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ContractScan — 合約風險掃描 | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --orange: #f97316; --yellow: #f59e0b; --green: #10b981;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* ──── Gate Overlay ──── */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%;box-shadow:0 4px 20px rgba(6,182,212,0.3)}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* ──── Main App ──── */
+.main{display:none}
+.main.active{display:block}
+
+/* Top Bar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:16px}
+.topbar .logo{font-weight:800;font-size:1rem;color:var(--accent);white-space:nowrap}
+.topbar .timer{color:var(--yellow);font-size:0.8rem;white-space:nowrap}
+.topbar .timer span{font-weight:700;font-variant-numeric:tabular-nums}
+.topbar .back-link{color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color .2s}
+.topbar .back-link:hover{color:var(--accent)}
+
+/* Container */
+.container{max-width:1200px;margin:0 auto;padding:24px}
+
+/* Hero */
+.hero-section{text-align:center;padding:40px 0 32px}
+.hero-section .badge{display:inline-block;background:rgba(6,182,212,0.15);color:var(--accent);padding:6px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;letter-spacing:0.5px;margin-bottom:16px}
+.hero-section h1{font-size:2.2rem;font-weight:800;margin-bottom:8px;background:linear-gradient(135deg,#e2e8f0 0%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-section h2{font-size:1.1rem;color:var(--muted);font-weight:400;margin-bottom:12px}
+.hero-section .desc{color:var(--muted);font-size:0.9rem;max-width:640px;margin:0 auto}
+
+/* Upload Zone */
+.upload-card{background:var(--card);border:2px dashed var(--border);border-radius:16px;padding:36px 28px;text-align:center;cursor:pointer;transition:all .3s;margin-bottom:24px}
+.upload-card:hover,.upload-card.dragover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.upload-card .dz-icon{font-size:2.5rem;margin-bottom:12px}
+.upload-card h3{font-size:1.05rem;margin-bottom:6px}
+.upload-card p{color:var(--muted);font-size:0.85rem}
+.upload-card input[type=file]{display:none}
+.upload-card .file-loaded{display:none;color:var(--accent2);font-weight:600;font-size:0.9rem;margin-top:10px}
+.upload-card.loaded .file-loaded{display:block}
+.upload-card.loaded .dz-hint{display:none}
+
+/* Example Chips */
+.chips-section{margin:28px 0}
+.chips-section h3{font-size:0.9rem;color:var(--muted);margin-bottom:12px}
+.chip-row{display:flex;gap:10px;flex-wrap:wrap}
+.chip{background:var(--card);border:1.5px solid var(--border);border-radius:24px;padding:10px 18px;font-size:0.82rem;cursor:pointer;transition:all .2s;color:var(--muted)}
+.chip:hover{border-color:var(--accent);color:var(--text);background:rgba(6,182,212,0.08)}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(6,182,212,0.12);font-weight:600}
+.chip .chip-icon{margin-right:4px}
+.chip .chip-risk{font-size:0.65rem;padding:2px 8px;border-radius:8px;margin-left:6px;font-weight:700}
+.chip .chip-risk.high{background:rgba(239,68,68,0.15);color:var(--red)}
+.chip .chip-risk.med{background:rgba(245,158,11,0.15);color:var(--yellow)}
+.chip .chip-risk.low{background:rgba(16,185,129,0.12);color:var(--green)}
+
+/* Action Row */
+.action-row{display:flex;gap:12px;align-items:center;justify-content:center;margin:24px 0 32px;flex-wrap:wrap}
+.btn-scan{background:var(--gradient);color:#fff;padding:14px 40px;border-radius:12px;font-weight:700;font-size:1rem;box-shadow:0 4px 24px rgba(6,182,212,0.35)}
+.btn-scan:hover{transform:translateY(-2px);box-shadow:0 6px 32px rgba(6,182,212,0.45)}
+.btn-scan:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent;padding:14px 28px;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer}
+.btn-outline:hover{border-color:var(--accent)}
+.btn-sm{padding:10px 20px;font-size:0.85rem}
+
+/* Scan Progress */
+.scan-progress{display:none;text-align:center;padding:20px 0}
+.scan-progress.active{display:block}
+.scan-progress .spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 16px;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scan-progress .scan-stages{color:var(--muted);font-size:0.85rem;margin-top:4px}
+.scan-progress .scan-stages span{display:block;margin:3px 0;opacity:0.4;transition:opacity .3s}
+.scan-progress .scan-stages span.done{color:var(--accent2);opacity:1}
+.scan-progress .scan-stages span.current{color:var(--accent);opacity:1}
+
+/* ──── Results ──── */
+.results{display:none;animation:fadeUp 0.5s ease}
+.results.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Section Header */
+.section-header{margin:40px 0 20px}
+.section-header h2{font-size:1.5rem;font-weight:800;margin-bottom:4px}
+.section-header p{color:var(--muted);font-size:0.85rem}
+
+/* ── Score Hero ── */
+.score-hero{display:flex;align-items:center;gap:28px;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:32px;margin-bottom:24px;flex-wrap:wrap}
+.score-badge{width:130px;height:130px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;text-align:center}
+.score-badge.high-risk{border:5px solid var(--red);background:rgba(239,68,68,0.08);color:var(--red)}
+.score-badge.med-risk{border:5px solid var(--yellow);background:rgba(245,158,11,0.08);color:var(--yellow)}
+.score-badge.low-risk{border:5px solid var(--green);background:rgba(16,185,129,0.08);color:var(--green)}
+.score-badge .risk-label{font-size:2.8rem;font-weight:900;line-height:1}
+.score-badge .risk-text{font-size:0.7rem;text-transform:uppercase;letter-spacing:2px;font-weight:700}
+.score-info{flex:1;min-width:200px}
+.score-info h3{font-size:1.2rem;margin-bottom:6px}
+.score-info .contract-ref{color:var(--muted);font-size:0.82rem;margin-bottom:16px}
+.score-info .clause-counts{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px}
+.clause-stat{text-align:center}
+.clause-stat .count{font-size:1.8rem;font-weight:800}
+.clause-stat .count.red{color:var(--red)} .clause-stat .count.yellow{color:var(--yellow)} .clause-stat .count.green{color:var(--green)}
+.clause-stat .lbl{font-size:0.7rem;color:var(--muted)}
+
+/* ── Summary Card ── */
+.summary-card{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%, rgba(245,158,11,0.05) 50%, rgba(6,182,212,0.02) 100%);border:1px solid rgba(239,68,68,0.3);border-radius:14px;padding:22px 28px;margin-bottom:24px}
+.summary-card .sum-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.summary-card .sum-header .sum-icon{font-size:1.4rem}
+.summary-card .sum-header h3{font-size:1rem}
+.summary-card .sum-body{font-size:0.9rem;line-height:1.7;color:var(--muted)}
+.summary-card .sum-body strong{color:var(--text)}
+.summary-card .exposure{display:inline-block;background:rgba(239,68,68,0.12);color:var(--red);padding:4px 12px;border-radius:8px;font-weight:700;font-size:0.9rem;margin-top:8px}
+
+/* ── Risk Category Breakdown ── */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:24px}
+.cat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;gap:14px;align-items:flex-start}
+.cat-card .cat-badge{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.cat-card .cat-badge.financial{background:rgba(239,68,68,0.12);color:var(--red)}
+.cat-card .cat-badge.legal{background:rgba(245,158,11,0.12);color:var(--yellow)}
+.cat-card .cat-badge.operational{background:rgba(59,130,246,0.12);color:#3b82f6}
+.cat-card .cat-badge.ip{background:rgba(139,92,246,0.12);color:#8b5cf6}
+.cat-card .cat-info h4{font-size:0.9rem;margin-bottom:2px}
+.cat-card .cat-info .cat-risk-count{font-size:0.75rem;margin-bottom:4px}
+.cat-card .cat-info .cat-risk-count .high-c{color:var(--red);font-weight:700}
+.cat-card .cat-info .cat-risk-count .med-c{color:var(--yellow);font-weight:700}
+.cat-card .cat-info p{color:var(--muted);font-size:0.78rem;line-height:1.5}
+
+/* ── Clause Cards ── */
+.clause-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:14px;transition:all .2s}
+.clause-card:hover{border-color:var(--accent)}
+.clause-card .clause-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.clause-card .clause-header .clause-ref{font-family:monospace;font-size:0.8rem;color:var(--accent)}
+.clause-card .clause-header .risk-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:12px;font-size:0.72rem;font-weight:600;white-space:nowrap}
+.risk-badge.high{background:rgba(239,68,68,0.12);color:var(--red)}
+.risk-badge.med{background:rgba(245,158,11,0.12);color:var(--yellow)}
+.risk-badge.low{background:rgba(16,185,129,0.12);color:var(--green)}
+.clause-card .original-text{background:rgba(239,68,68,0.06);border-left:3px solid var(--red);border-radius:0 8px 8px 0;padding:12px 16px;font-family:monospace;font-size:0.78rem;color:var(--muted);line-height:1.6;margin-bottom:14px;position:relative}
+.clause-card .original-text .highlight{background:rgba(239,68,68,0.15);color:var(--red);font-weight:600;padding:1px 3px;border-radius:2px}
+.clause-card .original-text .quote-label{position:absolute;top:-10px;left:12px;background:var(--red);color:#fff;font-size:0.6rem;padding:2px 8px;border-radius:4px;font-weight:700;letter-spacing:0.5px}
+.clause-card .explanation{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.clause-card .explanation .exp-icon{font-size:1rem;flex-shrink:0;margin-top:2px}
+.clause-card .explanation .exp-text{font-size:0.85rem;line-height:1.6;color:var(--text)}
+.clause-card .revision{background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:14px 16px}
+.clause-card .revision .rev-label{font-size:0.7rem;color:var(--accent2);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.clause-card .revision .rev-text{font-size:0.82rem;color:var(--text);line-height:1.6}
+
+/* ── Negotiation Priority ── */
+.priority-section{margin-bottom:24px}
+.priority-section h3{font-size:1.1rem;margin-bottom:6px}
+.priority-section .priority-sub{color:var(--muted);font-size:0.82rem;margin-bottom:18px}
+.priority-list{display:flex;flex-direction:column;gap:12px}
+.priority-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;gap:16px;align-items:flex-start}
+.priority-item .prio-rank{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.9rem;flex-shrink:0}
+.priority-item .prio-rank.must{background:rgba(239,68,68,0.12);color:var(--red)}
+.priority-item .prio-rank.should{background:rgba(245,158,11,0.12);color:var(--yellow)}
+.priority-item .prio-rank.nice{background:rgba(16,185,129,0.12);color:var(--green)}
+.priority-item .prio-content{flex:1}
+.priority-item .prio-content .prio-title{font-weight:600;font-size:0.9rem;margin-bottom:2px}
+.priority-item .prio-content .prio-reason{color:var(--muted);font-size:0.78rem;line-height:1.5}
+.priority-item .prio-tag{font-size:0.65rem;padding:3px 10px;border-radius:10px;font-weight:700;white-space:nowrap;margin-top:6px;display:inline-block}
+.priority-item .prio-tag.must{background:rgba(239,68,68,0.1);color:var(--red)}
+.priority-item .prio-tag.should{background:rgba(245,158,11,0.1);color:var(--yellow)}
+.priority-item .prio-tag.nice{background:rgba(16,185,129,0.1);color:var(--green)}
+
+/* ── Tips Section ── */
+.tips-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:24px}
+.tips-section h3{font-size:1.1rem;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.tips-section .tips-sub{color:var(--muted);font-size:0.82rem;margin-bottom:20px}
+.tip-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px}
+.tip-item{background:rgba(6,182,212,0.03);border:1px solid var(--border);border-radius:12px;padding:18px}
+.tip-item .tip-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tip-item .tip-num{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.75rem;color:#fff;flex-shrink:0}
+.tip-item .tip-title{font-weight:600;font-size:0.88rem}
+.tip-item .tip-desc{color:var(--muted);font-size:0.8rem;line-height:1.6}
+.tip-item .tip-desc strong{color:var(--yellow)}
+
+/* Download button */
+.download-row{text-align:center;margin-bottom:24px}
+.btn-download{background:var(--accent2);color:#fff;padding:14px 36px;border-radius:12px;font-weight:700;font-size:0.95rem;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(16,185,129,0.3);transition:all .2s}
+.btn-download:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(16,185,129,0.4)}
+
+/* Destruct */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;animation:fadeIn .3s}
+.toast.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Footer */
+.footer-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;padding:24px 0 40px}
+
+@media(max-width:768px){
+  .hero-section h1{font-size:1.6rem}
+  .score-hero{flex-direction:column;text-align:center}
+  .score-info .clause-counts{justify-content:center}
+  .topbar{flex-wrap:wrap;gap:8px}
+  .cat-grid{grid-template-columns:1fr}
+  .tip-list{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ GATE ════════════════ -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">🔍</div>
+    <h2>ContractScan 合約風險掃描</h2>
+    <p>AI-powered Contract Risk Analysis</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+    <div class="note">⚠️ <span>所有上傳資料將在 24 小時內自動銷毀</span></div>
+  </div>
+</div>
+
+<!-- ════════════════ MAIN ════════════════ -->
+<div class="main" id="mainApp">
+  <div class="topbar">
+    <div class="logo">⚡ ContractScan — 合約風險掃描</div>
+    <div class="timer">⏳ <span id="countdown">23:59:59</span></div>
+    <a href="../index.html" class="back-link">← Quattro Dynamics</a>
+  </div>
+
+  <div class="container">
+    <!-- Hero -->
+    <div class="hero-section">
+      <div class="badge">🔍 AI 合約風險分析</div>
+      <h1>唔好簽咗先後悔</h1>
+      <h2>AI Contract Risk Scanner — 簽約前掃描致命陷阱</h2>
+      <p class="desc">上傳合約 PDF 或選擇以下 Demo 試用 — AI 掃描每一條款，標記高風險陷阱，生成談判優先次序。專為香港貿易公司、製造商設計，特別針對中國供應商合約常見陷阱。</p>
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="upload-card" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="dz-icon">📤</div>
+      <div class="dz-hint">
+        <h3>拖放合約 PDF / 文件</h3>
+        <p>或點擊選擇檔案 · 支援 PDF · Word · TXT</p>
+      </div>
+      <div class="file-loaded">✅ <span id="fileName"></span> — 已載入</div>
+      <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" onchange="handleFile(this.files)">
+    </div>
+
+    <!-- Example Chips -->
+    <div class="chips-section">
+      <h3>🎯 或選擇以下合約 Demo 試用：</h3>
+      <div class="chip-row">
+        <div class="chip active" data-demo="supply" onclick="selectDemo('supply', this)">
+          <span class="chip-icon">🏭</span> Supply Agreement<span class="chip-risk high">高風險</span>
+        </div>
+        <div class="chip" data-demo="distribution" onclick="selectDemo('distribution', this)">
+          <span class="chip-icon">🌍</span> Distribution Agreement<span class="chip-risk med">中風險</span>
+        </div>
+        <div class="chip" data-demo="oem" onclick="selectDemo('oem', this)">
+          <span class="chip-icon">🛡️</span> OEM Agreement<span class="chip-risk low">低風險</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action -->
+    <div class="action-row">
+      <button class="btn btn-scan" id="scanBtn" onclick="startScan()">🔍 開始 AI 風險掃描</button>
+      <button class="btn btn-outline btn-sm" onclick="startDemoScan()">🚀 試用 Demo</button>
+    </div>
+
+    <!-- Scan Progress -->
+    <div class="scan-progress" id="scanProgress">
+      <div class="spinner"></div>
+      <p style="color:var(--muted);font-size:0.9rem;margin-bottom:12px">🤖 AI 正在分析合約…</p>
+      <div class="scan-stages" id="scanStages">
+        <span>📄 解析合約結構</span>
+        <span>🎯 標記關鍵條款</span>
+        <span>⚖️ 對比行業標準</span>
+        <span>🪤 偵測隱藏陷阱</span>
+        <span>📊 生成風險報告</span>
+      </div>
+    </div>
+
+    <!-- ════════════════ RESULTS ════════════════ -->
+    <div class="results" id="results">
+
+      <!-- Score Hero -->
+      <div class="section-header">
+        <h2>📊 AI 風險掃描報告</h2>
+        <p id="resultContractName"></p>
+      </div>
+
+      <div class="score-hero" id="scoreHero"></div>
+
+      <!-- Summary Card -->
+      <div class="summary-card" id="summaryCard"></div>
+
+      <!-- Risk Category Breakdown -->
+      <div class="section-header">
+        <h2>📈 風險分類細分</h2>
+        <p>按 Financial · Legal · Operational · IP 四大類別</p>
+      </div>
+      <div class="cat-grid" id="catGrid"></div>
+
+      <!-- Flagged Clauses -->
+      <div class="section-header">
+        <h2>⚠️ 逐條風險分析</h2>
+        <p>原始條款 + 風險解釋 + 修改建議</p>
+      </div>
+      <div id="clauseCards"></div>
+
+      <!-- Negotiation Priority -->
+      <div class="priority-section" id="prioritySection">
+        <h3>🥊 談判優先次序</h3>
+        <p class="priority-sub">AI 按風險嚴重性 × 商業影響 × 談判難度排序</p>
+        <div class="priority-list" id="priorityList"></div>
+      </div>
+
+      <!-- Download -->
+      <div class="download-row">
+        <button class="btn btn-download" onclick="downloadReport()">📥 下載風險報告 (PDF)</button>
+      </div>
+
+      <!-- Tips -->
+      <div class="tips-section">
+        <h3>💡 中國供應商合約常見陷阱</h3>
+        <p class="tips-sub">以下係我哋分析過千份中港貿易合約後總結出嘅最常見致命條款 — 簽約前必睇</p>
+        <div class="tip-list" id="tipList"></div>
+      </div>
+
+      <!-- Destruct -->
+      <div class="destruct">
+        <div class="dicon">⚠️</div>
+        <div><b>所有上傳檔案及分析結果將在 24 小時內從伺服器永久刪除。</b><br>請自行下載報告保存。如需再次使用，請重新上傳。</div>
+      </div>
+
+      <div class="footer-row">
+        <button class="btn btn-outline btn-sm" onclick="resetAll()">🔄 重新掃描</button>
+        <a href="../index.html" class="btn btn-outline btn-sm" style="text-decoration:none">🏠 返回主頁</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════ GATE ════════════════
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) { err.textContent = '請輸入有效電郵'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('cs_gate', 'true');
+  toast('✅ 歡迎使用 ContractScan');
+}
+function startCountdown() {
+  let remaining = 24 * 60 * 60;
+  const el = document.getElementById('countdown');
+  setInterval(() => {
+    remaining--;
+    if (remaining <= 0) { el.textContent = '已過期'; return; }
+    el.textContent = `${String(Math.floor(remaining/3600)).padStart(2,'0')}:${String(Math.floor((remaining%3600)/60)).padStart(2,'0')}:${String(remaining%60).padStart(2,'0')}`;
+  }, 1000);
+}
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+// ════════════════ FILE ════════════════
+function handleFile(files) {
+  if (!files.length) return;
+  document.getElementById('fileName').textContent = files[0].name;
+  document.getElementById('dropZone').classList.add('loaded');
+  toast('📄 已載入: ' + files[0].name);
+}
+
+// ════════════════ DEMO SELECTION ════════════════
+let selectedDemo = 'supply';
+function selectDemo(demo, el) {
+  selectedDemo = demo;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  const names = {supply: 'Supply Agreement (High Risk)', distribution: 'Distribution Agreement (Medium Risk)', oem: 'OEM Agreement (Low Risk)'};
+  toast('🎯 已選擇: ' + names[demo]);
+}
+
+// ════════════════ SCAN ════════════════
+function startScan() {
+  const hasFile = document.getElementById('dropZone').classList.contains('loaded');
+  if (!hasFile) { toast('📤 請上載合約文件，或選擇 Demo 試用'); return; }
+  runScan();
+}
+function startDemoScan() { runScan(); }
+
+function runScan() {
+  document.getElementById('results').classList.remove('active');
+  const progress = document.getElementById('scanProgress');
+  progress.classList.add('active');
+  document.getElementById('scanBtn').disabled = true;
+
+  // Animate scan stages
+  const stages = document.getElementById('scanStages').querySelectorAll('span');
+  stages.forEach(s => { s.classList.remove('done','current'); });
+  let si = 0;
+  const stageInterval = setInterval(() => {
+    if (si > 0) stages[si-1].classList.add('done');
+    if (si < stages.length) stages[si].classList.add('current');
+    si++;
+    if (si > stages.length) clearInterval(stageInterval);
+  }, 600);
+
+  setTimeout(() => {
+    clearInterval(stageInterval);
+    stages.forEach(s => { s.classList.add('done'); s.classList.remove('current'); });
+    progress.classList.remove('active');
+    document.getElementById('scanBtn').disabled = false;
+
+    if (selectedDemo === 'supply') renderSupplyDemo();
+    else if (selectedDemo === 'distribution') renderDistributionDemo();
+    else if (selectedDemo === 'oem') renderOemDemo();
+
+    document.getElementById('results').classList.add('active');
+    document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+    toast('✅ AI 風險掃描完成');
+  }, 3200);
+}
+
+// ════════════════ HELPER ════════════════
+function riskBadge(level) {
+  const icon = level === 'high' ? '🔴' : level === 'med' ? '🟡' : '🟢';
+  const label = level === 'high' ? '高風險' : level === 'med' ? '中風險' : '低風險';
+  return `<span class="risk-badge ${level}">${icon} ${label}</span>`;
+}
+
+// ════════════════════════════════════════
+//  DEMO 1: SUPPLY AGREEMENT (HIGH RISK)
+// ════════════════════════════════════════
+function renderSupplyDemo() {
+  document.getElementById('resultContractName').textContent = '合約類型：Supply Agreement — Dongguan Hongli Electronics Co., Ltd.';
+
+  // Score Hero
+  document.getElementById('scoreHero').innerHTML = `
+    <div class="score-badge high-risk">
+      <span class="risk-label">高</span>
+      <span class="risk-text">High Risk</span>
+    </div>
+    <div class="score-info">
+      <h3>⚠️ 整體風險評級：高風險</h3>
+      <p class="contract-ref">供應協議 · 東莞鴻利電子有限公司 · 電子零件 OEM 供應</p>
+      <div class="clause-counts">
+        <div class="clause-stat"><div class="count red">7</div><div class="lbl">🔴 高風險條款</div></div>
+        <div class="clause-stat"><div class="count yellow">3</div><div class="lbl">🟡 中風險條款</div></div>
+        <div class="clause-stat"><div class="count green">2</div><div class="lbl">🟢 低風險條款</div></div>
+      </div>
+    </div>
+  `;
+
+  // Summary
+  document.getElementById('summaryCard').innerHTML = `
+    <div class="sum-header"><span class="sum-icon">⚠️</span><h3>風險摘要</h3></div>
+    <div class="sum-body">
+      本合約包含 <strong>7 條高風險條款</strong>，<strong>3 條中風險條款</strong>。最致命的三個問題：(1) <strong>無限賠償責任條款</strong>讓買方承擔全部下游風險，(2) <strong>自動續約陷阱</strong>鎖定買方 3 年且解約需提前 180 天通知，(3) <strong>仲裁地點在供應商所在城市</strong>，買方無法獲得公平仲裁。<br>
+      <span class="exposure">💰 估算財務風險敞口：USD $85,000 – $210,000（最壞情況觸發時）</span>
+    </div>
+  `;
+
+  // Category Breakdown
+  document.getElementById('catGrid').innerHTML = `
+    <div class="cat-card">
+      <div class="cat-badge financial">💰</div>
+      <div class="cat-info">
+        <h4>Financial 財務風險</h4>
+        <p class="cat-risk-count"><span class="high-c">3 高</span> · <span class="med-c">1 中</span></p>
+        <p>無限賠償責任、自動續約鎖定、無上限價格調整權 — 合約總額 USD 350,000，最壞情況財務曝光可達 2-3 倍。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge legal">⚖️</div>
+      <div class="cat-info">
+        <h4>Legal 法律風險</h4>
+        <p class="cat-risk-count"><span class="high-c">2 高</span> · <span class="med-c">1 中</span></p>
+        <p>仲裁地點於供應商所在地、管轄法律為中國合同法、不可抗力條款過窄 — 法律保護嚴重不足。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge operational">⚙️</div>
+      <div class="cat-info">
+        <h4>Operational 營運風險</h4>
+        <p class="cat-risk-count"><span class="high-c">1 高</span> · <span class="med-c">1 中</span></p>
+        <p>無品質標準定義、交貨期為"estimated"無罰則、驗收標準由供應商單方面決定。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge ip">🧠</div>
+      <div class="cat-info">
+        <h4>IP 知識產權風險</h4>
+        <p class="cat-risk-count"><span class="high-c">1 高</span></p>
+        <p>買方提供的設計修改及模具之 IP 歸屬不清，供應商可合法為競爭對手生產同款產品。</p>
+      </div>
+    </div>
+  `;
+
+  // Clause Cards
+  document.getElementById('clauseCards').innerHTML = `
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 12.3 — Limitation of Liability</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "<span class="highlight">The Buyer agrees to indemnify and hold harmless the Supplier against any and all claims, losses, damages, liabilities, costs, and expenses (including reasonable attorneys' fees)</span> arising from or in connection with the products supplied hereunder, <span class="highlight">regardless of cause</span>, including but not limited to product liability claims, recall costs, and third-party claims. The Buyer waives any right to claim against the Supplier for any indirect, consequential, or incidental damages."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>無限賠償責任條款：</strong>此條款將所有產品責任風險全部轉嫁買方 — 包括供應商製造缺陷導致的索賠、產品召回成本、第三方訴訟。條款中的 "regardless of cause" 意味著即使問題源於供應商的疏忽或故意行為，買方仍需賠償供應商。這在國際貿易中是極度不平衡的條款，實質上將買方變成供應商的免費保險公司。如果產品在歐美市場被消費者起訴（產品責任訴訟平均金額 USD 500,000+），買方將獨自承擔所有費用。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text"><strong>改為雙向賠償責任，設有上限：</strong>(1) 刪除 "regardless of cause"，改為各方對自身疏忽或違約造成的損失負責；(2) 供應商對其製造缺陷、材料缺陷承擔賠償責任；(3) 賠償上限設為合約金額的 150-200%；(4) 加入 product liability insurance 要求（供應商須購買至少 USD 2M 的產品責任保險並將買方列為附加被保險人）；(5) 第三方索賠（end-user claims）不應受限於合約賠償上限。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 16.2 — Term & Auto-Renewal</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "This Agreement shall have an initial term of one (1) year and <span class="highlight">shall automatically renew for successive one-year periods unless either party gives written notice of non-renewal at least 180 days prior to the end of the then-current term</span>. During any renewal term, the Buyer shall maintain the minimum purchase volume specified in Schedule A, failing which <span class="highlight">the Buyer shall pay liquidated damages equal to 30% of the shortfall value</span>."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>自動續約陷阱 + 高額違約金：</strong>此條款設計極其精巧 — 合約看似一年期，但 180 天提前通知要求意味著買方在合約生效後 <strong>僅 6 個月</strong> 就必須決定是否續約，此時可能連第一批貨都未收到。若錯過通知窗口，合約自動續約一年，且附帶最低採購量要求。未達標需支付短缺金額 30% 的 liquidated damages — 這筆違約金可能高達數萬美元。此條款將買方鎖死在一個未經驗證的供應關係中。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 提前通知期從 180 天縮短至 <strong>60 天</strong>；(2) 移除自動續約機制，改為雙方書面同意續約；(3) 第一年不設最低採購量（試用期）；(4) 若保留 liquidated damages，金額應為合理預估損失（可改為短缺金額的 10-15%），且需證明實際損失。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 18.1 — Dispute Resolution & Arbitration</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "Any dispute arising out of or in connection with this Agreement shall be submitted to the <span class="highlight">Dongguan Arbitration Commission</span> for arbitration in accordance with its rules. The arbitration shall be conducted in <span class="highlight">Chinese language only</span>. The arbitral award shall be final and binding upon both parties. <span class="highlight">Each party shall bear its own costs</span> regardless of outcome. This Agreement shall be governed by the laws of the <span class="highlight">People's Republic of China</span>."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>極度不利的仲裁條款：</strong>四個致命問題 — (1) 東莞仲裁委員會對本地供應商有結構性優勢，仲裁員多為前中國法官或本地律師；(2) 僅使用中文，若買方為香港/外資公司，翻譯成本高昂且翻譯誤差可能影響裁決；(3) 各自承擔費用意味著即使買方勝訴，也無法追回數十萬港元的律師費；(4) 適用中國合同法 — 在中國法院/仲裁中，某些在普通法下常見的商業保護（如 equitable relief）可能不被承認。此外，東莞仲裁裁決在香港執行需通過內地與香港仲裁裁決互認安排，程序繁複。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">強烈建議改為 <strong>香港國際仲裁中心（HKIAC）</strong>，理由：(1) 香港仲裁裁決在 170+ 國家可依紐約公約執行；(2) 支持中英雙語仲裁；(3) 慣例上敗訴方承擔勝訴方合理費用；(4) 可選擇熟悉國際貿易的仲裁員。若供應商堅持中國仲裁，退一步可接受 CIETAC 香港分會（CIETAC Hong Kong）。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 5.1(b) — Quality Standards</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "The Supplier warrants that all products shall be of <span class="highlight">satisfactory quality</span> and in accordance with <span class="highlight">generally accepted industry standards</span>. The Buyer's sole remedy for any non-conforming products shall be <span class="highlight">repair or replacement at Supplier's discretion</span> within 30 days of delivery. <span class="highlight">No refunds</span> shall be provided under any circumstances."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>品質標準完全空白：</strong>"Satisfactory quality" 及 "generally accepted industry standards" 在法律上極度模糊，發生質量糾紛時無法作為客觀判斷標準。供應商可主觀認定任何質量為"滿意"。更嚴重的是：買方的唯一救濟是修理或更換（供應商自選），且明確排除退款 — 意味著即使整批貨為次品，買方也無法退貨取回貨款。"30 天內"的期限從交貨日起計，連跨洋運輸時間都不夠。這是典型的"賣完就算"條款。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 明確引用 <strong>AQL 標準</strong>（如 AQL 2.5 for major defects, AQL 4.0 for minor defects）；(2) 加入 approval sample / golden sample 作為品質基準；(3) 買方有權在出貨前委託第三方（SGS / Bureau Veritas / Intertek）進行 pre-shipment inspection，費用由供應商承擔；(4) defect rate > 3% 時買方有權拒收整批並全額退款；(5) 品質保證期延長至交貨後 12-18 個月。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 7.4 — Price Escalation</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "In the event of any increase in raw material costs, labor costs, or exchange rate fluctuation exceeding <span class="highlight">2%</span>, the Supplier may <span class="highlight">unilaterally adjust the unit price</span> upon 15 days' written notice. <span class="highlight">The Buyer shall accept such adjusted price</span> and the adjusted price shall apply to all outstanding orders including those already confirmed."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>單方面加價權 — 無上限、無客觀基準、無拒絕權：</strong>2% 的觸發門檻極低 — 人民幣兌美元日常波動經常超過此幅度。供應商可頻繁觸發加價。更致命的是，加價適用於"已確認的訂單"，意味著你確認了一張 PO 後，供應商在出貨前仍可加價，你必須接受。這完全顛覆了合約的基本功能（鎖定價格）。原材料成本上升缺乏客觀衡量標準，供應商可任意主張。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 價格調整必須基於 <strong>雙方事先同意的客觀指數</strong>（如 LME 銅價、Platts 塑料指數）；(2) 觸發門檻提高至 5-10%；(3) 調整需雙方書面同意，不可單方面；(4) 已確認的 PO 不受價格調整影響；(5) 加價超過 10% 時買方有權取消訂單並獲全額退款；(6) 加入降價機制 — 原材料成本下降時價格也應下調。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 9.3 — Force Majeure</span>
+        ${riskBadge('med')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "Neither party shall be liable for failure to perform caused by <span class="highlight">acts of God, war, fire, or flood</span>. The affected party shall be excused from performance for the duration of such event."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>不可抗力定義過窄：</strong>僅列舉四種極端情況，完全未涵蓋現代貿易中常見的不可抗力事件 — 疫情（COVID-19 已證明其破壞力）、政府限電（中國 2021-2022 年頻繁發生）、港口封鎖、原材料短缺、制裁/出口管制。此外，條款未設持續時間上限（理論上供應商可無限期延遲而不違約），也未賦予買方在長期不可抗力時的終止權。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 擴充不可抗力定義至包含 <strong>pandemic/epidemic, government restrictions, port closures, raw material shortage, energy rationing, sanctions/export controls</strong>；(2) 受影響方須在 <strong>7 天內書面通知</strong>並提供證明；(3) 不可抗力持續 <strong>超過 60 天</strong>，任何一方可無責終止合約；(4) 加入 mitigation obligation（受影響方須採取合理措施減少影響）。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 8.3 — Intellectual Property</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "All intellectual property rights in any <span class="highlight">modifications, improvements, or derivative works</span> made to the Buyer's designs or specifications during the manufacturing process shall be <span class="highlight">owned jointly</span> by both parties. <span class="highlight">The Supplier may freely use such jointly owned IP</span> for any purpose including manufacturing for third parties."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>IP 陷阱 — 你的設計變成供應商的資產：</strong>這是中國供應商合約中最常見也最危險的 IP 條款。供應商在生產過程中必然會對買方設計做微調（例如為適配其模具而修改尺寸），這些"修改/改進"便被定義為"共同擁有"。然後供應商獲得"自由使用權" — 意味著供應商可合法地用你的設計、你的模具為你的競爭對手生產同樣的產品。"Jointly owned" 在中國法律下缺乏明確定義，實際上誰控制生產誰就控制 IP。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) <strong>買方提供的所有設計、規格、模具之 IP 歸買方獨家所有</strong>；(2) 生產過程中的任何修改僅為實現買方設計之目的，不產生新的 IP；(3) 若確有實質性創新，需雙方書面協議確定歸屬及授權條款；(4) 供應商不得為任何第三方使用買方模具或基於買方設計生產產品（non-compete for product）；(5) 加入 injunctive relief 條款。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 11.5 — Governing Law</span>
+        ${riskBadge('med')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "This Agreement shall be governed by and construed in accordance with the laws of the <span class="highlight">People's Republic of China</span>, excluding its conflict of law principles. <span class="highlight">The United Nations Convention on Contracts for the International Sale of Goods (CISG) is expressly excluded</span>."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>適用中國法 + 排除 CISG：</strong>中國合同法在許多方面與普通法/國際貿易慣例不同。更值得注意的是，合約明確排除 CISG — CISG 是一套專為國際貨物銷售設計的統一規則，排除它意味著買方失去了一套成熟、可預測的國際法律框架。中國合同法在違約賠償、利息計算、合約解釋等方面的規則可能對不熟悉中國法的香港買方構成意外風險。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) <strong>加入 CISG 作為補充適用法律</strong>，以填補中國合同法對國際貿易的空白；(2) 若改為 HKIAC 仲裁，可選擇香港法為 governing law；(3) 中英文版本同具法律效力，但衝突時以英文版本為準（因英文為國際貿易通用語言）。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 14.2 — Non-Compete</span>
+        ${riskBadge('med')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "During the term of this Agreement and for a period of <span class="highlight">five (5) years</span> thereafter, the Buyer shall not <span class="highlight">directly or indirectly</span> source, manufacture, or sell any products that are <span class="highlight">similar to or competitive with</span> the products supplied hereunder."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>過度廣泛的競業禁止條款：</strong>5 年期限在國際貿易中極度不合理（行業慣例為 1-2 年）。"similar to or competitive with" 定義過於模糊 — 幾乎可涵蓋買方所有產品。此條款不僅限制買方向其他供應商採購，甚至限制買方自行生產或銷售任何"類似"產品。此種條款在多數司法管轄區可能被裁定為不合理的 restraint of trade 而無效，但在此之前仍需耗費訴訟成本。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 將 non-compete 期限從 5 年縮短至 <strong>合約期內 + 終止後 12-18 個月</strong>；(2) 限制範圍至 <strong>使用供應商專有技術或模具生產的特定產品</strong>，而非所有 similar products；(3) 明確不限制買方從其他供應商採購同類產品（前提是不使用供應商 IP/模具）。</div>
+      </div>
+    </div>
+  `;
+
+  // Priority
+  document.getElementById('priorityList').innerHTML = `
+    <div class="priority-item">
+      <div class="prio-rank must">1</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 12.3 — 刪除無限賠償責任條款</div>
+        <div class="prio-reason">這是整份合約最致命的條款。無限賠償 + "regardless of cause" 令你在法律上成為供應商的保險公司。必須徹底改寫為雙向賠償且有上限。</div>
+        <span class="prio-tag must">🥊 Must Fix — 不修改不簽約</span>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank must">2</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 7.4 — 移除單方面加價權</div>
+        <div class="prio-reason">合約的基本功能是鎖定價格。單方面加價權讓合約失去意義 — 你確認了 PO，供應商仍可在出貨前加價。必須改為雙向同意 + 客觀指數 + 已確認 PO 不受影響。</div>
+        <span class="prio-tag must">🥊 Must Fix — 不修改不簽約</span>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank must">3</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 8.3 — IP 歸屬必須明確歸買方</div>
+        <div class="prio-reason">你的設計、你的模具、你的錢 — IP 必須歸你。"Jointly owned + free use" 等於將你的商業機密送給供應商。此條涉及核心競爭力，沒有妥協空間。</div>
+        <span class="prio-tag must">🥊 Must Fix — 不修改不簽約</span>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank must">4</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 18.1 — 仲裁改為香港 HKIAC</div>
+        <div class="prio-reason">爭議解決機制是合約的"最後防線"。在供應商所在地仲裁等於未打先輸。HKIAC 是亞洲最受尊重的仲裁機構，此條值得強硬爭取。</div>
+        <span class="prio-tag must">🥊 Must Fix — 不修改不簽約</span>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank should">5</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 16.2 — 取消自動續約，縮短通知期</div>
+        <div class="prio-reason">自動續約 + 最低採購量 + 高額違約金係精巧的鎖定機制。供應商可能讓步，因為此條款本身對買方極不公平。</div>
+        <span class="prio-tag should">🤝 Should Fix — 盡量爭取</span>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank should">6</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 5.1(b) — 定義客觀品質標準及驗收程序</div>
+        <div class="prio-reason">供應商通常願意接受 AQL 標準和第三方檢驗，因為這是行業慣例。加入 pre-shipment inspection 對供應商影響有限但對買方保護巨大。</div>
+        <span class="prio-tag should">🤝 Should Fix — 盡量爭取</span>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank should">7</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 14.2 — Non-Compete 範圍及期限合理化</div>
+        <div class="prio-reason">5 年全球競業禁止在多數司法管轄區不可執行。將期限縮短至 12-18 個月並限制範圍，供應商通常可接受。</div>
+        <span class="prio-tag should">🤝 Should Fix — 盡量爭取</span>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank nice">8</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 9.3 — 擴充不可抗力定義</div>
+        <div class="prio-reason">如果以上主要條款已修改，不可抗力條款可適當讓步。但至少要加入疫情和政府行動的覆蓋。</div>
+        <span class="prio-tag nice">✅ Nice to Fix — 可接受妥協</span>
+      </div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank nice">9</div>
+      <div class="prio-content">
+        <div class="prio-title">Clause 11.5 — 加入 CISG 為補充法律</div>
+        <div class="prio-reason">如果仲裁地點已改為 HKIAC，法律選擇的重要性相對降低。加入 CISG 是好，但不是 deal-breaker。</div>
+        <span class="prio-tag nice">✅ Nice to Fix — 可接受妥協</span>
+      </div>
+    </div>
+  `;
+
+  // Tips
+  document.getElementById('tipList').innerHTML = `
+    <div class="tip-item">
+      <div class="tip-header"><div class="tip-num">1</div><div class="tip-title">「行業標準」≠ 有標準</div></div>
+      <div class="tip-desc">中國供應商合約中出現 "industry standard quality" 或 "satisfactory quality" <strong>幾乎等於沒有品質保證</strong>。必須要求引用具體的 AQL 等級（如 AQL 2.5）、國際標準（如 ISO 9001）或 approval sample 作為品質基準。</div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-header"><div class="tip-num">2</div><div class="tip-title">模具費 ≠ 模具擁有權</div></div>
+      <div class="tip-desc">很多買方以為付了模具費就擁有模具。<strong>在中國法下，除非合約明確寫明模具擁有權歸買方且供應商僅為保管人</strong>，否則模具可能被視為供應商資產。必須加入模具返還條款。</div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-header"><div class="tip-num">3</div><div class="tip-title">自動續約 = 合約陷阱</div></div>
+      <div class="tip-desc">自動續約條款常常搭配 <strong>極短的通知窗口（如合約開始後 6 個月內須決定是否續約）</strong>，讓買方在未充分評估供應商表現前就被鎖定。永遠要求移除自動續約，或至少將通知期設定在合約到期前 30-60 天。</div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-header"><div class="tip-num">4</div><div class="tip-title">「單方面調整」四個字要極度警惕</div></div>
+      <div class="tip-desc">任何賦予供應商「單方面調整價格」的條款都應被視為 <strong>deal-breaker</strong>。價格調整必須基於客觀指數、雙方同意、有上限、已確認 PO 不受影響。人民幣匯率日常波動就足以觸發許多合約中的價格調整條款。</div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-header"><div class="tip-num">5</div><div class="tip-title">不可抗力 — COVID 後的新常態</div></div>
+      <div class="tip-desc">2020 年前的合約模板大多未涵蓋 pandemic。確保你的合約不可抗力條款 <strong>明確包含：疫情/傳染病、政府封鎖/限電、港口關閉、原材料短缺</strong>。同時加入持續時間上限（如 60 天）及終止權。</div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-header"><div class="tip-num">6</div><div class="tip-title">IP 條款 — 永遠假設最壞情況</div></div>
+      <div class="tip-desc">中國 OEM 合約中最常見的 IP 陷阱："modifications made during production shall be jointly owned"。<strong>必須寫明買方提供的設計及相關修改之 IP 歸買方獨家所有</strong>，供應商不得為第三方使用。加入 injunctive relief 條款以獲得禁制令保障。</div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-header"><div class="tip-num">7</div><div class="tip-title">仲裁地點 — 永遠選擇中立地點</div></div>
+      <div class="tip-desc">在供應商所在城市仲裁對買方極為不利。首選 <strong>香港 HKIAC</strong>（紐約公約執行、中英雙語、國際仲裁員）、次選新加坡 SIAC。如果供應商堅持中國仲裁，可考慮 CIETAC 香港分會。</div>
+    </div>
+    <div class="tip-item">
+      <div class="tip-header"><div class="tip-num">8</div><div class="tip-title">Liquidated Damages — 看清楚是罰款還是補償</div></div>
+      <div class="tip-desc">中國合約中的 liquidated damages 條款有時設定極高（如短缺金額的 30%）。<strong>在普通法下，penalty clause 不可執行</strong>，但在中國法下法院有較大裁量權。確保 liquidated damages 是 genuine pre-estimate of loss，而非懲罰性條款。</div>
+    </div>
+  `;
+
+  document.getElementById('results').classList.add('active');
+}
+
+// ════════════════════════════════════════
+//  DEMO 2: DISTRIBUTION AGREEMENT (MEDIUM RISK)
+// ════════════════════════════════════════
+function renderDistributionDemo() {
+  document.getElementById('resultContractName').textContent = '合約類型：Exclusive Distribution Agreement — EuroTrade GmbH (Germany)';
+
+  document.getElementById('scoreHero').innerHTML = `
+    <div class="score-badge med-risk">
+      <span class="risk-label">中</span>
+      <span class="risk-text">Medium Risk</span>
+    </div>
+    <div class="score-info">
+      <h3>⚠️ 整體風險評級：中風險</h3>
+      <p class="contract-ref">獨家經銷協議 · EuroTrade GmbH · 德國市場</p>
+      <div class="clause-counts">
+        <div class="clause-stat"><div class="count red">3</div><div class="lbl">🔴 高風險</div></div>
+        <div class="clause-stat"><div class="count yellow">4</div><div class="lbl">🟡 中風險</div></div>
+        <div class="clause-stat"><div class="count green">2</div><div class="lbl">🟢 低風險</div></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('summaryCard').innerHTML = `
+    <div class="sum-header"><span class="sum-icon">📊</span><h3>風險摘要</h3></div>
+    <div class="sum-body">
+      本合約包含 <strong>3 條高風險條款</strong>，<strong>4 條中風險條款</strong>。主要問題：(1) <strong>全歐盟獨家權無最低採購量承諾</strong>—經銷商可取得獨家權而不承擔任何義務，(2) <strong>90 天付款期</strong>對供應商現金流造成嚴重壓力，(3) <strong>終止條款含糊</strong>且可能觸發歐盟 Commercial Agents Directive 下的巨額法定補償。<br>
+      <span class="exposure">💰 估算財務風險敞口：USD $45,000 – $120,000（最壞情況觸發時）</span>
+    </div>
+  `;
+
+  document.getElementById('catGrid').innerHTML = `
+    <div class="cat-card">
+      <div class="cat-badge financial">💰</div>
+      <div class="cat-info">
+        <h4>Financial 財務風險</h4>
+        <p class="cat-risk-count"><span class="high-c">0 高</span> · <span class="med-c">2 中</span></p>
+        <p>90 天付款期壓縮現金流、無最低採購量承諾導致收入不確定、終止後補償金額未設上限。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge legal">⚖️</div>
+      <div class="cat-info">
+        <h4>Legal 法律風險</h4>
+        <p class="cat-risk-count"><span class="high-c">1 高</span> · <span class="med-c">1 中</span></p>
+        <p>歐盟 Commercial Agents Directive 可能強制適用、管轄法律為德國法、non-compete 條款可能違反歐盟競爭法。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge operational">⚙️</div>
+      <div class="cat-info">
+        <h4>Operational 營運風險</h4>
+        <p class="cat-risk-count"><span class="high-c">1 高</span> · <span class="med-c">1 中</span></p>
+        <p>全歐盟獨家權無法有效管理、終止條款含糊導致過渡期混亂、庫存回購義務不明確。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge ip">🧠</div>
+      <div class="cat-info">
+        <h4>IP 知識產權風險</h4>
+        <p class="cat-risk-count"><span class="high-c">1 高</span></p>
+        <p>經銷商獲授權使用商標但無品質控制條款 — 可能損害品牌價值。商標在歐盟的註冊及保護義務不清。</p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('clauseCards').innerHTML = `
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 2.1 — Exclusive Territory</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "The Supplier grants the Distributor the <span class="highlight">exclusive right to distribute the Products in the European Union and United Kingdom</span> (the 'Territory'). The Supplier shall not appoint any other distributor in the Territory and shall <span class="highlight">refer all inquiries from the Territory to the Distributor</span>. This exclusivity is granted <span class="highlight">without any minimum purchase obligation</span> for the first three years."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>無限獨家權，零義務：</strong>此條款將整個歐盟 + 英國市場的獨家權授予經銷商，但前三年完全沒有最低採購量要求。經銷商可以"獨佔但不銷售" — 佔據市場准入權而不產出業績。供應商甚至不能直接處理來自該區域的客戶查詢，必須轉介給經銷商。如果經銷商表現不佳，供應商將完全失去歐洲市場三年。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 加入 <strong>逐年遞增的最低採購量</strong>（Year 1: USD 100K, Year 2: USD 200K, Year 3: USD 350K）；(2) 加入 <strong>performance review clause</strong> — 未達最低採購量的 75% 時，獨家權自動轉為非獨家；(3) 地域可先限制為德國 + 奧地利，表現良好再擴展；(4) 保留供應商直接服務 key accounts 的權利。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 6.2 — Payment Terms</span>
+        ${riskBadge('med')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "Payment shall be made within <span class="highlight">ninety (90) days</span> from the date of the Supplier's invoice. No discounts shall apply for early payment. Late payment shall bear interest at the rate of <span class="highlight">2% per annum</span> above the European Central Bank base rate."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>90 天付款期 + 極低逾期利息：</strong>從發票日到實際收款可能長達 120 天（計入運輸及行政時間），對供應商現金流構成極大壓力。逾期利率僅 ECB + 2%（目前約 4-5%），遠低於商業融資成本 — 這實際上鼓勵經銷商延遲付款。此外，無早付折扣意味著經銷商無動力準時付款。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 付款期縮短至 <strong>30-60 天</strong>；(2) 加入早付折扣（如 10 天內付款享 3% 折扣）；(3) 逾期利率提高至商業合理水平（如 ECB + 8% 或月息 1.5%）；(4) 大額訂單要求部分預付款或信用證（L/C）。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 15.3 — Termination</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "This Agreement may be terminated by either party upon <span class="highlight">reasonable notice</span>. Upon termination, the Distributor shall be entitled to <span class="highlight">fair compensation</span> for the goodwill and customer base developed. The Supplier shall <span class="highlight">repurchase all unsold inventory at cost plus 10%</span>."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>三個模糊概念 = 無限風險：</strong>(1) "Reasonable notice" 無法定義 — 德國法院可能認定為 6-12 個月；(2) "Fair compensation" for goodwill 是歐盟 Commercial Agents Directive 的核心概念，在多個歐盟成員國法院可被解釋為 1-2 年的平均佣金/利潤；(3) 供應商必須以 cost + 10% 回購所有未售庫存 — 經銷商可在終止前大量進貨，供應商必須高價回購。這三條結合可產生數十萬美元的終止成本。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 明確通知期（如 <strong>90 天書面通知</strong>）；(2) 明確 compensation 計算方式及上限（如過去 12 個月佣金的 50%）；(3) 庫存回購僅限於過去 6 個月內採購且未開封的產品，回購價為成本價（不加 10%）；(4) 指定香港法為 governing law 以排除歐盟 Commercial Agents Directive 的強制適用。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 9.1 — Non-Compete</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "During the term of this Agreement, the Supplier shall not <span class="highlight">sell any products directly or indirectly in the Territory</span>, including through online channels or third-party platforms. This restriction shall survive termination for <span class="highlight">three (3) years</span>."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>禁止供應商直接銷售 + 終止後 3 年限制：</strong>此條款不僅禁止供應商在經銷區域銷售，連線上渠道（如亞馬遜歐洲、自營網站）也完全禁止。加上終止後 3 年的限制，意味著即使炒了經銷商，供應商仍無法進入歐洲市場 3 年。此外，此條款可能違反歐盟競爭法（Article 101 TFEU），若被裁定無效可能引發更大的法律不確定性。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 允許供應商通過自營網站進行被動銷售（passive sales）；(2) 終止後 non-compete 縮短至 <strong>12 個月</strong>；(3) 加入 selective distribution 框架以避免違反歐盟競爭法；(4) 明確 non-compete 僅限於合約產品，不延伸至供應商其他產品線。</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('priorityList').innerHTML = `
+    <div class="priority-item">
+      <div class="prio-rank must">1</div>
+      <div class="prio-content"><div class="prio-title">Clause 2.1 — 加入最低採購量承諾</div><div class="prio-reason">無義務的獨家權是最危險的商業條款。最低採購量是經銷協議的基石。</div><span class="prio-tag must">🥊 Must Fix</span></div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank must">2</div>
+      <div class="prio-content"><div class="prio-title">Clause 15.3 — 明確終止補償計算方式及上限</div><div class="prio-reason">"Reasonable notice" + "fair compensation" 在法律上是計時炸彈。必須量化。</div><span class="prio-tag must">🥊 Must Fix</span></div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank must">3</div>
+      <div class="prio-content"><div class="prio-title">Clause 9.1 — Non-Compete 合理化</div><div class="prio-reason">終止後 3 年全球禁止銷售對供應商過度限制，且可能違反歐盟競爭法。</div><span class="prio-tag must">🥊 Must Fix</span></div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank should">4</div>
+      <div class="prio-content"><div class="prio-title">Clause 6.2 — 付款期從 90 天縮短至 45-60 天</div><div class="prio-reason">90 天對供應商現金流壓力過大。45-60 天是同類合約的合理中間點。</div><span class="prio-tag should">🤝 Should Fix</span></div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank nice">5</div>
+      <div class="prio-content"><div class="prio-title">指定香港法為管轄法律</div><div class="prio-reason">排除歐盟 Commercial Agents Directive 的適用。若經銷商堅持德國法，需加入明確的 compensation cap。</div><span class="prio-tag nice">✅ Nice to Fix</span></div>
+    </div>
+  `;
+
+  document.getElementById('tipList').innerHTML = `
+    <div class="tip-item"><div class="tip-header"><div class="tip-num">1</div><div class="tip-title">獨家權 ≠ 送禮</div></div><div class="tip-desc">授予獨家經銷權時<strong>必須搭配最低採購量、業績考核、和未達標時的退出機制</strong>。沒有義務的獨家權只會讓經銷商佔據市場而不產出。</div></div>
+    <div class="tip-item"><div class="tip-header"><div class="tip-num">2</div><div class="tip-title">歐盟代理/經銷法規 — 香港公司最常忽略的風險</div></div><div class="tip-desc">歐盟 Commercial Agents Directive 賦予經銷商在終止時獲得巨額法定補償的權利。<strong>選擇非歐盟管轄法律（如香港法）是防止此風險的關鍵</strong>。</div></div>
+    <div class="tip-item"><div class="tip-header"><div class="tip-num">3</div><div class="tip-title">模糊 = 危險</div></div><div class="tip-desc">經銷協議中的 "reasonable notice"、"fair compensation"、"best efforts" 等詞在法律上沒有固定含義，<strong>在訴訟中將由法官（而非你）決定其含義</strong>。盡量使用具體數字和明確標準。</div></div>
+    <div class="tip-item"><div class="tip-header"><div class="tip-num">4</div><div class="tip-title">庫存回購條款 — 設立限制</div></div><div class="tip-desc">終止時的庫存回購義務應有限制：<strong>僅限過去 6 個月採購、未開封、可轉售的產品</strong>。否則經銷商可在終止前大量進貨進行套利。</div></div>
+  `;
+
+  document.getElementById('results').classList.add('active');
+}
+
+// ════════════════════════════════════════
+//  DEMO 3: OEM AGREEMENT (LOW RISK)
+// ════════════════════════════════════════
+function renderOemDemo() {
+  document.getElementById('resultContractName').textContent = '合約類型：OEM Manufacturing Agreement — Shenzhen ProTech Manufacturing Ltd.';
+
+  document.getElementById('scoreHero').innerHTML = `
+    <div class="score-badge low-risk">
+      <span class="risk-label">低</span>
+      <span class="risk-text">Low Risk</span>
+    </div>
+    <div class="score-info">
+      <h3>✅ 整體風險評級：低風險</h3>
+      <p class="contract-ref">OEM 生產協議 · 深圳 ProTech 製造有限公司 · 智能家居產品</p>
+      <div class="clause-counts">
+        <div class="clause-stat"><div class="count red">1</div><div class="lbl">🔴 高風險</div></div>
+        <div class="clause-stat"><div class="count yellow">2</div><div class="lbl">🟡 中風險</div></div>
+        <div class="clause-stat"><div class="count green">4</div><div class="lbl">🟢 低風險</div></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('summaryCard').innerHTML = `
+    <div class="sum-header"><span class="sum-icon">✅</span><h3>風險摘要</h3></div>
+    <div class="sum-body">
+      此合約總體條款公平，僅有 <strong>1 條高風險條款</strong>，<strong>2 條中風險條款</strong>。主要關注點為：(1) <strong>軟件/固件的 IP 歸屬不明確</strong>（硬件的 IP 條款已妥善處理），(2) 品質檢驗標準可進一步具體化，(3) 保固期的 defect rate threshold 可微調。整體而言，此合約的基礎框架穩健，經少量修改後即可安全簽約。<br>
+      <span class="exposure">💰 估算財務風險敞口：USD $8,000 – $25,000（最壞情況觸發時）</span>
+    </div>
+  `;
+
+  document.getElementById('catGrid').innerHTML = `
+    <div class="cat-card">
+      <div class="cat-badge financial">💰</div>
+      <div class="cat-info">
+        <h4>Financial 財務風險</h4>
+        <p class="cat-risk-count"><span class="high-c">0 高</span> · <span class="med-c">1 中</span></p>
+        <p>付款條件 T/T 30/70 屬行業標準。賠償上限 150% 合約金額合理。defect rate refund mechanism 已設立。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge legal">⚖️</div>
+      <div class="cat-info">
+        <h4>Legal 法律風險</h4>
+        <p class="cat-risk-count"><span class="high-c">0 高</span> · <span class="med-c">1 中</span></p>
+        <p>管轄法律為香港法 + HKIAC 仲裁。唯一 minor issue：合約僅有英文版本。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge operational">⚙️</div>
+      <div class="cat-info">
+        <h4>Operational 營運風險</h4>
+        <p class="cat-risk-count"><span class="high-c">0 高</span> · <span class="med-c">0 中</span></p>
+        <p>交貨期明確、有延遲罰則。品質標準引用 AQL 2.5。Pre-shipment inspection 可選擇性執行。</p>
+      </div>
+    </div>
+    <div class="cat-card">
+      <div class="cat-badge ip">🧠</div>
+      <div class="cat-info">
+        <h4>IP 知識產權風險</h4>
+        <p class="cat-risk-count"><span class="high-c">1 高</span></p>
+        <p>硬件設計及模具 IP 已妥善歸買方。但固件/軟件的 IP 歸屬及源代碼交付未明確。</p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('clauseCards').innerHTML = `
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 9.2 — IP Ownership (Firmware/Software)</span>
+        ${riskBadge('high')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "All hardware designs, tooling, and mechanical specifications provided by the Buyer shall remain the exclusive property of the Buyer. <span class="highlight">Firmware and software developed for the Products shall be licensed to the Buyer for use in the Products</span>. The Supplier shall provide the compiled firmware binary for production purposes."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>固件/軟件 IP 歸屬的重大漏洞：</strong>硬件 IP 處理得很好 — 明確歸買方。但軟件部分使用 "licensed" 而非 "assigned" 或 "owned" — 意味著買方僅獲得使用授權而非擁有權。更嚴重的是，供應商僅需提供 compiled binary（已編譯的二進制文件），而非 source code（源代碼）。如果合作關係終止，買方無法修改固件、無法轉廠生產（新工廠無法編譯固件）。對於智能家居產品，固件是產品的核心組成部分，失去固件控制權等於失去產品控制權。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 明確 <strong>買方全額支付的固件/軟件開發成果之 IP 歸買方所有</strong>；(2) 供應商須在每個開發階段交付 <strong>完整且可編譯的源代碼</strong>（包括 build scripts、依賴庫清單、開發文檔）；(3) 加入 source code escrow 條款 — 源代碼交由第三方保管，在特定條件（如供應商破產/無法繼續服務）時釋放給買方；(4) 供應商保證其開發的軟件不侵犯第三方 IP。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 5.3 — Quality Inspection</span>
+        ${riskBadge('med')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "The Supplier shall conduct <span class="highlight">internal quality inspection</span> prior to each shipment. The Buyer may, <span class="highlight">at its own expense</span>, appoint a third-party inspection agency to conduct pre-shipment inspection. The inspection standard shall be <span class="highlight">AQL 2.5 for major defects</span>. In the event of non-compliance, the Supplier shall remedy the defects within 15 days."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>檢驗機制可加強：</strong>此條款不算差 — 已引用 AQL 2.5 — 但有三個可改進之處：(1) 第三方檢驗費用由買方承擔，這在行業中也常見但可協商；(2) 僅定義 major defects 的 AQL，未涵蓋 minor defects 和 critical defects；(3) "remedy within 15 days" 未說明如果 15 天後仍不合格的後果（退貨？退款？取消？）。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) 加入 critical defects 的 <strong>zero tolerance</strong> 標準（任何 critical defect 即整批拒收）；(2) 明確定義 minor defects 的 AQL（如 AQL 4.0）；(3) 若 re-inspection 仍不合格，買方有權 <strong>拒收整批貨並獲全額退款</strong>（包括已付訂金）；(4) 可協商由供應商承擔 initial inspection 費用（若 defect rate > AQL threshold）。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 7.1 — Warranty & Defect Rate</span>
+        ${riskBadge('med')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "The Supplier warrants the Products against defects in materials and workmanship for <span class="highlight">12 months from the date of shipment</span>. The Supplier shall repair or replace defective products at its cost. If the defect rate exceeds <span class="highlight">5%</span> of any shipment, the Supplier shall credit the Buyer for the cost of the defective units plus <span class="highlight">actual freight costs</span> for return shipping."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>保固條款基礎良好，可微調：</strong>12 個月保固期符合行業標準。但 5% defect rate threshold 偏高 — 行業最佳實踐通常設在 2-3%。此外，"actual freight costs" 僅涵蓋退貨運費，未涵蓋買方已支付的進口關稅、檢驗費、及重新包裝/發貨給終端客戶的成本。在保修期內更換產品給終端客戶的 labor cost 也是一筆可觀費用。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">(1) Defect rate threshold 從 5% 降至 <strong>3%</strong>；(2) 供應商承擔的費用擴展至包括 <strong>進口關稅、檢驗費、及合理的重新發貨成本</strong>；(3) 若 defect rate 超過 3%，供應商須承擔第三方檢驗機構進行 100% inspection 的費用；(4) 加入 chronic defect 條款 — 同一缺陷連續三批出現，買方有權要求全面 corrective action plan。</div>
+      </div>
+    </div>
+
+    <div class="clause-card">
+      <div class="clause-header">
+        <span class="clause-ref">Clause 15.2 — Governing Language</span>
+        ${riskBadge('low')}
+      </div>
+      <div class="original-text">
+        <span class="quote-label">📄 原始條款</span>
+        "This Agreement is executed in the <span class="highlight">English language only</span>. All communications, notices, and technical documentation shall be in English."
+      </div>
+      <div class="explanation">
+        <span class="exp-icon">💡</span>
+        <span class="exp-text"><strong>低風險但值得注意：</strong>合約僅有英文版本在國際貿易中常見且可接受（尤其 HKIAC 仲裁支持英文）。但如果供應商內部溝通為中文，可能存在執行層面的理解偏差。例如：品質標準、技術規格在翻譯過程中可能失真。</span>
+      </div>
+      <div class="revision">
+        <div class="rev-label">✅ 建議修改</div>
+        <div class="rev-text">可加入中英文對照版本，<strong>但明確衝突時以英文版本為準</strong>。技術文檔可雙語提供以確保生產部門準確理解規格。</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('priorityList').innerHTML = `
+    <div class="priority-item">
+      <div class="prio-rank must">1</div>
+      <div class="prio-content"><div class="prio-title">Clause 9.2 — 固件/軟件 IP 歸屬必須明確為買方所有</div><div class="prio-reason">智能產品的核心是軟件。僅有使用授權而無源代碼，你無法轉廠、無法升級、無法維護。這是唯一的 deal-breaker。</div><span class="prio-tag must">🥊 Must Fix</span></div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank should">2</div>
+      <div class="prio-content"><div class="prio-title">Clause 5.3 — 完善檢驗標準（加入 critical defect zero tolerance）</div><div class="prio-reason">此條已有良好基礎，補上 critical defects 定義及 re-inspection fail 的後果即可。</div><span class="prio-tag should">🤝 Should Fix</span></div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank should">3</div>
+      <div class="prio-content"><div class="prio-title">Clause 7.1 — Defect rate threshold 降至 3%</div><div class="prio-reason">從 5% 降至 3% 是合理的調整。供應商通常可以接受。加入更全面的 cost coverage。</div><span class="prio-tag should">🤝 Should Fix</span></div>
+    </div>
+    <div class="priority-item">
+      <div class="prio-rank nice">4</div>
+      <div class="prio-content"><div class="prio-title">Clause 15.2 — 加入中文對照版本</div><div class="prio-reason">非緊急，但可減少執行層面的理解偏差。英文版本為準。</div><span class="prio-tag nice">✅ Nice to Fix</span></div>
+    </div>
+  `;
+
+  document.getElementById('tipList').innerHTML = `
+    <div class="tip-item"><div class="tip-header"><div class="tip-num">1</div><div class="tip-title">軟件/固件 IP — OEM 合約最常被忽略的盲點</div></div><div class="tip-desc">很多買方仔細保護了硬件 IP，卻忘記了固件。<strong>對於智能產品，固件/IP 應該與硬件 IP 獲得同等保護</strong>。要求交付源代碼 + 設立 escrow。</div></div>
+    <div class="tip-item"><div class="tip-header"><div class="tip-num">2</div><div class="tip-title">Defect Rate — 5% 看似低，實際很高</div></div><div class="tip-desc">5% defect rate 意味著每 20 件產品就有 1 件次品。<strong>對於消費者電子產品，終端市場可接受的 defect rate 通常 < 1-2%</strong>。OEM 合約應設置更嚴格的門檻。</div></div>
+    <div class="tip-item"><div class="tip-header"><div class="tip-num">3</div><div class="tip-title">AQL 標準 — 必須涵蓋所有缺陷等級</div></div><div class="tip-desc">一份完整的品質條款應涵蓋 <strong>critical（安全相關，zero tolerance）、major（功能缺陷，AQL 2.5）、minor（外觀瑕疵，AQL 4.0）</strong>三個等級。</div></div>
+    <div class="tip-item"><div class="tip-header"><div class="tip-num">4</div><div class="tip-title">Source Code Escrow — 你的保險單</div></div><div class="tip-desc">對於依賴供應商開發軟件的 OEM 產品，<strong>source code escrow 是必要的風險管理工具</strong>。費用約每年 USD 500-2,000，遠低於失去源代碼後重新開發的成本。</div></div>
+  `;
+
+  document.getElementById('results').classList.add('active');
+}
+
+// ════════════════ DOWNLOAD ════════════════
+function downloadReport() {
+  const contractName = document.getElementById('resultContractName').textContent;
+  const scoreSection = document.getElementById('scoreHero').innerText;
+  const summary = document.getElementById('summaryCard').innerText;
+  const categories = document.getElementById('catGrid').innerText;
+  const clauses = document.getElementById('clauseCards').innerText;
+  const priorities = document.getElementById('priorityList').innerText;
+  const tips = document.getElementById('tipList').innerText;
+
+  const report = `╔══════════════════════════════════════════════╗
+║   ContractScan — AI 合約風險掃描報告        ║
+║   Quattro Dynamics                          ║
+║   生成時間: ${new Date().toISOString()}               ║
+╚══════════════════════════════════════════════╝
+
+${contractName}
+
+══════════════ 整體風險評級 ══════════════
+${scoreSection}
+
+══════════════ 風險摘要 ══════════════
+${summary}
+
+══════════════ 風險分類細分 ══════════════
+${categories}
+
+══════════════ 逐條風險分析 ══════════════
+${clauses}
+
+══════════════ 談判優先次序 ══════════════
+${priorities}
+
+══════════════ 中國供應商合約常見陷阱 ══════════════
+${tips}
+
+---
+本報告由 Quattro Dynamics ContractScan AI 生成
+僅供參考，不構成法律意見。簽約前請諮詢專業律師。
+資料將在生成後 24 小時內自動銷毀。
+`;
+
+  const blob = new Blob([report], {type: 'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ContractScan_Report_${new Date().toISOString().slice(0,10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('📥 風險報告已下載！');
+}
+
+// ════════════════ RESET ════════════════
+function resetAll() {
+  document.getElementById('results').classList.remove('active');
+  document.getElementById('dropZone').classList.remove('loaded');
+  document.getElementById('fileInput').value = '';
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast('🔄 已重置，可以開始新掃描');
+}
+
+// ════════════════ DRAG & DROP ════════════════
+['dragenter','dragover','dragleave','drop'].forEach(evt => {
+  document.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+});
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', () => dz.classList.add('dragover'));
+['dragleave','drop'].forEach(evt => { dz.addEventListener(evt, () => dz.classList.remove('dragover')); });
+dz.addEventListener('drop', e => { handleFile(e.dataTransfer.files); });
+
+// ════════════════ INIT ════════════════
+if (localStorage.getItem('cs_gate')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+document.getElementById('gateEmail').addEventListener('keydown', e => { if (e.key === 'Enter') enterApp(); });
+</script>
+</body>
+</html>

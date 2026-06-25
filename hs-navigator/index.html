@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HS Navigator — AI 海關編碼查詢 | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* Gate Overlay */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{color:var(--warn);font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-sm{padding:10px 22px;font-size:0.85rem;border-radius:8px}
+
+/* Main App */
+.app{display:none}
+.app.active{display:block}
+
+/* Top Bar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+
+/* Content */
+.content{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+/* Section Header */
+.section-header{margin-bottom:28px}
+.section-header h1{font-size:1.7rem;margin-bottom:6px}
+.section-header .subtitle{color:var(--muted);font-size:0.95rem}
+
+/* Input Area */
+.input-card{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:32px;margin-bottom:28px}
+.input-card h2{font-size:1.25rem;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.input-card .hint{color:var(--muted);font-size:0.85rem;margin-bottom:20px}
+.search-row{display:flex;gap:12px;margin-bottom:16px}
+.search-row input{flex:1;padding:14px 18px;background:#0d1117;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:0.95rem}
+.search-row input:focus{outline:none;border-color:var(--accent)}
+.search-row button{background:var(--gradient);color:#fff;border:none;padding:14px 32px;border-radius:12px;font-weight:600;cursor:pointer;font-size:0.95rem;white-space:nowrap;transition:all .2s}
+.search-row button:hover{opacity:0.9;transform:translateY(-1px)}
+.search-row button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.input-card textarea{width:100%;background:#0d1117;border:1.5px solid var(--border);border-radius:12px;color:var(--text);padding:14px 18px;font-size:0.9rem;font-family:inherit;resize:vertical;min-height:80px;margin-bottom:16px}
+.input-card textarea:focus{outline:none;border-color:var(--accent)}
+
+/* Example Chips */
+.chips-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25);border-radius:20px;padding:8px 16px;font-size:0.83rem;color:var(--accent);cursor:pointer;transition:all .2s;user-select:none}
+.chip:hover{background:rgba(6,182,212,0.15);border-color:var(--accent);transform:translateY(-1px)}
+.chip:active{transform:scale(0.97)}
+
+/* Loading Spinner */
+.loading-overlay{display:none;align-items:center;justify-content:center;gap:14px;padding:32px;margin:20px 0;background:var(--card);border:1px solid var(--border);border-radius:14px;font-size:0.95rem;color:var(--muted)}
+.loading-overlay.show{display:flex}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Results Panel */
+.results-panel{display:none}
+.results-panel.show{display:block}
+
+/* Primary Result Card */
+.primary-card{background:var(--card);border:2px solid var(--accent);border-radius:16px;padding:32px;margin-bottom:20px;position:relative;overflow:hidden}
+.primary-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--gradient)}
+.primary-card .badge-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.primary-card .conf-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.15);color:var(--accent2);border:1px solid rgba(16,185,129,0.3);padding:6px 14px;border-radius:20px;font-size:0.85rem;font-weight:700}
+.primary-card .conf-bar{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;min-width:120px}
+.primary-card .conf-bar-fill{height:100%;background:var(--gradient);border-radius:4px;transition:width 1s ease}
+.primary-card .hs-code{font-size:2rem;font-weight:800;color:var(--accent);font-family:monospace;margin-bottom:6px}
+.primary-card .hs-desc{font-size:1.05rem;color:var(--text);margin-bottom:4px}
+.primary-card .hs-chapter{color:var(--muted);font-size:0.8rem}
+
+/* Detail Grid */
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px}
+
+/* Duty Card */
+.duty-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px}
+.duty-card h3{font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.duty-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.duty-table th{text-align:left;padding:10px 12px;font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);font-weight:600}
+.duty-table td{padding:10px 12px;border-bottom:1px solid rgba(30,45,69,0.6)}
+.duty-table tr:last-child td{border-bottom:none}
+.duty-table .flag{width:20px;text-align:center}
+.duty-table .rate{font-weight:700;font-family:monospace}
+.duty-table .rate.high{color:var(--red)}
+.duty-table .rate.medium{color:var(--warn)}
+.duty-table .rate.low{color:var(--accent2)}
+.duty-table .rate.free{color:var(--accent2)}
+.duty-table .note{color:var(--muted);font-size:0.75rem}
+
+/* Alt Codes Card */
+.alt-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px}
+.alt-card h3{font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.alt-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;transition:all .2s;flex-wrap:wrap;gap:8px}
+.alt-item:hover{border-color:var(--accent)}
+.alt-item:last-child{margin-bottom:0}
+.alt-item .alt-code{font-family:monospace;font-weight:700;color:var(--accent);font-size:0.95rem}
+.alt-item .alt-desc{color:var(--muted);font-size:0.8rem}
+.alt-item .alt-conf{font-size:0.8rem;font-weight:600;padding:4px 10px;border-radius:8px}
+.alt-conf.medium-conf{background:rgba(245,158,11,0.12);color:var(--warn)}
+.alt-conf.low-conf{background:rgba(239,68,68,0.1);color:var(--red)}
+
+/* Customs Notes */
+.notes-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px}
+.notes-card h3{font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.note-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(30,45,69,0.6)}
+.note-item:last-child{border-bottom:none}
+.note-item .note-icon{font-size:1.2rem;flex-shrink:0;margin-top:2px}
+.note-item .note-text{font-size:0.9rem}
+.note-item .note-text strong{color:var(--text)}
+.note-item .note-text span{display:block;color:var(--muted);font-size:0.82rem;margin-top:3px}
+
+/* Optimization Tip */
+.optip-card{background:linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.05));border:2px solid rgba(16,185,129,0.25);border-radius:14px;padding:24px;margin-bottom:20px}
+.optip-card h3{font-size:1rem;margin-bottom:10px;display:flex;align-items:center;gap:8px;color:var(--accent2)}
+.optip-card .tip-content{font-size:0.95rem;color:var(--text)}
+.optip-card .tip-savings{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.15);color:var(--accent2);padding:6px 14px;border-radius:20px;font-size:0.85rem;font-weight:700;margin-top:12px}
+
+/* Destruct Notice */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* Back link */
+.back-link{text-align:center;margin-top:24px;padding-bottom:32px}
+.back-link a{color:var(--muted);text-decoration:none;font-size:0.85rem;transition:color .2s}
+.back-link a:hover{color:var(--accent)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;animation:fadeIn .3s}
+.toast.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Responsive */
+@media(max-width:768px){
+  .search-row{flex-direction:column}
+  .primary-card .hs-code{font-size:1.4rem}
+  .gate-box{padding:28px 20px}
+  .input-card{padding:20px}
+  .detail-grid{grid-template-columns:1fr}
+  .primary-card{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== GATE OVERLAY ====== -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">🏷️</div>
+    <h2>HS Navigator 海關編碼 AI</h2>
+    <p>AI-Powered Tariff Intelligence</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+
+    <div class="note">
+      ⚠️ <span>所有查詢資料將在 24 小時內自動銷毀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MAIN APP ====== -->
+<div class="app" id="mainApp">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="logo">🏷️ HS Navigator — AI Tariff Intelligence</div>
+    <div class="timer">⏳ 資料保留: <span id="countdown">23:59:59</span></div>
+  </div>
+
+  <div class="content">
+    <!-- Section Header -->
+    <div class="section-header">
+      <h1>🌏 智能海關編碼查詢系統</h1>
+      <p class="subtitle">輸入產品描述 → AI 即時匹配最準確的 HS Code，查看各國關稅、合規要求及優化建議</p>
+    </div>
+
+    <!-- Input Card -->
+    <div class="input-card" id="inputCard">
+      <h2>🔍 產品查詢</h2>
+      <p class="hint">輸入產品名稱或詳細描述，AI 將自動分析並推薦最佳 HS Code</p>
+
+      <div class="search-row">
+        <input type="text" id="productName" placeholder="產品名稱 (e.g. 1.7L Stainless Steel Electric Kettle)" onkeydown="if(event.key==='Enter')analyzeHS()">
+        <button id="analyzeBtn" onclick="analyzeHS()">🤖 AI 分析</button>
+      </div>
+
+      <textarea id="productDesc" placeholder="詳細描述 (可選) — e.g. 1.7L Stainless Steel Electric Kettle with auto shut-off, double-wall insulation, boil-dry protection, 2200W, cordless base"></textarea>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span style="color:var(--muted);font-size:0.78rem">💡 快速範例:</span>
+      </div>
+      <div class="chips-row" id="exampleChips">
+        <span class="chip" onclick="quickExample(0)">🛒 5L Air Fryer</span>
+        <span class="chip" onclick="quickExample(1)">🫖 1.7L Electric Kettle</span>
+        <span class="chip" onclick="quickExample(2)">🍞 2-Slice Toaster</span>
+        <span class="chip" onclick="quickExample(3)">☕ 12-Cup Coffee Maker</span>
+        <span class="chip" onclick="quickExample(4)">🥤 1500W Stand Blender</span>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <span>AI 正在分析產品並匹配 HS Code...</span>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="results-panel" id="resultsPanel">
+
+      <!-- Primary Result -->
+      <div class="primary-card" id="primaryCard">
+        <div class="badge-row">
+          <span class="conf-badge" id="confBadge">🎯 92% 匹配</span>
+          <div class="conf-bar"><div class="conf-bar-fill" id="confBarFill" style="width:0%"></div></div>
+          <span style="color:var(--muted);font-size:0.75rem" id="confLabel"></span>
+        </div>
+        <div class="hs-code" id="hsCode">8516.79.0000</div>
+        <div class="hs-desc" id="hsDesc">Electro-thermic appliances — Other</div>
+        <div class="hs-chapter" id="hsChapter">Chapter 85 — Electrical machinery and equipment; sound recorders; television image recorders; parts thereof</div>
+      </div>
+
+      <!-- Detail Grid: Duty + Alt Codes -->
+      <div class="detail-grid">
+        <!-- Duty Rates Table -->
+        <div class="duty-card">
+          <h3>🌍 目標市場關稅率</h3>
+          <div style="overflow-x:auto">
+          <table class="duty-table" id="dutyTable">
+            <!-- filled by JS -->
+          </table>
+          </div>
+        </div>
+
+        <!-- Alternative HS Codes -->
+        <div class="alt-card">
+          <h3>🔄 其他可能的 HS Code</h3>
+          <div id="altCodes">
+            <!-- filled by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Customs Notes + Optimization -->
+      <div class="detail-grid">
+        <!-- Customs & Compliance Notes -->
+        <div class="notes-card">
+          <h3>⚠️ 海關合規要點</h3>
+          <div id="customsNotes">
+            <!-- filled by JS -->
+          </div>
+        </div>
+
+        <!-- Duty Optimization Tip -->
+        <div class="optip-card" id="optipCard">
+          <h3>💡 關稅優化建議</h3>
+          <div class="tip-content" id="tipContent"></div>
+          <div class="tip-savings" id="tipSavings"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Destruct Notice -->
+    <div class="destruct">
+      <div class="dicon">⚠️</div>
+      <div><b>所有查詢記錄及分析結果將在 24 小時內從伺服器永久刪除。</b><br>HS Code 分類及關稅資訊僅供參考。實際進口清關請諮詢持牌報關行或海關經紀。</div>
+    </div>
+
+    <!-- Back Link -->
+    <div class="back-link">
+      <a href="../index.html">← 返回主頁</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// PRODUCT DATABASE — Real HS Codes
+// ═══════════════════════════════════════
+const HS_DATABASE = {
+  // 5L Air Fryer
+  'air fryer': {
+    primary: {
+      code: '8516.60.9000',
+      desc: 'Other ovens; cooking stoves, ranges, grills and roasters',
+      chapter: 'Chapter 85 — Electrical machinery and equipment; parts thereof · Heading 8516: Electric water heaters, space heaters, hair & hand dryers, electric irons, ovens, cookers, toasters, coffee makers, kettles, and other electro-thermic appliances',
+      confidence: 92
+    },
+    alternatives: [
+      { code: '8516.79.0000', desc: 'Other electro-thermic appliances', confidence: 64 },
+      { code: '8516.50.0000', desc: 'Microwave ovens', confidence: 18 },
+      { code: '8419.81.9080', desc: 'Other machinery for making hot drinks / cooking food', confidence: 12 }
+    ],
+    duties: [
+      { country: '🇺🇸 USA', rate: '3.7%', note: '+25% Section 301 (China) — total effective ~28.7%', rateClass: 'high' },
+      { country: '🇪🇺 EU', rate: '2.7%', note: 'TARIC 8516609000 · CE + RoHS required', rateClass: 'low' },
+      { country: '🇬🇧 UK', rate: '2.5%', note: 'UK Global Tariff — post-Brexit, UKCA marking required', rateClass: 'low' },
+      { country: '🇯🇵 Japan', rate: '0%', note: 'EPA/JEFTA zero rate for most kitchen appliances', rateClass: 'free' },
+      { country: '🇦🇺 Australia', rate: '5%', note: 'Customs Tariff Act 1995 · ChAFTA may apply (China)', rateClass: 'medium' },
+      { country: '🇨🇦 Canada', rate: '8%', note: 'MFN rate · CPTPP not applicable for China origin', rateClass: 'high' }
+    ],
+    customs: [
+      { icon: '🏥', title: 'FDA 認證', detail: 'Food-contact appliances require FDA registration (USA). Must comply with 21 CFR for food contact materials.' },
+      { icon: '🇪🇺', title: 'CE / RoHS / REACH', detail: 'Mandatory for EU market entry. RoHS restricts hazardous substances; REACH requires chemical registration.' },
+      { icon: '⚡', title: 'UL / ETL 認證', detail: 'Required for US/Canada retail. UL 1026 covers household electric cooking appliances.' },
+      { icon: '📋', title: 'Anti-Dumping', detail: 'No current AD/CVD on air fryers from China. But monitor DOC case list — cookware category occasionally targeted.' },
+      { icon: '🏷️', title: '原產地標記', detail: 'Must carry "Made in China" label visible on product + packaging (US: 19 CFR §134). EU requires country of origin.' }
+    ],
+    optip: '若以未組裝件 (CKD/SKD) 形式出口，可考慮申報為零件 (parts): <strong>8516.90.7500</strong> (Parts for electro-thermic cooking appliances) — 部分國家零件稅率低於成品，潛在節省 2-5%。但需確保海關接受組裝件歸類為零件。',
+    optipSaving: '💰 潛在節省: 2-5% 關稅成本'
+  },
+
+  // 1.7L Electric Kettle
+  'electric kettle': {
+    primary: {
+      code: '8516.79.0000',
+      desc: 'Other electro-thermic appliances (includes electric kettles)',
+      chapter: 'Chapter 85 · Heading 8516: …other electro-thermic appliances of a kind used for domestic purposes',
+      confidence: 95
+    },
+    alternatives: [
+      { code: '8516.10.8000', desc: 'Electric instantaneous or storage water heaters', confidence: 32 },
+      { code: '8516.80.8000', desc: 'Electric heating resistors', confidence: 8 }
+    ],
+    duties: [
+      { country: '🇺🇸 USA', rate: '3.7%', note: '+25% Section 301 if China origin; some consumer kettles exempt under exclusion list', rateClass: 'high' },
+      { country: '🇪🇺 EU', rate: '2.7%', note: 'TARIC 8516797000 · LFGB food-grade certification recommended', rateClass: 'low' },
+      { country: '🇬🇧 UK', rate: '2.0%', note: 'UK Global Tariff · UKCA replaces CE from 2025', rateClass: 'low' },
+      { country: '🇯🇵 Japan', rate: '0%', note: 'WTO bound rate 0% for most household electro-thermic', rateClass: 'free' },
+      { country: '🇦🇺 Australia', rate: '5%', note: 'RCM (Regulatory Compliance Mark) required for electrical safety', rateClass: 'medium' },
+      { country: '🇨🇦 Canada', rate: '8%', note: 'CSA or cUL certification required; provincial safety standards vary', rateClass: 'high' }
+    ],
+    customs: [
+      { icon: '🍽️', title: 'LFGB / 食品級認證', detail: 'EU/德國要求水壺使用食品級物料 (LFGB/FDA 21 CFR 175.300)。不銹鋼需通過遷移測試。' },
+      { icon: '🇪🇺', title: 'CE + RoHS + WEEE', detail: 'EU 市場必須。WEEE 需登記德國 EAR 或相關國家回收系統。' },
+      { icon: '⚡', title: '插頭標準', detail: '不同市場插頭規格不同 (US: NEMA 1-15P, EU: CEE 7/16, UK: BS 1363, AU: AS/NZS 3112)。電壓 110-240V 需標明。' },
+      { icon: '📋', title: 'Section 301 排除', detail: '美國 USTR 定期更新 Section 301 排除清單。部分家用電熱水壺可能獲得暫時豁免。需定期檢查。' },
+      { icon: '🔥', title: '乾燒保護', detail: '歐洲 EN 60335-2-15 標準要求水壺必須有乾燒自動斷電保護。部分市場要求 thermal fuse 雙重保護。' }
+    ],
+    optip: '若水壺底座 (cordless base) 與壺身分開包裝出貨，可考慮以 <strong>8516.90.8500</strong> (電熱器具零件) 申報底座，以成品申報壺身 — 零件稅率通常比成品低 2-3%。需確保發票上清楚分列兩個項目。',
+    optipSaving: '💰 潛在節省: 2-3% 關稅成本 (底座部分)'
+  },
+
+  // 2-Slice Toaster
+  'toaster': {
+    primary: {
+      code: '8516.72.0000',
+      desc: 'Toasters — electro-thermic domestic appliances',
+      chapter: 'Chapter 85 · Heading 8516: specifically "Toasters" at subheading 8516.72',
+      confidence: 97
+    },
+    alternatives: [
+      { code: '8516.79.0000', desc: 'Other electro-thermic appliances', confidence: 42 },
+      { code: '8516.60.9000', desc: 'Other ovens / grills', confidence: 15 }
+    ],
+    duties: [
+      { country: '🇺🇸 USA', rate: '3.7%', note: '+25% Section 301 (China) · total ~28.7%', rateClass: 'high' },
+      { country: '🇪🇺 EU', rate: '2.7%', note: 'TARIC 8516720000 · straightforward classification', rateClass: 'low' },
+      { country: '🇬🇧 UK', rate: '2.0%', note: 'Most small kitchen appliances at this rate', rateClass: 'low' },
+      { country: '🇯🇵 Japan', rate: '0%', note: 'Zero rate for household toasters under WTO schedule', rateClass: 'free' },
+      { country: '🇦🇺 Australia', rate: '5%', note: 'Standard rate for cooking appliances', rateClass: 'medium' },
+      { country: '🇨🇦 Canada', rate: '8%', note: 'MFN rate · CSA standard C22.2 No. 64 for toasters', rateClass: 'high' }
+    ],
+    customs: [
+      { icon: '🔌', title: '電氣安全認證', detail: 'UL 1026 (US), CSA C22.2 No. 64 (Canada), EN 60335-2-9 (EU)。Toaster 需特別注意防火安全測試。' },
+      { icon: '🇪🇺', title: 'CE + EMC 指令', detail: '歐盟強制要求。EMC (電磁兼容) 測試因為加熱元件產生電磁干擾而特別重要。' },
+      { icon: '📋', title: 'Anti-Dumping 狀態', detail: '目前對中國產 Toaster 無 反傾銷稅。但中低端小家電一直是美國國際貿易委員會重點監控產品。' },
+      { icon: '🏷️', title: '能源標籤', detail: 'EU 能源標籤法規 (EU) 2017/1369 暫不涵蓋 Toaster，但部分零售商 (Amazon, Carrefour) 自願要求能效數據。' },
+      { icon: '🌿', title: '環保要求', detail: '加州 Proposition 65 要求標示可能含有害物質警告。EU RoHS + WEEE 強制回收登記。' }
+    ],
+    optip: 'Toaster 分類非常明確 (8516.72)，關稅優化空間有限。建議在 <strong>原產地證明書 (COO)</strong> 上清楚標明產品用途及技術參數，避免海關以「其他」類目重新分類 (可能導致不同稅率)。如以 OEM 方式出口給大品牌，可要求買方提供 binding ruling。',
+    optipSaving: '📋 最佳做法: 確保文件完整，避免分類爭議導致的延誤/罰款'
+  },
+
+  // 12-Cup Coffee Maker
+  'coffee maker': {
+    primary: {
+      code: '8516.71.0000',
+      desc: 'Coffee or tea makers — electro-thermic domestic appliances',
+      chapter: 'Chapter 85 · Heading 8516: subheading 8516.71 specifically covers coffee and tea makers',
+      confidence: 94
+    },
+    alternatives: [
+      { code: '8516.79.0000', desc: 'Other electro-thermic appliances', confidence: 38 },
+      { code: '8419.81.9080', desc: 'Machinery for making hot drinks (commercial)', confidence: 22 },
+      { code: '8516.10.8000', desc: 'Electric water heaters', confidence: 10 }
+    ],
+    duties: [
+      { country: '🇺🇸 USA', rate: '3.7%', note: '+25% Section 301 · 部分咖啡機在排除清單 · 實際約 ~3.7-28.7%', rateClass: 'high' },
+      { country: '🇪🇺 EU', rate: '2.7%', note: 'TARIC 8516710000 · CE + LFGB 食品級要求', rateClass: 'low' },
+      { country: '🇬🇧 UK', rate: '2.0%', note: 'UK Global Tariff · 與 EU 相近', rateClass: 'low' },
+      { country: '🇯🇵 Japan', rate: '0%', note: 'EPA preference applies · Food Sanitation Act 認證需注意', rateClass: 'free' },
+      { country: '🇦🇺 Australia', rate: '5%', note: 'Australia — 水接觸部件需符合 AS/NZS 4020 飲用水標準', rateClass: 'medium' },
+      { country: '🇨🇦 Canada', rate: '8%', note: 'CSA C22.2 No. 168 for commercial coffee makers; No. 64 for domestic', rateClass: 'high' }
+    ],
+    customs: [
+      { icon: '🏥', title: 'FDA + NSF 認證', detail: '美國市場 — 咖啡機需 FDA 食品接觸材料註冊。NSF/ANSI 4 標準 (商用) 或 NSF 51 (家用材料)。' },
+      { icon: '☕', title: 'LFGB / 德國食品級', detail: '歐洲 — 所有接觸水/咖啡的部件必須通過 LFGB 或 EU 1935/2004 遷移測試。BPA-free 宣告。' },
+      { icon: '🏷️', title: '原產地規則', detail: '若使用進口泵 (如意大利 ULKA 泵)，可能影響原產地判定。注意自由貿易協定下的累計原產地規則。' },
+      { icon: '📦', title: 'Section 301 排除', detail: '某些滴漏式咖啡機 (drip coffee makers) 曾獲 USTR Section 301 關稅排除。需查閱最新 Federal Register 公告。' },
+      { icon: '🔌', title: 'UL/ETL 認證', detail: 'UL 1082 (coffee makers) 為美國專用標準。注意定時器、保溫盤等安全測試要求。' }
+    ],
+    optip: '如出口至美國，確認產品是否在 <strong>USTR Section 301 排除清單</strong>範圍內。部分家用滴漏式咖啡機 (HS 8516.71.0020) 在 2024 年排除清單中。另外，若以<strong>未裝泵</strong>狀態出口 (missing a key functional part)，可嘗試歸類為零件 (8516.90) 降低稅率。',
+    optipSaving: '💰 潛在節省: 25% (若符合 Section 301 排除) 或 2-3% (零件策略)'
+  },
+
+  // 1500W Stand Blender
+  'blender': {
+    primary: {
+      code: '8509.40.0000',
+      desc: 'Food grinders and mixers; fruit or vegetable juice extractors — electromechanical domestic appliances',
+      chapter: 'Chapter 85 · Heading 8509: Electromechanical domestic appliances with self-contained electric motor, other than vacuum cleaners of heading 8508',
+      confidence: 91
+    },
+    alternatives: [
+      { code: '8509.80.0000', desc: 'Other electromechanical domestic appliances', confidence: 48 },
+      { code: '8479.82.0000', desc: 'Mixing / kneading / crushing machines (industrial)', confidence: 16 },
+      { code: '8435.10.0000', desc: 'Machinery for fruit crushing / juice extraction', confidence: 8 }
+    ],
+    duties: [
+      { country: '🇺🇸 USA', rate: '4.2%', note: '+25% Section 301 → total ~29.2% · FDA food contact required', rateClass: 'high' },
+      { country: '🇪🇺 EU', rate: '2.2%', note: 'TARIC 8509400000 · CE + LFGB for jar/blade materials', rateClass: 'low' },
+      { country: '🇬🇧 UK', rate: '2.0%', note: 'UK Global Tariff · same classification post-Brexit', rateClass: 'low' },
+      { country: '🇯🇵 Japan', rate: '0%', note: 'EPA/JEFTA zero rate for food processors & blenders', rateClass: 'free' },
+      { country: '🇦🇺 Australia', rate: '5%', note: 'RCM required · AS/NZS 60335-2-14 safety standard', rateClass: 'medium' },
+      { country: '🇨🇦 Canada', rate: '6.5%', note: 'CSA C22.2 No. 195 for motor-operated food processors', rateClass: 'medium' }
+    ],
+    customs: [
+      { icon: '🏥', title: 'FDA 食品接觸', detail: '攪拌杯及刀片 (Tritan/玻璃/不銹鋼) 必須符合 FDA 21 CFR 食品接觸材料要求。第三方測試報告必須。' },
+      { icon: '⚡', title: '電機安全標準', detail: 'UL 982 (US), EN 60335-2-14 (EU), CSA C22.2 No. 195 (Canada)。1500W 高功率需特別注意過載保護及溫升測試。' },
+      { icon: '🔪', title: '刀片安全', detail: '歐盟 EN 60335 要求 blenders 必須有聯鎖裝置 (interlock)，防止刀片在蓋子打開時運轉。這是海關查驗常見項目。' },
+      { icon: '🇪🇺', title: 'CE + EMC + RoHS', detail: '高功率電機產生較強電磁干擾 — EMC 測試尤為重要 (EN 55014-1)。RoHS 限制電路板及電機中的有害物質。' },
+      { icon: '📋', title: 'Section 301 影響', detail: 'Blenders (8509.40) 在 USTR Section 301 List 3 中，需附加 25% 關稅。尚未有任何大規模排除。考慮從第三國轉運不可行 — 需實質轉型。' }
+    ],
+    optip: '若攪拌機附帶<strong>多個可替換容器</strong> (如研磨杯、果汁杯)，可將額外配件分開申報為零件 <strong>8509.90.0000</strong> (Parts of electromechanical domestic appliances)，零件稅率通常較成品低。另一策略: 如馬達功率降至 <strong>1000W 以下</strong>，關稅分類不變，但部分零售商對 "家用" vs "商用" 定義不同可能影響認證要求。',
+    optipSaving: '💰 潛在節省: 3-5% (配件以零件申報)'
+  }
+};
+
+// ═══════════════════════════════════════
+// QUICK EXAMPLES
+// ═══════════════════════════════════════
+const QUICK_EXAMPLES = [
+  { name: '5L Air Fryer AF-500', desc: '5L Digital Air Fryer with LED touch screen, 1800W, 80-200°C temperature control, non-stick basket, auto shut-off, CE/FDA certified' },
+  { name: '1.7L Stainless Steel Electric Kettle', desc: '1.7L 2200W Stainless Steel Electric Kettle with auto shut-off, boil-dry protection, double-wall insulation, cordless base with 360° swivel, Strix controller' },
+  { name: '2-Slice Toaster PT-200', desc: '2-Slice Stainless Steel Toaster with digital display, 6 browning levels, bagel/defrost/reheat functions, extra-wide slots, removable crumb tray' },
+  { name: '12-Cup Drip Coffee Maker', desc: '12-Cup (1.8L) Programmable Drip Coffee Maker with LCD timer, keep-warm plate, pause-and-serve, reusable filter, glass carafe, 900W heating element' },
+  { name: '1500W Professional Stand Blender', desc: '1500W Stand Blender with 2L BPA-free Tritan jar, 6 stainless steel blades, 8 speeds + pulse, ice crush function, overload protection, non-slip base' }
+];
+
+// ═══════════════════════════════════════
+// GATE LOGIC
+// ═══════════════════════════════════════
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) {
+    err.textContent = '請輸入有效電郵地址';
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('hsnav_gate_passed', 'true');
+  localStorage.setItem('hsnav_email', email);
+  toast('✅ HS Navigator 已就緒 — 輸入產品名稱開始查詢');
+}
+
+// ── Countdown Timer ──
+function startCountdown() {
+  let remaining = 24 * 60 * 60;
+  const el = document.getElementById('countdown');
+  setInterval(() => {
+    remaining--;
+    if (remaining <= 0) { el.textContent = '已過期'; return; }
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    const s = remaining % 60;
+    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+// ── Toast ──
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════
+// PRODUCT MATCHING
+// ═══════════════════════════════════════
+function matchProduct(query) {
+  const q = query.toLowerCase();
+  if (q.includes('air fryer') || q.includes('airfryer')) return HS_DATABASE['air fryer'];
+  if (q.includes('kettle') || q.includes('水壺') || q.includes('水煲')) return HS_DATABASE['electric kettle'];
+  if (q.includes('toaster') || q.includes('多士爐') || q.includes('烤麵包')) return HS_DATABASE['toaster'];
+  if (q.includes('coffee maker') || q.includes('coffee machine') || q.includes('咖啡機') || q.includes('drip coffee')) return HS_DATABASE['coffee maker'];
+  if (q.includes('blender') || q.includes('攪拌機') || q.includes('果汁機') || q.includes('food processor')) return HS_DATABASE['blender'];
+  return null;
+}
+
+// ═══════════════════════════════════════
+// QUICK EXAMPLE
+// ═══════════════════════════════════════
+function quickExample(idx) {
+  const ex = QUICK_EXAMPLES[idx];
+  document.getElementById('productName').value = ex.name;
+  document.getElementById('productDesc').value = ex.desc;
+
+  // Highlight active chip
+  document.querySelectorAll('.chip').forEach((c, i) => c.style.borderColor = i === idx ? 'var(--accent)' : 'rgba(6,182,212,0.25)');
+
+  // Auto-analyze
+  analyzeHS();
+}
+
+// ═══════════════════════════════════════
+// ANALYZE HS CODE
+// ═══════════════════════════════════════
+function analyzeHS() {
+  const nameInput = document.getElementById('productName');
+  const name = nameInput.value.trim();
+  if (!name) {
+    toast('⚠️ 請輸入產品名稱');
+    nameInput.focus();
+    return;
+  }
+
+  const desc = document.getElementById('productDesc').value.trim();
+  const query = name + ' ' + desc;
+
+  // Show loading
+  const loading = document.getElementById('loadingOverlay');
+  const results = document.getElementById('resultsPanel');
+  const btn = document.getElementById('analyzeBtn');
+
+  loading.classList.add('show');
+  results.classList.remove('show');
+  btn.disabled = true;
+
+  // Simulate AI processing time
+  const delay = 1200 + Math.random() * 800;
+
+  setTimeout(() => {
+    const data = matchProduct(query);
+
+    if (data) {
+      renderResults(data, name);
+    } else {
+      // Generic fallback for unrecognized products
+      renderGenericResults(name, desc);
+    }
+
+    loading.classList.remove('show');
+    results.classList.add('show');
+    btn.disabled = false;
+
+    // Scroll to results
+    results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, delay);
+}
+
+// ═══════════════════════════════════════
+// RENDER RESULTS
+// ═══════════════════════════════════════
+function renderResults(data, productName) {
+  const p = data.primary;
+
+  // Primary card
+  document.getElementById('hsCode').textContent = p.code;
+  document.getElementById('hsDesc').textContent = p.desc;
+  document.getElementById('hsChapter').textContent = p.chapter;
+  document.getElementById('confBadge').textContent = `🎯 ${p.confidence}% 匹配`;
+  document.getElementById('confLabel').textContent = `${p.confidence}% confidence`;
+
+  // Animate confidence bar
+  setTimeout(() => {
+    document.getElementById('confBarFill').style.width = p.confidence + '%';
+  }, 200);
+
+  // Duty table
+  const dutyTable = document.getElementById('dutyTable');
+  dutyTable.innerHTML = `
+    <thead>
+      <tr><th></th><th>國家/地區</th><th>關稅率</th><th>備註</th></tr>
+    </thead>
+    <tbody>
+      ${data.duties.map(d => `
+        <tr>
+          <td class="flag">${d.country.split(' ')[0]}</td>
+          <td>${d.country.slice(d.country.indexOf(' ')+1)}</td>
+          <td class="rate ${d.rateClass}">${d.rate}</td>
+          <td class="note">${d.note}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  `;
+
+  // Alternative codes
+  const altDiv = document.getElementById('altCodes');
+  altDiv.innerHTML = data.alternatives.map((a, i) => `
+    <div class="alt-item">
+      <div>
+        <div class="alt-code">${a.code}</div>
+        <div class="alt-desc">${a.desc}</div>
+      </div>
+      <span class="alt-conf ${a.confidence > 30 ? 'medium-conf' : 'low-conf'}">${a.confidence}%</span>
+    </div>
+  `).join('');
+
+  // Customs notes
+  const notesDiv = document.getElementById('customsNotes');
+  notesDiv.innerHTML = data.customs.map(n => `
+    <div class="note-item">
+      <span class="note-icon">${n.icon}</span>
+      <div class="note-text">
+        <strong>${n.title}</strong>
+        <span>${n.detail}</span>
+      </div>
+    </div>
+  `).join('');
+
+  // Optimization tip
+  document.getElementById('tipContent').innerHTML = data.optip;
+  document.getElementById('tipSavings').textContent = data.optipSaving;
+
+  // Flash the primary card
+  const primaryCard = document.getElementById('primaryCard');
+  primaryCard.style.transition = 'none';
+  primaryCard.style.boxShadow = '0 0 40px rgba(6,182,212,0.4)';
+  setTimeout(() => {
+    primaryCard.style.transition = 'box-shadow 1s ease';
+    primaryCard.style.boxShadow = 'none';
+  }, 100);
+
+  toast(`🤖 AI 已分析完成 — 推薦 HS Code: ${p.code}`);
+}
+
+// ═══════════════════════════════════════
+// GENERIC FALLBACK
+// ═══════════════════════════════════════
+function renderGenericResults(name, desc) {
+  // For unrecognized products, provide a generic response based on keywords
+  let fallbackData;
+
+  if (desc.toLowerCase().includes('heat') || desc.toLowerCase().includes('cook') || desc.toLowerCase().includes('warm')) {
+    fallbackData = { ...HS_DATABASE['air fryer'] };
+    fallbackData.primary = {
+      ...fallbackData.primary,
+      code: '8516.79.0000',
+      desc: 'Other electro-thermic appliances (AI estimated)',
+      chapter: 'Chapter 85 · Heading 8516: Electro-thermic appliances — exact subheading requires further analysis',
+      confidence: 72
+    };
+    fallbackData.primary.confidence = 72;
+    fallbackData.optip = `對於產品「<strong>${name}</strong>」，AI 無法 100% 確定精確分類。建議:<br><br>
+      1. 提供更詳細的產品規格 (功率、容量、功能、材質)<br>
+      2. 確認是否有<strong>加熱功能</strong> — 這決定歸入 Chapter 85 (8516) 或 Chapter 84<br>
+      3. 上傳產品圖片進行視覺 AI 輔助分類<br>
+      4. 諮詢持牌報關行獲取 Binding Ruling`;
+    fallbackData.optipSaving = '⚠️ 建議: 完善產品資訊以獲得精確匹配';
+  } else if (desc.toLowerCase().includes('motor') || desc.toLowerCase().includes('mix') || desc.toLowerCase().includes('grind')) {
+    fallbackData = { ...HS_DATABASE['blender'] };
+    fallbackData.primary = {
+      ...fallbackData.primary,
+      code: '8509.80.0000',
+      desc: 'Other electromechanical domestic appliances (AI estimated)',
+      chapter: 'Chapter 85 · Heading 8509: self-contained electric motor appliances',
+      confidence: 68
+    };
+    fallbackData.primary.confidence = 68;
+    fallbackData.optip = `產品「<strong>${name}</strong>」帶有電機 — AI 初步判斷歸入 8509 系列。<br><br>
+      ⚠️ 精確分類取決於:<br>
+      • 產品主要功能 (研磨? 攪拌? 榨汁?)<br>
+      • 是否家用 or 商用/工業用<br>
+      • 是否附帶加熱功能 (若帶加熱可能歸入 8516)`;
+    fallbackData.optipSaving = '⚠️ 建議: 提供更多功能描述以獲得精確匹配';
+  } else {
+    // Fully generic
+    fallbackData = {
+      primary: {
+        code: '— 需更多資訊 —',
+        desc: 'AI 無法從目前描述確定 HS Code。請提供更多產品細節。',
+        chapter: 'HS 分類取決於產品材質、功能、用途。建議提供功率、材質、功能、用途等詳細描述。',
+        confidence: 45
+      },
+      alternatives: [
+        { code: '可能需要提供更多細節', desc: '請嘗試使用上方範例產品或提供更詳細的英文產品描述', confidence: 0 }
+      ],
+      duties: [
+        { country: '🇺🇸 USA', rate: '?', note: 'Rate depends on HS classification', rateClass: 'medium' },
+        { country: '🇪🇺 EU', rate: '?', note: 'Rate depends on HS classification', rateClass: 'medium' },
+        { country: '🇬🇧 UK', rate: '?', note: 'Rate depends on HS classification', rateClass: 'medium' },
+        { country: '🇯🇵 Japan', rate: '?', note: 'Rate depends on HS classification', rateClass: 'medium' },
+        { country: '🇦🇺 Australia', rate: '?', note: 'Rate depends on HS classification', rateClass: 'medium' },
+        { country: '🇨🇦 Canada', rate: '?', note: 'Rate depends on HS classification', rateClass: 'medium' }
+      ],
+      customs: [
+        { icon: 'ℹ️', title: '提示', detail: '目前無法提供具體合規要點 — 需要先確認正確的 HS Code 分類。' }
+      ],
+      optip: `對於「<strong>${name}</strong>」，建議:<br><br>
+        • 提供產品的 <strong>HS 描述語言</strong> (英文技術規格)<br>
+        • 說明產品<strong>主要功能</strong> (加熱? 電機驅動? 手動?)<br>
+        • 描述<strong>材質構成</strong> (主要材質及各部件材質)<br>
+        • 指明<strong>用途</strong> (家用/商用/工業用)<br><br>
+        或嘗試使用上方快速範例產品進行測試。`,
+      optipSaving: '💡 建議: 使用更具體的產品描述'
+    };
+  }
+
+  renderResults(fallbackData, name);
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+if (localStorage.getItem('hsnav_gate_passed')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+</script>
+</body>
+</html>

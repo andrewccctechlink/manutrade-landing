@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Message Pool — Smart Quote Aggregation | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* Gate Overlay */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{color:var(--warn);font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* Validation */
+.valid-box{display:none;align-items:center;gap:8px;margin-bottom:12px;padding:10px 14px;background:rgba(6,182,212,0.08);border-radius:8px;font-size:0.85rem}
+.valid-box.show{display:flex}
+.valid-box input{width:auto;flex:1;margin:0;text-align:center;letter-spacing:4px;font-size:1.1rem}
+.valid-box .send-btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;white-space:nowrap}
+
+/* Main App */
+.app{display:none}
+.app.active{display:block}
+/* Top Bar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+
+/* Content */
+.content{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+/* Section Header */
+.section-header{margin-bottom:28px}
+.section-header h1{font-size:1.7rem;margin-bottom:6px}
+.section-header .subtitle{color:var(--muted);font-size:0.95rem}
+
+/* Forward Instruction */
+.forward-box{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:28px;margin-bottom:24px;text-align:center}
+.forward-box .fw-icon{font-size:2.5rem;margin-bottom:12px}
+.forward-box h3{font-size:1.15rem;margin-bottom:8px}
+.forward-box .fw-email{display:inline-block;background:#0d1117;border:1px solid var(--accent);border-radius:10px;padding:12px 28px;font-size:1.15rem;color:var(--accent);font-family:monospace;margin:10px 0;user-select:all;cursor:pointer}
+.forward-box .fw-email:hover{background:rgba(6,182,212,0.08)}
+.forward-box .fw-desc{color:var(--muted);font-size:0.85rem;margin-top:8px}
+
+/* Inbox */
+.inbox-section{margin-bottom:32px}
+.inbox-section h2{font-size:1.3rem;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.inbox-section h2 .badge{font-size:0.75rem;background:var(--accent);color:#fff;padding:3px 10px;border-radius:20px;font-weight:600}
+.email-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px;transition:all .2s}
+.email-card:hover{border-color:var(--accent)}
+.email-card .email-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.email-card .email-from{font-weight:700;font-size:0.9rem}
+.email-card .email-date{color:var(--muted);font-size:0.75rem}
+.email-card .email-subject{font-size:0.85rem;color:var(--muted);margin-bottom:14px}
+.email-card .email-body{font-size:0.82rem;color:var(--muted);margin-bottom:16px;padding:14px;background:#0d1117;border-radius:8px;line-height:1.7;font-family:monospace}
+.email-card .extracted{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:10px;padding:16px}
+.email-card .extracted h4{font-size:0.8rem;color:var(--accent2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.extract-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.extract-item{background:#0d1117;border-radius:8px;padding:10px 14px}
+.extract-item .ei-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+.extract-item .ei-value{font-size:0.9rem;font-weight:600;color:var(--text);margin-top:2px}
+
+/* Search */
+.search-section{margin-bottom:32px}
+.search-section h2{font-size:1.3rem;margin-bottom:16px}
+.search-bar{display:flex;gap:10px;margin-bottom:24px}
+.search-bar input{flex:1;padding:14px 18px;background:#0d1117;border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:0.95rem}
+.search-bar input:focus{outline:none;border-color:var(--accent)}
+.search-bar .search-hint{color:var(--muted);font-size:0.75rem;margin-bottom:4px}
+.search-bar button{background:var(--gradient);color:#fff;border:none;padding:14px 28px;border-radius:12px;font-weight:600;cursor:pointer;font-size:0.95rem;white-space:nowrap;transition:all .2s}
+.search-bar button:hover{opacity:0.9;transform:translateY(-1px)}
+
+/* Results Table */
+.results-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:24px;display:none}
+.results-card.show{display:block}
+.results-card table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.results-card thead th{text-align:left;padding:12px 16px;border-bottom:1px solid var(--border);color:var(--muted);font-weight:600;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;background:rgba(0,0,0,0.2)}
+.results-card tbody td{padding:12px 16px;border-bottom:1px solid rgba(30,45,69,0.6)}
+.results-card tbody tr:hover{background:rgba(6,182,212,0.03)}
+.results-card .checkbox{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.results-card .vendor-badge{display:inline-block;background:rgba(6,182,212,0.12);color:var(--accent);padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:600}
+.results-card .price{font-weight:700;color:var(--accent2)}
+.results-footer{padding:16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.results-footer .selected-count{font-size:0.85rem;color:var(--muted)}
+.results-footer .selected-count b{color:var(--accent)}
+
+/* Upload Zone */
+.upload-section{margin-bottom:32px}
+.upload-section h2{font-size:1.3rem;margin-bottom:16px}
+.upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.drop-zone{border:2px dashed var(--border);border-radius:14px;padding:36px 24px;text-align:center;cursor:pointer;transition:all .3s;background:var(--card)}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.drop-zone .dz-icon{font-size:2.2rem;margin-bottom:10px}
+.drop-zone h3{font-size:1rem;margin-bottom:4px}
+.drop-zone p{color:var(--muted);font-size:0.8rem}
+.drop-zone input[type=file]{display:none}
+.drop-zone .file-loaded{display:none;color:var(--accent2);font-weight:600;font-size:0.85rem;margin-top:8px}
+.drop-zone.loaded .file-loaded{display:block}
+.drop-zone.loaded .dz-hint{display:none}
+
+/* Destruct notice */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* Back link */
+.back-link{text-align:center;margin-top:24px;padding-bottom:32px}
+.back-link a{color:var(--muted);text-decoration:none;font-size:0.85rem;transition:color .2s}
+.back-link a:hover{color:var(--accent)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;animation:fadeIn .3s}
+.toast.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Responsive */
+@media(max-width:768px){
+  .upload-grid{grid-template-columns:1fr}
+  .gate-box{padding:28px 20px}
+  .search-bar{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== GATE OVERLAY ====== -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">💬</div>
+    <h2>Message Pool 報價池</h2>
+    <p>Procurement Intelligence Hub</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+
+    <div class="note">
+      ⚠️ <span>所有上傳資料將在 24 小時內自動銷毀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MAIN APP ====== -->
+<div class="app" id="mainApp">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="logo">📨 Message Pool — Quote Aggregation</div>
+    <div class="timer">⏳ 資料保留: <span id="countdown">23:59:59</span></div>
+  </div>
+
+  <div class="content">
+    <!-- Section Header -->
+    <div class="section-header">
+      <h1>📬 將所有報價集中一處，智能搜尋比價</h1>
+      <p class="subtitle">Forward 供應商報價電郵 → AI 自動抽出產品、價格、廠商 → 一鍵生成 Quotation</p>
+    </div>
+
+    <!-- Forward Instruction Box -->
+    <div class="forward-box">
+      <div class="fw-icon">📤</div>
+      <h3>Forward 任何報價電郵到以下地址</h3>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:12px">AI 會自動解析電郵內容，抽出產品名稱、數量、單價、廠商資料</p>
+      <div class="fw-email" onclick="copyEmail()" title="點擊複製">📋 pool@quattro.ai</div>
+      <p class="fw-desc" id="copyMsg">支援 Gmail / Outlook Forward · PDF 附件 · WhatsApp / WeChat 截圖</p>
+    </div>
+
+    <!-- Mock Inbox -->
+    <div class="inbox-section">
+      <h2>📥 近期 Forward 記錄 <span class="badge">3 封新報價</span></h2>
+
+      <!-- Email 1 -->
+      <div class="email-card">
+        <div class="email-meta">
+          <div class="email-from">👤 王經理 &lt;wang@shenzhen-factory.cn&gt;</div>
+          <div class="email-date">📅 Forwarded 10 分鐘前</div>
+        </div>
+        <div class="email-subject">📧 Re: Quotation Request — 5L Air Fryer AF-500</div>
+        <div class="email-body">
+From: wang@shenzhen-factory.cn<br>
+Subject: Quotation for 5L Air Fryer AF-500<br><br>
+Dear Sir,<br><br>
+Thank you for your inquiry. Please find our best quotation below:<br><br>
+5L Air Fryer Model AF-500: USD 18.50/pc FOB Shenzhen<br>
+MOQ: 2000 pcs<br>
+Delivery: 30 days<br>
+Payment: T/T 30% deposit, 70% before shipment<br><br>
+Best regards,<br>
+Wang — Shenzhen Topman Electronics
+        </div>
+        <div class="extracted">
+          <h4>🤖 AI 自動抽出</h4>
+          <div class="extract-grid">
+            <div class="extract-item"><div class="ei-label">Product</div><div class="ei-value">5L Air Fryer AF-500</div></div>
+            <div class="extract-item"><div class="ei-label">Unit Price</div><div class="ei-value">USD 18.50</div></div>
+            <div class="extract-item"><div class="ei-label">MOQ</div><div class="ei-value">2000 pcs</div></div>
+            <div class="extract-item"><div class="ei-label">Vendor</div><div class="ei-value">Shenzhen Topman Electronics</div></div>
+            <div class="extract-item"><div class="ei-label">Lead Time</div><div class="ei-value">30 days</div></div>
+            <div class="extract-item"><div class="ei-label">Source</div><div class="ei-value">Email Forward</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email 2 -->
+      <div class="email-card">
+        <div class="email-meta">
+          <div class="email-from">👤 李小姐 &lt;li@ningbo-factory.com&gt;</div>
+          <div class="email-date">📅 Forwarded 1 小時前</div>
+        </div>
+        <div class="email-subject">📧 Fw: Quotation — 1.7L Electric Kettle EK-100</div>
+        <div class="email-body">
+From: li@ningbo-factory.com<br>
+Subject: Re: RFQ #2024-0618<br><br>
+Hello,<br><br>
+Quotation as follows:<br><br>
+Item: 1.7L Electric Kettle EK-100 (Stainless Steel)<br>
+Price: USD 8.90/pc FOB Ningbo<br>
+MOQ: 1500 pcs<br>
+Lead Time: 25-30 days<br>
+Payment: 100% T/T before shipment<br><br>
+Regards,<br>
+Li Mei — Ningbo Haiwei Electrical
+        </div>
+        <div class="extracted">
+          <h4>🤖 AI 自動抽出</h4>
+          <div class="extract-grid">
+            <div class="extract-item"><div class="ei-label">Product</div><div class="ei-value">1.7L Kettle EK-100</div></div>
+            <div class="extract-item"><div class="ei-label">Unit Price</div><div class="ei-value">USD 8.90</div></div>
+            <div class="extract-item"><div class="ei-label">MOQ</div><div class="ei-value">1500 pcs</div></div>
+            <div class="extract-item"><div class="ei-label">Vendor</div><div class="ei-value">Ningbo Haiwei Electrical</div></div>
+            <div class="extract-item"><div class="ei-label">Lead Time</div><div class="ei-value">25-30 days</div></div>
+            <div class="extract-item"><div class="ei-label">Source</div><div class="ei-value">Email Forward</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email 3 -->
+      <div class="email-card">
+        <div class="email-meta">
+          <div class="email-from">👤 Chen &lt;chen@dongguan-plastic.cn&gt;</div>
+          <div class="email-date">📅 Forwarded 2 小時前</div>
+        </div>
+        <div class="email-subject">📧 Fw: Quotation for 2-Slice Toaster PT-200</div>
+        <div class="email-body">
+From: chen@dongguan-plastic.cn<br>
+Subject: Quotation — 2-Slice Toaster PT-200<br><br>
+Hi,<br><br>
+Please check our offer:<br><br>
+2-Slice Toaster PT-200: USD 12.80/pc EXW Dongguan<br>
+MOQ: 1000 pcs<br>
+Delivery: 20 days<br>
+Terms: 30% deposit, balance against B/L<br><br>
+Thank you,<br>
+Chen — Dongguan Jiahe Plastic &amp; Metal
+        </div>
+        <div class="extracted">
+          <h4>🤖 AI 自動抽出</h4>
+          <div class="extract-grid">
+            <div class="extract-item"><div class="ei-label">Product</div><div class="ei-value">2-Slice Toaster PT-200</div></div>
+            <div class="extract-item"><div class="ei-label">Unit Price</div><div class="ei-value">USD 12.80</div></div>
+            <div class="extract-item"><div class="ei-label">MOQ</div><div class="ei-value">1000 pcs</div></div>
+            <div class="extract-item"><div class="ei-label">Vendor</div><div class="ei-value">Dongguan Jiahe Plastic &amp; Metal</div></div>
+            <div class="extract-item"><div class="ei-label">Lead Time</div><div class="ei-value">20 days</div></div>
+            <div class="extract-item"><div class="ei-label">Source</div><div class="ei-value">Email Forward</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart Search -->
+    <div class="search-section">
+      <h2>🔍 智能搜尋報價</h2>
+      <div class="search-bar">
+        <div style="flex:1">
+          <div class="search-hint">搜尋你嘅產品報價池，AI 自動匹配供應商</div>
+          <input type="text" id="searchInput" placeholder="e.g. air fryer under USD20" onkeydown="if(event.key==='Enter')searchQuotes()">
+        </div>
+        <button onclick="searchQuotes()">🔍 搜尋報價</button>
+      </div>
+
+      <!-- Results Table -->
+      <div class="results-card" id="resultsCard">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px"></th>
+              <th>Product</th>
+              <th>Vendor</th>
+              <th>Unit Price</th>
+              <th>MOQ</th>
+              <th>Lead Time</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+        <div class="results-footer">
+          <div class="selected-count">已選 <b id="selCount">0</b> 項產品</div>
+          <button class="btn btn-primary" style="width:auto;padding:12px 28px" onclick="createQuotation()" id="btnCreateQ" disabled>📄 Create Quotation</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screenshot Upload -->
+    <div class="upload-section">
+      <h2>📸 WhatsApp / WeChat 報價截圖</h2>
+      <div class="upload-grid">
+        <div class="drop-zone" id="dzWA" onclick="document.getElementById('waInput').click()">
+          <div class="dz-icon">💬</div>
+          <div class="dz-hint">
+            <h3>WhatsApp 報價截圖</h3>
+            <p>上載 WhatsApp 對話截圖</p>
+          </div>
+          <div class="file-loaded" id="waLoaded">✅ 已上載 WhatsApp 截圖</div>
+          <input type="file" id="waInput" accept=".jpg,.jpeg,.png" onchange="handleScreenshot(this.files,'wa')">
+        </div>
+        <div class="drop-zone" id="dzWC" onclick="document.getElementById('wcInput').click()">
+          <div class="dz-icon">💚</div>
+          <div class="dz-hint">
+            <h3>WeChat 報價截圖</h3>
+            <p>上載微信對話截圖</p>
+          </div>
+          <div class="file-loaded" id="wcLoaded">✅ 已上載 WeChat 截圖</div>
+          <input type="file" id="wcInput" accept=".jpg,.jpeg,.png" onchange="handleScreenshot(this.files,'wc')">
+        </div>
+      </div>
+    </div>
+
+    <!-- Destruct Notice -->
+    <div class="destruct">
+      <div class="dicon">⚠️</div>
+      <div><b>所有上傳電郵、截圖及提取資料將在 24 小時內從伺服器永久刪除。</b><br>請在生成 Quotation 後自行下載保存。如需再次使用，請重新上傳。</div>
+    </div>
+
+    <!-- Back Link -->
+    <div class="back-link">
+      <a href="../index.html">← 返回主頁</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Gate Logic ──
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) { err.textContent = '請輸入有效電郵'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('mp_gate_passed', 'true');
+  localStorage.setItem('mp_email', email);
+  toast('✅ 歡迎使用 ' + (name === 'message-pool' ? 'Message Pool' : 'Container Optimizer'));
+}
+
+// ── Toast ──
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+// ── Copy Email ──
+function copyEmail() {
+  navigator.clipboard.writeText('pool@quattro.ai').then(() => {
+    document.getElementById('copyMsg').textContent = '✅ 已複製！Forward 報價電郵到 pool@quattro.ai';
+    toast('📋 已複製 pool@quattro.ai');
+    setTimeout(() => {
+      document.getElementById('copyMsg').textContent = '支援 Gmail / Outlook Forward · PDF 附件 · WhatsApp / WeChat 截圖';
+    }, 3000);
+  }).catch(() => {
+    toast('📋 請手動複製: pool@quattro.ai');
+  });
+}
+
+// ── Search Logic ──
+const quotePool = [
+  { product:'5L Air Fryer AF-500', vendor:'Shenzhen Topman Electronics', price:18.50, moq:'2000 pcs', lead:'30 days', source:'Email Forward' },
+  { product:'1.7L Electric Kettle EK-100', vendor:'Ningbo Haiwei Electrical', price:8.90, moq:'1500 pcs', lead:'25-30 days', source:'Email Forward' },
+  { product:'2-Slice Toaster PT-200', vendor:'Dongguan Jiahe Plastic & Metal', price:12.80, moq:'1000 pcs', lead:'20 days', source:'Email Forward' },
+];
+
+function searchQuotes() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const results = q ? quotePool.filter(item =>
+    item.product.toLowerCase().includes(q) || item.vendor.toLowerCase().includes(q)
+  ) : quotePool;
+
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = results.map((r,i) => `
+    <tr>
+      <td><input type="checkbox" class="checkbox" data-idx="${i}" data-product="${r.product}" data-vendor="${r.vendor}" data-price="${r.price}" onchange="updateSelected()"></td>
+      <td><strong>${r.product}</strong></td>
+      <td><span class="vendor-badge">${r.vendor}</span></td>
+      <td class="price">$${r.price.toFixed(2)}</td>
+      <td>${r.moq}</td>
+      <td>${r.lead}</td>
+      <td>${r.source}</td>
+    </tr>
+  `).join('');
+
+  const card = document.getElementById('resultsCard');
+  card.classList.add('show');
+  document.getElementById('selCount').textContent = '0';
+  document.getElementById('btnCreateQ').disabled = true;
+
+  if (results.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="padding:32px;text-align:center;color:var(--muted)">😕 未有匹配嘅報價。試下 forward 更多報價電郵到 pool@quattro.ai</td></tr>`;
+  }
+}
+
+function updateSelected() {
+  const checked = document.querySelectorAll('#resultsBody .checkbox:checked');
+  document.getElementById('selCount').textContent = checked.length;
+  document.getElementById('btnCreateQ').disabled = checked.length === 0;
+}
+
+function createQuotation() {
+  const checked = document.querySelectorAll('#resultsBody .checkbox:checked');
+  if (checked.length === 0) return;
+
+  let items = [];
+  let total = 0;
+  checked.forEach(cb => {
+    const product = cb.dataset.product;
+    const vendor = cb.dataset.vendor;
+    const price = parseFloat(cb.dataset.price);
+    items.push({ product, vendor, price });
+    total += price;
+  });
+
+  const avgPrice = total / items.length;
+  let quote = `═══════════════════════════════════════\n`;
+  quote += `  QUATTRO DYNAMICS — QUOTATION\n`;
+  quote += `═══════════════════════════════════════\n\n`;
+  quote += `  Date: ${new Date().toISOString().slice(0,10)}\n`;
+  quote += `  Ref: Q-${Date.now().toString(36).toUpperCase()}\n\n`;
+  quote += `  Compiled from Message Pool (${items.length} items)\n\n`;
+  quote += `───────────────────────────────────────\n`;
+  quote += `  PRODUCT                      VENDOR                    UNIT PRICE\n`;
+  quote += `───────────────────────────────────────\n`;
+  items.forEach(it => {
+    quote += `  ${it.product.padEnd(28)} ${it.vendor.padEnd(24)} $${it.price.toFixed(2)}\n`;
+  });
+  quote += `───────────────────────────────────────\n`;
+  quote += `  Avg Unit Price: USD ${avgPrice.toFixed(2)}\n`;
+  quote += `  Total Items: ${items.length}\n\n`;
+  quote += `  Note: Prices are FOB/EXW as quoted by suppliers.\n`;
+  quote += `  Shipping and other charges not included.\n\n`;
+  quote += `  ═══════════════════════════════════════\n`;
+
+  // Show as alert for demo
+  alert(quote);
+  toast('✅ Quotation 已生成！');
+}
+
+// ── Screenshot Upload ──
+function handleScreenshot(files, type) {
+  if (!files.length) return;
+  const f = files[0];
+  const dz = document.getElementById(type === 'wa' ? 'dzWA' : 'dzWC');
+  const loaded = document.getElementById(type === 'wa' ? 'waLoaded' : 'wcLoaded');
+  dz.classList.add('loaded');
+  loaded.textContent = `✅ ${f.name}`;
+  toast(`📸 ${type === 'wa' ? 'WhatsApp' : 'WeChat'} 截圖已上載，AI 正在解析...`);
+
+  // Simulate AI parsing
+  setTimeout(() => {
+    toast(`🤖 AI 已從 ${type === 'wa' ? 'WhatsApp' : 'WeChat'} 截圖抽出報價資料，已加入報價池`);
+  }, 2500);
+}
+
+// ── Drag & Drop Setup ──
+['dzWA','dzWC'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+  el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('dragover');
+    const type = id === 'dzWA' ? 'wa' : 'wc';
+    handleScreenshot(e.dataTransfer.files, type);
+  });
+});
+
+// ── Init ──
+if (localStorage.getItem('msgpool_gate_passed')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+</script>
+</body>
+</html>

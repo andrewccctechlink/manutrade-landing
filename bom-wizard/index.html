@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOM Wizard — AI 物料清單管理 | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b; --green: #10b981;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* Gate Overlay */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{color:var(--warn);font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-sm{padding:10px 22px;font-size:0.85rem;border-radius:8px}
+.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent;cursor:pointer;transition:all .2s}
+.btn-outline:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.btn-accent{background:var(--accent);color:#fff}
+.btn-accent:hover{opacity:0.85}
+.btn-warn{background:var(--warn);color:#0b0f19}
+.btn-warn:hover{opacity:0.85}
+
+/* Main App */
+.app{display:none}
+.app.active{display:block}
+
+/* Top Bar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+
+/* Content */
+.content{max-width:1300px;margin:0 auto;padding:28px 24px}
+
+/* Section Header */
+.section-header{margin-bottom:24px}
+.section-header h1{font-size:1.7rem;margin-bottom:6px}
+.section-header .subtitle{color:var(--muted);font-size:0.95rem}
+
+/* Product Tabs */
+.product-bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+.product-chip{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:12px 20px;font-size:0.9rem;color:var(--muted);cursor:pointer;transition:all .2s;user-select:none}
+.product-chip:hover{border-color:var(--accent);color:var(--text)}
+.product-chip.active{border-color:var(--accent);background:rgba(6,182,212,0.08);color:var(--accent);font-weight:600}
+.product-chip .chip-icon{font-size:1.2rem}
+
+/* Summary Cards */
+.summary-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.summary-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center}
+.summary-card .sum-label{color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.summary-card .sum-value{font-size:1.6rem;font-weight:800}
+.summary-card.total{border-color:var(--accent);background:rgba(6,182,212,0.04)}
+.summary-card.total .sum-value{color:var(--accent)}
+.summary-card .sum-breakdown{font-size:0.75rem;color:var(--muted);margin-top:4px}
+
+/* BOM Table */
+.table-wrapper{border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:20px}
+.bom-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.bom-table thead{background:rgba(6,182,212,0.06)}
+.bom-table th{text-align:left;padding:12px 14px;font-size:0.73rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;border-bottom:2px solid var(--border);white-space:nowrap}
+.bom-table th.sortable{cursor:pointer;user-select:none}
+.bom-table th.sortable:hover{color:var(--accent)}
+.bom-table td{padding:11px 14px;border-bottom:1px solid rgba(30,45,69,0.5)}
+.bom-table tbody tr{transition:background .15s}
+.bom-table tbody tr:hover{background:rgba(6,182,212,0.03)}
+.bom-table tbody tr:last-child td{border-bottom:none}
+.bom-table .comp-name{font-weight:600;color:var(--text)}
+.bom-table .part-no{font-family:monospace;font-size:0.8rem;color:var(--accent)}
+.bom-table .cost{font-family:monospace;font-weight:600}
+.bom-table .supplier{color:var(--muted);font-size:0.8rem}
+
+/* Status Badge */
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap}
+.status-badge.stable{background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.25)}
+.status-badge.recent-change{background:rgba(245,158,11,0.12);color:var(--warn);border:1px solid rgba(245,158,11,0.25)}
+.status-badge.volatile{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.25)}
+
+/* Risk Flags */
+.risk-flags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.risk-flag{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:10px;font-size:0.78rem;font-weight:600}
+.risk-flag.red{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25)}
+.risk-flag.warn{background:rgba(245,158,11,0.1);color:var(--warn);border:1px solid rgba(245,158,11,0.25)}
+.risk-flag.info{background:rgba(6,182,212,0.08);color:var(--accent);border:1px solid rgba(6,182,212,0.2)}
+
+/* What-If Calculator */
+.whatif-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px}
+.whatif-card h3{font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.whatif-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.whatif-row .field{display:flex;flex-direction:column;gap:4px}
+.whatif-row .field label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+.whatif-row .field select,.whatif-row .field input{background:#0d1117;border:1.5px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:0.9rem;font-family:inherit}
+.whatif-row .field select:focus,.whatif-row .field input:focus{outline:none;border-color:var(--accent)}
+.whatif-row .field select{min-width:200px}
+.whatif-row .field input{width:120px;font-family:monospace}
+.whatif-result{background:rgba(6,182,212,0.05);border:1px solid rgba(6,182,212,0.2);border-radius:10px;padding:16px;margin-top:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.whatif-result .impact{font-size:0.95rem}
+.whatif-result .impact strong{font-size:1.2rem}
+.whatif-result .impact .up{color:var(--red)}
+.whatif-result .impact .down{color:var(--green)}
+
+/* Pro Tip */
+.protip-card{background:linear-gradient(135deg, rgba(16,185,129,0.08), rgba(6,182,212,0.05));border:2px solid rgba(16,185,129,0.25);border-radius:14px;padding:24px;margin-bottom:20px}
+.protip-card h3{font-size:1rem;margin-bottom:10px;display:flex;align-items:center;gap:8px;color:var(--accent2)}
+.protip-card .tip-content{font-size:0.95rem;line-height:1.7}
+.protip-card .tip-savings{display:inline-flex;align-items:center;gap:6px;background:rgba(16,185,129,0.15);color:var(--accent2);padding:6px 14px;border-radius:20px;font-size:0.85rem;font-weight:700;margin-top:12px}
+
+/* Export Bar */
+.export-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+.export-bar .meta{color:var(--muted);font-size:0.8rem}
+
+/* Destruct Notice */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* Back link */
+.back-link{text-align:center;margin-top:24px;padding-bottom:32px}
+.back-link a{color:var(--muted);text-decoration:none;font-size:0.85rem;transition:color .2s}
+.back-link a:hover{color:var(--accent)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;animation:fadeIn .3s;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.toast.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Responsive */
+@media(max-width:768px){
+  .summary-row{grid-template-columns:repeat(2,1fr)}
+  .bom-table{font-size:0.75rem}
+  .bom-table th,.bom-table td{padding:8px 10px}
+  .table-wrapper{overflow-x:auto}
+  .whatif-row{flex-direction:column;align-items:stretch}
+  .whatif-row .field select,.whatif-row .field input{width:100%}
+  .gate-box{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== GATE OVERLAY ====== -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">📋</div>
+    <h2>BOM Wizard 物料清單管理</h2>
+    <p>AI-Powered Bill of Materials Intelligence</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+
+    <div class="note">
+      ⚠️ <span>所有查詢資料將在 24 小時內自動銷毀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MAIN APP ====== -->
+<div class="app" id="mainApp">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="logo">📋 BOM Wizard — AI Bill of Materials</div>
+    <div class="timer">⏳ 資料保留: <span id="countdown">23:59:59</span></div>
+  </div>
+
+  <div class="content">
+    <!-- Section Header -->
+    <div class="section-header">
+      <h1>🔧 智能物料清單管理</h1>
+      <p class="subtitle">選擇產品查看完整 BOM、成本拆解、風險評估與 What-If 成本模擬</p>
+    </div>
+
+    <!-- Product Chips -->
+    <div class="product-bar" id="productBar">
+      <div class="product-chip active" onclick="loadProduct(0)" data-idx="0">
+        <span class="chip-icon">🛒</span> 5L Air Fryer AF-500
+      </div>
+      <div class="product-chip" onclick="loadProduct(1)" data-idx="1">
+        <span class="chip-icon">🫖</span> 1.7L Electric Kettle EK-100
+      </div>
+      <div class="product-chip" onclick="loadProduct(2)" data-idx="2">
+        <span class="chip-icon">🥤</span> Stand Blender BM-1500
+      </div>
+    </div>
+
+    <!-- Cost Summary -->
+    <div class="summary-row" id="summaryRow">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- Export Bar -->
+    <div class="export-bar">
+      <span class="meta" id="bomMeta">15 components · Last updated: 2026-06-20</span>
+      <button class="btn btn-sm btn-outline" onclick="exportCSV()">📥 Export BOM (CSV)</button>
+    </div>
+
+    <!-- Risk Flags -->
+    <div class="risk-flags" id="riskFlags">
+      <!-- filled by JS -->
+    </div>
+
+    <!-- BOM Table -->
+    <div class="table-wrapper">
+      <table class="bom-table">
+        <thead>
+          <tr>
+            <th style="width:30px">#</th>
+            <th>Component Name</th>
+            <th>Part #</th>
+            <th>Material</th>
+            <th style="text-align:center">Qty</th>
+            <th style="text-align:right">Unit Cost</th>
+            <th>Supplier</th>
+            <th style="text-align:center">Lead Time</th>
+            <th style="text-align:center">Status</th>
+          </tr>
+        </thead>
+        <tbody id="bomBody">
+          <!-- filled by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- What-If Calculator -->
+    <div class="whatif-card">
+      <h3>🧮 What-If 成本模擬器</h3>
+      <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px">調整任何組件成本，即時計算對總單位成本嘅影響</p>
+      <div class="whatif-row">
+        <div class="field">
+          <label>選擇組件</label>
+          <select id="whatifComponent" onchange="updateWhatIf()">
+            <!-- filled by JS -->
+          </select>
+        </div>
+        <div class="field">
+          <label>新單位成本 (USD)</label>
+          <input type="number" id="whatifCost" step="0.01" min="0" oninput="updateWhatIf()" placeholder="$0.00">
+        </div>
+        <button class="btn btn-sm btn-warn" onclick="resetWhatIf()" style="align-self:flex-end">↺ 重置</button>
+      </div>
+      <div class="whatif-result" id="whatifResult">
+        <div class="impact">選擇組件並輸入新成本以查看影響</div>
+        <button class="btn btn-sm btn-outline" onclick="applyWhatIf()" id="applyWhatIfBtn" disabled>✅ 套用至 BOM</button>
+      </div>
+    </div>
+
+    <!-- Pro Tip -->
+    <div class="protip-card">
+      <h3>💡 BOM 優化建議</h3>
+      <div class="tip-content" id="protipContent">
+        合併 3 條產品線（Air Fryer + Kettle + Blender）的 PCB 訂單，可透過批量採購獲得 <strong>12-18%</strong> 的 PCB 單價折扣。<br>
+        共用 PCB 供應商可同時降低認證成本（UL/CE 共享測試報告），每年節省約 <strong>$8,000-$15,000</strong>。
+      </div>
+      <div class="tip-savings">💰 潛在節省: 12-18% PCB成本 + 認證費用攤分</div>
+    </div>
+
+    <!-- Destruct Notice -->
+    <div class="destruct">
+      <div class="dicon">⚠️</div>
+      <div><b>所有查詢記錄及分析結果將在 24 小時內從伺服器永久刪除。</b><br>BOM 數據僅供參考，實際採購請以供應商正式報價單為準。</div>
+    </div>
+
+    <!-- Back Link -->
+    <div class="back-link">
+      <a href="../index.html">← 返回主頁</a>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// BOM DATABASE — Realistic Components
+// ═══════════════════════════════════════
+const BOM_DATABASE = [
+  { // 0: 5L Air Fryer AF-500
+    name: '5L Air Fryer AF-500',
+    icon: '🛒',
+    lastUpdated: '2026-06-20',
+    components: [
+      { name:'Heating Element Assembly (1800W)', partNo:'AF-HE-1800', material:'Nickel-Chromium Alloy + Mica', qty:1, cost:2.85, supplier:'Dongguan Tianmei Heating Tech', leadTime:'3-4 wks', status:'stable' },
+      { name:'Digital Control PCB', partNo:'AF-PCB-V3', material:'FR-4 + MCU + Relay', qty:1, cost:4.20, supplier:'Shenzhen JLC Electronics', leadTime:'4-5 wks', status:'recent-change' },
+      { name:'LED Touch Display Module', partNo:'AF-DISP-7SEG', material:'LED 7-Seg + Capacitive Touch IC', qty:1, cost:1.85, supplier:'Shenzhen Kingbright Display', leadTime:'3-4 wks', status:'stable' },
+      { name:'NTC Temperature Sensor (100KΩ)', partNo:'NTC-MF52-100K', material:'Manganese-Nickel Oxide Ceramic', qty:1, cost:0.45, supplier:'Shiheng Electronics', leadTime:'2-3 wks', status:'stable' },
+      { name:'DC Brushless Fan Motor (12V)', partNo:'AF-FAN-DC12', material:'Steel + Copper Winding + ABS', qty:1, cost:3.50, supplier:'Ningbo Hengshuai Motor', leadTime:'4-6 wks', status:'volatile' },
+      { name:'Mechanical Thermostat (Reset)', partNo:'TST-216-C', material:'Bimetal Strip + Ceramic', qty:1, cost:1.20, supplier:'Changzhou Shengkai Electric', leadTime:'3-4 wks', status:'stable' },
+      { name:'Thermal Fuse (216°C)', partNo:'TF-216-10A', material:'Metal Alloy + Ceramic Tube', qty:1, cost:0.15, supplier:'Dongguan Better Electronics', leadTime:'2 wks', status:'stable' },
+      { name:'Door Microswitch', partNo:'MSW-KW10-Z', material:'PA66 + Silver Contacts', qty:1, cost:0.35, supplier:'Yueqing Kangerwei Electric', leadTime:'2-3 wks', status:'stable' },
+      { name:'ABS Outer Housing (Top + Bottom)', partNo:'AF-HSG-ABS-V2', material:'ABS PA-757 (Flame Retardant)', qty:1, cost:3.80, supplier:'Dongguan Jieshun Plastic', leadTime:'5-6 wks', status:'stable' },
+      { name:'Stainless Steel Inner Basket', partNo:'AF-BSK-SS304', material:'304 Stainless Steel (0.5mm)', qty:1, cost:2.95, supplier:'Foshan Nanhai Metal Products', leadTime:'4-5 wks', status:'recent-change' },
+      { name:'Non-Stick Coating (PTFE)', partNo:'AF-COAT-PTFE', material:'PTFE Coating 2-Layer', qty:1, cost:0.80, supplier:'Zhuhai Whitford Coatings', leadTime:'1-2 wks', status:'stable' },
+      { name:'Bakelite Handle Assembly', partNo:'AF-HDL-BKL', material:'Bakelite PF + SS Screws', qty:1, cost:0.65, supplier:'Ningbo Jinmao Hardware', leadTime:'3-4 wks', status:'stable' },
+      { name:'Silicone Feet Pads (Set of 4)', partNo:'AF-FT-SIL4', material:'Silicone Rubber (60° Shore)', qty:1, cost:0.25, supplier:'Shenzhen Zhongding Silicone', leadTime:'2 wks', status:'stable' },
+      { name:'Control Knob + Button Assembly', partNo:'AF-CTRL-KB', material:'ABS + Silicone Overmold', qty:1, cost:0.90, supplier:'Dongguan Jieshun Plastic', leadTime:'3-4 wks', status:'stable' },
+      { name:'Wiring Harness (UL Certified)', partNo:'AF-WH-UL', material:'UL1007 PVC + Copper', qty:1, cost:0.55, supplier:'Shenzhen Yilian Cable', leadTime:'2-3 wks', status:'stable' },
+      { name:'Power Cord (3-Pin, 1.5m)', partNo:'PC-3PIN-15M-US', material:'PVC + Copper + NEMA 5-15P', qty:1, cost:0.75, supplier:'Zhongshan Volex Power Cord', leadTime:'2-3 wks', status:'stable' },
+      { name:'Packaging (Corrugated Box + EPE Foam)', partNo:'AF-PKG-BOX', material:'B-Flute Corrugated + EPE', qty:1, cost:1.40, supplier:'Shenzhen Meiyingsen Packaging', leadTime:'2 wks', status:'stable' }
+    ],
+    risks: [
+      { level:'warn', text:'⚠️ DC Fan Motor 交期 4-6 週 — 銅價波動影響成本', type:'long-lead' },
+      { level:'info', text:'📋 ABS 外殼 MOQ 5,000 pcs — 定制模具分攤 $12,000', type:'moq' },
+      { level:'red', text:'🔴 PCB MCU 供應緊張 — 半導體週期性缺貨風險', type:'single-source' },
+      { level:'warn', text:'📊 不銹鋼內籃近期漲價 8% — 鎳價上漲', type:'volatile-material' }
+    ],
+    protip: '合併 3 條產品線（Air Fryer + Kettle + Blender）的 PCB 訂單可透過批量採購獲得 <strong>12-18%</strong> 的 PCB 單價折扣。<br>共用 PCB 供應商可同時降低認證成本（UL/CE 共享測試報告），每年節省約 <strong>$8,000-$15,000</strong>。',
+    protipSaving: '💰 潛在節省: 12-18% PCB成本 + 認證費用攤分'
+  },
+
+  { // 1: 1.7L Electric Kettle EK-100
+    name: '1.7L Electric Kettle EK-100',
+    icon: '🫖',
+    lastUpdated: '2026-06-18',
+    components: [
+      { name:'Heating Element Disc (1850W)', partNo:'EK-HD-1850', material:'304 SS Plate + Tubular Heater', qty:1, cost:2.20, supplier:'Dongguan Tianmei Heating Tech', leadTime:'3-4 wks', status:'stable' },
+      { name:'Strix Controller (UK Brand)', partNo:'STRIX-U1850-01', material:'Bimetal + Ceramic + Copper', qty:1, cost:2.85, supplier:'Strix Ltd (UK) / Dist: HK Agent', leadTime:'6-8 wks', status:'volatile' },
+      { name:'NTC Thermistor (100KΩ)', partNo:'NTC-MF52-100K-B', material:'Mn-Ni Oxide Ceramic', qty:1, cost:0.38, supplier:'Shiheng Electronics', leadTime:'2-3 wks', status:'stable' },
+      { name:'304 Stainless Steel Body', partNo:'EK-BODY-SS304', material:'304 SS (0.6mm) Brushed Finish', qty:1, cost:3.50, supplier:'Foshan Nanhai Metal Products', leadTime:'4-5 wks', status:'recent-change' },
+      { name:'Double-Wall Insulation Liner', partNo:'EK-LNR-DW', material:'304 SS Inner + Air Gap', qty:1, cost:1.75, supplier:'Foshan Nanhai Metal Products', leadTime:'4-5 wks', status:'stable' },
+      { name:'Cordless Base (360° Swivel)', partNo:'EK-BASE-SW360', material:'PP GF30 + Copper Ring', qty:1, cost:1.20, supplier:'Dongguan Jieshun Plastic', leadTime:'3-4 wks', status:'stable' },
+      { name:'Lid Assembly (SS + Silicone Seal)', partNo:'EK-LID-SS', material:'304 SS + Food-Grade Silicone', qty:1, cost:0.90, supplier:'Ningbo Jinmao Hardware', leadTime:'3-4 wks', status:'stable' },
+      { name:'Handle (PP + TPE Overmold)', partNo:'EK-HDL-PPTPE', material:'PP GF20 + TPE Soft-Touch', qty:1, cost:0.85, supplier:'Dongguan Jieshun Plastic', leadTime:'4-5 wks', status:'stable' },
+      { name:'Boil-Dry Thermal Fuse', partNo:'TF-230-10A', material:'Alloy Link + Ceramic Housing', qty:1, cost:0.18, supplier:'Dongguan Better Electronics', leadTime:'2 wks', status:'stable' },
+      { name:'LED Indicator Ring (Blue)', partNo:'EK-LED-RING', material:'PCB + 12x Blue SMD LED', qty:1, cost:0.55, supplier:'Shenzhen Kingbright Display', leadTime:'3-4 wks', status:'stable' },
+      { name:'Power Cord (1.0m, 3-Pin)', partNo:'PC-3PIN-10M-UK', material:'PVC + Copper + BS 1363', qty:1, cost:0.65, supplier:'Zhongshan Volex Power Cord', leadTime:'2-3 wks', status:'stable' },
+      { name:'Packaging (Box + PE Foam)', partNo:'EK-PKG-BOX', material:'B-Flute Corr. + PE + Manual', qty:1, cost:1.10, supplier:'Shenzhen Meiyingsen Packaging', leadTime:'2 wks', status:'stable' }
+    ],
+    risks: [
+      { level:'red', text:'🔴 Strix 控制器 — 單一來源供應（英國），交期 6-8 週，匯率波動影響成本', type:'single-source' },
+      { level:'warn', text:'⚠️ 不銹鋼壺身近期漲價 5% — 304 SS 板材價格上升', type:'volatile-material' },
+      { level:'warn', text:'📋 PP+TPE 手柄 MOQ 10,000 pcs — 定制雙色模具 $18,000', type:'moq' },
+      { level:'info', text:'🌐 Strix 英鎊計價 — GBP/USD 匯率每變動 5% 影響單價 ~$0.14', type:'fx' }
+    ],
+    protip: 'Strix 控制器嘅替代方案：考慮中國品牌 <strong>KST（科斯特）</strong> 恆溫控制器，價格約 $1.60 (-44%)，交期 3-4 週。<br>但需注意：部分歐美買家合約指定必須使用 Strix。若市場接受替代方案，每年可節省約 <strong>$30,000+</strong>（以年產 50,000 pcs 計）。',
+    protipSaving: '💰 潛在節省: 44% 控制器成本 (需買家核准替代方案)'
+  },
+
+  { // 2: Stand Blender BM-1500
+    name: 'Stand Blender BM-1500',
+    icon: '🥤',
+    lastUpdated: '2026-06-22',
+    components: [
+      { name:'Series Motor 1500W', partNo:'BM-MTR-1500W', material:'Copper Windings + Laminated Steel', qty:1, cost:8.50, supplier:'Ningbo Hengshuai Motor', leadTime:'6-8 wks', status:'volatile' },
+      { name:'Motor Speed Controller PCB', partNo:'BM-PCB-SPD', material:'FR-4 + Triac + MCU + Heat Sink', qty:1, cost:3.20, supplier:'Shenzhen JLC Electronics', leadTime:'4-5 wks', status:'stable' },
+      { name:'Safety Interlock Switch', partNo:'BM-ILK-SW', material:'PA66 + Silver Contacts', qty:1, cost:0.55, supplier:'Yueqing Kangerwei Electric', leadTime:'2-3 wks', status:'stable' },
+      { name:'Stainless Steel Blade Set (6-Blade)', partNo:'BM-BLD-6SS', material:'420J2 SS (Hardened)', qty:1, cost:2.40, supplier:'Yangjiang Top Knife', leadTime:'3-4 wks', status:'stable' },
+      { name:'Blade Coupling Assembly', partNo:'BM-CPL-SS', material:'304 SS + Rubber Dampener', qty:1, cost:1.10, supplier:'Ningbo Jinmao Hardware', leadTime:'3-4 wks', status:'stable' },
+      { name:'Tritan™ BPA-Free Jar (2L)', partNo:'BM-JAR-TR2L', material:'Eastman Tritan TX1001', qty:1, cost:3.80, supplier:'Dongguan Jieshun Plastic', leadTime:'5-6 wks', status:'recent-change' },
+      { name:'Jar Lid (Tritan + Silicone Gasket)', partNo:'BM-LID-TRSIL', material:'Tritan + Food-Grade Silicone', qty:1, cost:0.75, supplier:'Dongguan Jieshun Plastic', leadTime:'4-5 wks', status:'stable' },
+      { name:'Tamper Tool (PP)', partNo:'BM-TMP-PP', material:'PP Homo-Polymer', qty:1, cost:0.45, supplier:'Dongguan Jieshun Plastic', leadTime:'3-4 wks', status:'stable' },
+      { name:'ABS Motor Housing', partNo:'BM-HSG-ABS', material:'ABS FR Grade + Overmold', qty:1, cost:2.90, supplier:'Dongguan Jieshun Plastic', leadTime:'5-6 wks', status:'stable' },
+      { name:'Rubber Isolation Mounts (4pcs)', partNo:'BM-ISO-RUB4', material:'NBR Rubber (50° Shore)', qty:1, cost:0.35, supplier:'Shenzhen Zhongding Rubber', leadTime:'2 wks', status:'stable' },
+      { name:'Heavy-Gauge Power Cord (1.5m)', partNo:'PC-3PIN-HG15', material:'PVC + Thick Copper + NEMA', qty:1, cost:0.85, supplier:'Zhongshan Volex Power Cord', leadTime:'2-3 wks', status:'stable' },
+      { name:'Aluminum Control Knob', partNo:'BM-KNB-AL', material:'6061 Aluminum + Anodized', qty:1, cost:0.60, supplier:'Ningbo Jinmao Hardware', leadTime:'3-4 wks', status:'stable' },
+      { name:'Overload Circuit Breaker (15A)', partNo:'BM-CB-15A', material:'Bimetal + Ceramic', qty:1, cost:0.95, supplier:'Changzhou Shengkai Electric', leadTime:'3-4 wks', status:'stable' },
+      { name:'EMC Filter Board', partNo:'BM-EMC-FLT', material:'FR-4 + Inductor + X/Y Caps', qty:1, cost:1.50, supplier:'Shenzhen SEFuse Electronics', leadTime:'3-4 wks', status:'stable' },
+      { name:'Thermal Cut-Off Switch (130°C)', partNo:'TCO-130-15A', material:'Alloy + Ceramic', qty:1, cost:0.25, supplier:'Dongguan Better Electronics', leadTime:'2 wks', status:'stable' },
+      { name:'Silicone Jar Seal Gasket', partNo:'BM-GSK-SIL', material:'Food-Grade Silicone', qty:1, cost:0.30, supplier:'Shenzhen Zhongding Silicone', leadTime:'2 wks', status:'stable' },
+      { name:'Suction Non-Slip Feet (4pcs)', partNo:'BM-FT-SUC4', material:'Silicone + Suction Cup Design', qty:1, cost:0.40, supplier:'Shenzhen Zhongding Silicone', leadTime:'2 wks', status:'stable' },
+      { name:'Packaging (Box + EPE + Manual)', partNo:'BM-PKG-BOX', material:'B-Flute Corr. + EPE + Color Manual', qty:1, cost:1.85, supplier:'Shenzhen Meiyingsen Packaging', leadTime:'2 wks', status:'stable' }
+    ],
+    risks: [
+      { level:'red', text:'🔴 1500W 馬達 — 銅價波動直接影響成本 (±$0.50/pcs)，交期 6-8 週', type:'volatile-material' },
+      { level:'warn', text:'⚠️ Tritan™ 原料 — Eastman 單一來源，全球供應緊張時有配額限制', type:'single-source' },
+      { level:'warn', text:'📋 ABS 外殼 + Tritan 杯 MOQ 各 3,000 pcs — 模具費 $25,000 起', type:'moq' },
+      { level:'info', text:'📊 420J2 不銹鋼刀片 — 硬度需求 QC 嚴格，退貨率 ~3%（熱處理不穩定）', type:'quality' }
+    ],
+    protip: '合併 3 條產品線嘅 <strong>PCB 訂單</strong>可透過批量採購獲得折扣。另外，Tritan™ 杯可與 Air Fryer 的 ABS 外殼共用供應商 <strong>Dongguan Jieshun</strong> — 合併訂單提升議價能力，預期節省 <strong>5-8%</strong> 塑料件總成本。',
+    protipSaving: '💰 潛在節省: 5-8% 塑料件成本 (共享供應商批量折扣)'
+  }
+];
+
+// ═══════════════════════════════════════
+// CATEGORY MAPPING
+// ═══════════════════════════════════════
+const CATEGORIES = {
+  electronics: ['PCB','Display','Sensor','Thermostat','Controller','Switch','NTC','LED','Fuse','Breaker','Filter','Wiring','Power Cord','Harness','Motor','Circuit Breaker','Thermal Fuse','Thermal Cut-Off','Interlock'],
+  plastics: ['ABS','Housing','Handle','Knob','Base','Lid','Jar','Tamper','Feet','Pad','Tritan','PP','TPE','Bakelite','Overmold','Cordless','Isolation Mount','Seal Gasket','Non-Slip'],
+  packaging: ['Packaging','Corrugated','EPE','Foam','Manual'],
+  metals: ['Heating','Stainless Steel','Blade','Coupling','Aluminum','Disc','Basket','Liner','Nickel','Copper','Coating','Alloy','Steel'],
+};
+
+function categorize(comp) {
+  const cat = comp.category || '';
+  const txt = (comp.name + ' ' + comp.material).toLowerCase();
+  for (const [catName, keywords] of Object.entries(CATEGORIES)) {
+    for (const kw of keywords) {
+      if (txt.includes(kw.toLowerCase())) return catName;
+    }
+  }
+  return 'other';
+}
+
+// Pre-categorize all components
+BOM_DATABASE.forEach(product => {
+  product.components.forEach(c => {
+    c.category = categorize(c);
+  });
+  product.categoryBreakdown = {
+    electronics: product.components.filter(c => c.category === 'electronics').reduce((s,c) => s + c.cost, 0),
+    plastics: product.components.filter(c => c.category === 'plastics').reduce((s,c) => s + c.cost, 0),
+    metals: product.components.filter(c => c.category === 'metals').reduce((s,c) => s + c.cost, 0),
+    packaging: product.components.filter(c => c.category === 'packaging').reduce((s,c) => s + c.cost, 0),
+  };
+  product.totalCost = product.components.reduce((s,c) => s + c.cost, 0);
+  product.componentCount = product.components.length;
+});
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let currentProductIdx = 0;
+let modifiedComponents = null; // null = no modifications
+let whatifSelectedComp = -1;
+let whatifNewCost = null;
+
+// ═══════════════════════════════════════
+// GATE LOGIC
+// ═══════════════════════════════════════
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) {
+    err.textContent = '請輸入有效電郵地址';
+    err.style.display = 'block';
+    return;
+  }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  loadProduct(0);
+  localStorage.setItem('bomwiz_gate_passed', 'true');
+  localStorage.setItem('bomwiz_email', email);
+  toast('✅ BOM Wizard 已就緒 — 選擇產品開始分析');
+}
+
+// ── Countdown Timer ──
+function startCountdown() {
+  let remaining = 24 * 60 * 60;
+  const el = document.getElementById('countdown');
+  setInterval(() => {
+    remaining--;
+    if (remaining <= 0) { el.textContent = '已過期'; return; }
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    const s = remaining % 60;
+    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+// ── Toast ──
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════
+// LOAD PRODUCT
+// ═══════════════════════════════════════
+function loadProduct(idx) {
+  currentProductIdx = idx;
+  modifiedComponents = null;
+  whatifSelectedComp = -1;
+  whatifNewCost = null;
+
+  // Highlight active chip
+  document.querySelectorAll('.product-chip').forEach((c, i) => {
+    c.classList.toggle('active', i === idx);
+  });
+
+  const product = BOM_DATABASE[idx];
+  const comps = product.components;
+
+  // Update meta
+  document.getElementById('bomMeta').textContent =
+    `${comps.length} components · Last updated: ${product.lastUpdated}`;
+
+  // Summary cards
+  renderSummary(product);
+
+  // Risk flags
+  renderRisks(product);
+
+  // BOM table
+  renderBOM(comps);
+
+  // What-If
+  renderWhatIfOptions(comps);
+  resetWhatIf();
+
+  // Pro tip
+  document.getElementById('protipContent').innerHTML = product.protip;
+  const tipSavings = document.querySelector('.protip-card .tip-savings');
+  if (tipSavings) tipSavings.textContent = product.protipSaving;
+
+  toast(`📋 已載入: ${product.name} — ${comps.length} 個組件`);
+}
+
+// ═══════════════════════════════════════
+// RENDER SUMMARY
+// ═══════════════════════════════════════
+function renderSummary(product) {
+  const comps = modifiedComponents || product.components;
+  const total = comps.reduce((s, c) => s + c.cost, 0);
+
+  // Recalculate categories
+  const electronics = comps.filter(c => c.category === 'electronics').reduce((s, c) => s + c.cost, 0);
+  const plastics = comps.filter(c => c.category === 'plastics').reduce((s, c) => s + c.cost, 0);
+  const metals = comps.filter(c => c.category === 'metals').reduce((s, c) => s + c.cost, 0);
+  const packaging = comps.filter(c => c.category === 'packaging' || c.name.toLowerCase().includes('packaging')).reduce((s, c) => s + c.cost, 0);
+
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="summary-card total">
+      <div class="sum-label">Total Unit Cost</div>
+      <div class="sum-value">$${total.toFixed(2)}</div>
+      <div class="sum-breakdown">${comps.length} components</div>
+    </div>
+    <div class="summary-card">
+      <div class="sum-label">🔌 Electronics</div>
+      <div class="sum-value">$${electronics.toFixed(2)}</div>
+      <div class="sum-breakdown">${((electronics/total)*100).toFixed(1)}% of total</div>
+    </div>
+    <div class="summary-card">
+      <div class="sum-label">🧊 Plastics</div>
+      <div class="sum-value">$${plastics.toFixed(2)}</div>
+      <div class="sum-breakdown">${((plastics/total)*100).toFixed(1)}% of total</div>
+    </div>
+    <div class="summary-card">
+      <div class="sum-label">🔩 Metals</div>
+      <div class="sum-value">$${metals.toFixed(2)}</div>
+      <div class="sum-breakdown">${((metals/total)*100).toFixed(1)}% of total</div>
+    </div>
+    <div class="summary-card">
+      <div class="sum-label">📦 Packaging</div>
+      <div class="sum-value">$${packaging.toFixed(2)}</div>
+      <div class="sum-breakdown">${((packaging/total)*100).toFixed(1)}% of total</div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════
+// RENDER RISKS
+// ═══════════════════════════════════════
+function renderRisks(product) {
+  document.getElementById('riskFlags').innerHTML = product.risks.map(r =>
+    `<span class="risk-flag ${r.level}">${r.text}</span>`
+  ).join('');
+}
+
+// ═══════════════════════════════════════
+// RENDER BOM TABLE
+// ═══════════════════════════════════════
+function renderBOM(comps) {
+  const statusLabel = { 'stable': '✅ Stable', 'recent-change': '🟡 Recent Change', 'volatile': '🔴 Volatile' };
+  const statusClass = { 'stable': 'stable', 'recent-change': 'recent-change', 'volatile': 'volatile' };
+
+  document.getElementById('bomBody').innerHTML = comps.map((c, i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:0.75rem">${i + 1}</td>
+      <td class="comp-name">${c.name}</td>
+      <td class="part-no">${c.partNo}</td>
+      <td style="font-size:0.82rem">${c.material}</td>
+      <td style="text-align:center">${c.qty}</td>
+      <td class="cost" style="text-align:right">$${c.cost.toFixed(2)}</td>
+      <td class="supplier">${c.supplier}</td>
+      <td style="text-align:center;font-size:0.8rem">${c.leadTime}</td>
+      <td style="text-align:center"><span class="status-badge ${statusClass[c.status]}">${statusLabel[c.status]}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// WHAT-IF CALCULATOR
+// ═══════════════════════════════════════
+function renderWhatIfOptions(comps) {
+  const sel = document.getElementById('whatifComponent');
+  sel.innerHTML = '<option value="-1">— 選擇組件 —</option>' +
+    comps.map((c, i) => `<option value="${i}">${c.name} ($${c.cost.toFixed(2)})</option>`).join('');
+}
+
+function updateWhatIf() {
+  const idx = parseInt(document.getElementById('whatifComponent').value);
+  const costVal = document.getElementById('whatifCost').value;
+  const resultDiv = document.getElementById('whatifResult');
+  const applyBtn = document.getElementById('applyWhatIfBtn');
+
+  if (idx < 0 || costVal === '') {
+    resultDiv.innerHTML = '<div class="impact">選擇組件並輸入新成本以查看影響</div>';
+    applyBtn.disabled = true;
+    whatifSelectedComp = -1;
+    whatifNewCost = null;
+    return;
+  }
+
+  const newCost = parseFloat(costVal);
+  if (isNaN(newCost) || newCost < 0) {
+    resultDiv.innerHTML = '<div class="impact" style="color:var(--red)">⚠️ 請輸入有效成本金額</div>';
+    applyBtn.disabled = true;
+    whatifSelectedComp = -1;
+    whatifNewCost = null;
+    return;
+  }
+
+  const product = BOM_DATABASE[currentProductIdx];
+  const comps = modifiedComponents || product.components;
+  const originalCost = comps[idx].cost;
+  const currentTotal = comps.reduce((s, c) => s + c.cost, 0);
+  const diff = newCost - originalCost;
+  const newTotal = currentTotal + diff;
+  const pctChange = ((diff / currentTotal) * 100);
+
+  whatifSelectedComp = idx;
+  whatifNewCost = newCost;
+
+  const sign = diff >= 0 ? '+' : '';
+  const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : '');
+  resultDiv.innerHTML = `
+    <div class="impact">
+      調整後總成本: <strong>$${newTotal.toFixed(2)}</strong>
+      <span style="font-size:0.85rem;margin-left:8px;color:var(--muted)">
+        (${sign}$${diff.toFixed(2)} / ${sign}${pctChange.toFixed(1)}%)
+      </span>
+      <br><span style="font-size:0.8rem;color:var(--muted)">
+        ${comps[idx].name}: $${originalCost.toFixed(2)} → <span class="${cls}">$${newCost.toFixed(2)}</span>
+      </span>
+    </div>
+  `;
+  applyBtn.disabled = false;
+}
+
+function applyWhatIf() {
+  if (whatifSelectedComp < 0 || whatifNewCost === null) return;
+
+  const product = BOM_DATABASE[currentProductIdx];
+  if (!modifiedComponents) {
+    modifiedComponents = product.components.map(c => ({ ...c }));
+  }
+  modifiedComponents[whatifSelectedComp].cost = whatifNewCost;
+
+  // Update status to 'recent-change' if not already volatile
+  if (modifiedComponents[whatifSelectedComp].status === 'stable') {
+    modifiedComponents[whatifSelectedComp].status = 'recent-change';
+  }
+
+  renderBOM(modifiedComponents);
+  renderSummary(product); // uses modifiedComponents internally
+  renderWhatIfOptions(modifiedComponents);
+
+  // Reset what-if inputs
+  document.getElementById('whatifComponent').value = '-1';
+  document.getElementById('whatifCost').value = '';
+  document.getElementById('whatifResult').innerHTML = '<div class="impact">選擇組件並輸入新成本以查看影響</div>';
+  document.getElementById('applyWhatIfBtn').disabled = true;
+  whatifSelectedComp = -1;
+  whatifNewCost = null;
+
+  toast('💾 成本變更已套用至 BOM');
+}
+
+function resetWhatIf() {
+  modifiedComponents = null;
+  const product = BOM_DATABASE[currentProductIdx];
+  renderBOM(product.components);
+  renderSummary(product);
+  renderWhatIfOptions(product.components);
+  document.getElementById('whatifComponent').value = '-1';
+  document.getElementById('whatifCost').value = '';
+  document.getElementById('whatifResult').innerHTML = '<div class="impact">選擇組件並輸入新成本以查看影響</div>';
+  document.getElementById('applyWhatIfBtn').disabled = true;
+  whatifSelectedComp = -1;
+  whatifNewCost = null;
+
+  toast('↺ BOM 已重置為原始成本');
+}
+
+// ═══════════════════════════════════════
+// EXPORT CSV
+// ═══════════════════════════════════════
+function exportCSV() {
+  const product = BOM_DATABASE[currentProductIdx];
+  const comps = modifiedComponents || product.components;
+  const total = comps.reduce((s, c) => s + c.cost, 0);
+
+  let csv = 'No.,Component Name,Part #,Material,Qty,Unit Cost (USD),Supplier,Lead Time,Status\n';
+  comps.forEach((c, i) => {
+    csv += `"${i+1}","${c.name}","${c.partNo}","${c.material}","${c.qty}","${c.cost.toFixed(2)}","${c.supplier}","${c.leadTime}","${c.status}"\n`;
+  });
+  csv += `\n"","","","","","","","",""\n`;
+  csv += `"Total Unit Cost","","","","","$${total.toFixed(2)}","","",""\n`;
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `BOM_${product.name.replace(/\s+/g,'_')}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  toast('📥 BOM 已匯出為 CSV');
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+if (localStorage.getItem('bomwiz_gate_passed')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  loadProduct(0);
+}
+</script>
+</body>
+</html>

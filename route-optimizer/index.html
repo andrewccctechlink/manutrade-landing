@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RouteOptimizer — 海運路線優化 | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b; --purple: #a855f7;
+  --chart-base: #6366f1; --chart-bunker: #f59e0b; --chart-thc: #ef4444; --chart-docs: #10b981; --chart-security: #ec4899; --chart-peak: #8b5cf6; --chart-imbalance: #f97316;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* ── Gate Overlay ── */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:460px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3.5rem;margin-bottom:12px}
+.gate-box h1{font-size:1.5rem;margin-bottom:6px;color:var(--accent)}
+.gate-box h2{font-size:1rem;color:var(--muted);font-weight:400;margin-bottom:20px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px;line-height:1.7}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{color:var(--warn);font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
+
+.btn{display:inline-block;padding:14px 28px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none;font-family:inherit}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-sm{padding:10px 20px;font-size:0.85rem}
+.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent}
+.btn-outline:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.btn-ghost{background:transparent;color:var(--accent);padding:8px 16px;font-size:0.85rem}
+
+/* ── Main App ── */
+.app{display:none}
+.app.active{display:block}
+
+/* Topbar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .left{display:flex;align-items:center;gap:14px}
+.topbar .logo{font-weight:800;font-size:1.05rem;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar .logo-icon{margin-right:2px}
+.topbar .right{display:flex;align-items:center;gap:20px}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Content */
+.content{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+/* Header */
+.page-header{margin-bottom:28px}
+.page-header .breadcrumb{margin-bottom:10px}
+.page-header .breadcrumb a{color:var(--muted);text-decoration:none;font-size:0.85rem;transition:color .2s}
+.page-header .breadcrumb a:hover{color:var(--accent)}
+.page-header .breadcrumb span{color:var(--muted);font-size:0.85rem}
+.page-header h1{font-size:1.8rem;margin-bottom:6px}
+.page-header .subtitle{color:var(--muted);font-size:0.95rem}
+
+/* Card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:24px}
+.card h2{font-size:1.15rem;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.card h3{font-size:0.95rem;margin-bottom:12px;color:var(--accent)}
+.card .card-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+.card .card-row:last-child{margin-bottom:0}
+
+/* Select */
+.select-group{flex:1;min-width:180px}
+.select-group label{display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.select-group select{width:100%;padding:10px 14px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9rem;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.select-group select:focus{outline:none;border-color:var(--accent)}
+
+/* Chips */
+.chips-section{margin-bottom:20px}
+.chips-section .chips-label{font-size:0.78rem;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+.chips{display:flex;gap:10px;flex-wrap:wrap}
+.chip{padding:10px 16px;background:rgba(6,182,212,0.06);border:1px solid var(--border);border-radius:24px;font-size:0.83rem;color:var(--text);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.chip:hover{border-color:var(--accent);background:rgba(6,182,212,0.1);transform:translateY(-1px)}
+.chip.active{border-color:var(--accent);background:rgba(6,182,212,0.12);color:var(--accent)}
+.chip .chip-emoji{font-size:1rem}
+
+/* Context bar */
+.context-bar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(6,182,212,0.05);border:1px solid var(--border);border-radius:10px;margin-bottom:20px;font-size:0.85rem;flex-wrap:wrap}
+.context-bar .ctx-icon{font-size:1.2rem}
+.context-bar strong{color:var(--accent)}
+
+/* Route Summary Cards */
+.route-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:16px}
+.route-card{background:#0d1117;border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;transition:all .2s;cursor:pointer}
+.route-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.route-card.best{border-color:var(--accent2);box-shadow:0 0 20px rgba(16,185,129,0.1)}
+.route-card .best-badge{position:absolute;top:-10px;right:12px;background:var(--accent2);color:#000;font-size:0.7rem;font-weight:700;padding:4px 10px;border-radius:10px}
+.route-card .line-name{font-size:1rem;font-weight:700;margin-bottom:4px}
+.route-card .line-etd{font-size:0.75rem;color:var(--muted);margin-bottom:10px}
+.route-card .line-total{font-size:1.4rem;font-weight:800;color:var(--accent);margin-bottom:4px}
+.route-card .line-perunit{font-size:0.75rem;color:var(--muted);margin-bottom:10px}
+.route-card .line-meta{display:flex;gap:8px;flex-wrap:wrap}
+.route-card .meta-pill{padding:4px 10px;font-size:0.7rem;border-radius:10px;background:rgba(6,182,212,0.08);color:var(--accent)}
+
+/* Results Table */
+.results-table-wrap{overflow-x:auto;margin-top:16px}
+.results-table{width:100%;border-collapse:collapse;font-size:0.83rem}
+.results-table thead th{text-align:left;padding:12px 14px;background:rgba(6,182,212,0.04);border-bottom:2px solid var(--border);color:var(--muted);font-weight:600;font-size:0.73rem;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+.results-table tbody td{padding:12px 14px;border-bottom:1px solid rgba(30,45,69,0.5);vertical-align:middle}
+.results-table tbody tr:hover{background:rgba(6,182,212,0.03)}
+.results-table tbody tr.best-row{background:rgba(16,185,129,0.04)}
+.results-table .line-badge{padding:3px 10px;border-radius:6px;font-weight:700;font-size:0.75rem;background:rgba(6,182,212,0.12);color:var(--accent)}
+.results-table .cost-value{font-family:'SF Mono','Menlo',monospace;font-weight:600}
+.results-table .reliability-bar{display:inline-block;height:6px;border-radius:3px;background:var(--accent2);vertical-align:middle;margin-right:6px}
+.reliability-high{color:var(--accent2)}
+.reliability-mid{color:var(--warn)}
+.reliability-low{color:var(--red)}
+.results-table .co2-bar{display:inline-block;height:6px;border-radius:3px;background:var(--warn);vertical-align:middle;margin-right:6px}
+.results-table .best-for{font-size:0.78rem;max-width:150px}
+
+/* Charts Row */
+.charts-row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px}
+.charts-row .chart-col{flex:1;min-width:280px}
+
+/* Donut Chart (pure CSS) */
+.donut-wrapper{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.donut-chart{width:160px;height:160px;border-radius:50%;position:relative;flex-shrink:0}
+.donut-chart .donut-hole{position:absolute;inset:38px;background:#0b0f19;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.donut-chart .donut-hole .total-label{font-size:0.65rem;color:var(--muted)}
+.donut-chart .donut-hole .total-amount{font-size:1.1rem;font-weight:800;color:var(--accent)}
+.donut-legend{flex:1;min-width:180px}
+.donut-legend .legend-item{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:0.8rem}
+.donut-legend .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.donut-legend .legend-val{font-weight:600;margin-left:auto;font-family:'SF Mono','Menlo',monospace}
+
+/* Hidden Fees */
+.fees-list{display:grid;gap:10px}
+.fee-item{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;transition:all .2s}
+.fee-item:hover{border-color:var(--accent)}
+.fee-item .fee-left{display:flex;align-items:center;gap:12px}
+.fee-item .fee-icon{font-size:1.4rem;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:rgba(239,68,68,0.1);border-radius:8px}
+.fee-item .fee-name{font-weight:600;font-size:0.9rem}
+.fee-item .fee-desc{font-size:0.75rem;color:var(--muted);margin-top:2px}
+.fee-item .fee-amount{font-weight:700;font-size:1rem;color:var(--red);font-family:'SF Mono','Menlo',monospace}
+
+/* Pro Tip */
+.pro-tip{background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:16px 20px;display:flex;align-items:flex-start;gap:12px;font-size:0.88rem}
+.pro-tip .tip-icon{font-size:1.4rem;flex-shrink:0}
+.pro-tip strong{color:var(--warn)}
+
+/* Destruct Notice */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* Back Link */
+.back-link{text-align:center;margin-top:24px;padding-bottom:32px}
+.back-link a{color:var(--muted);text-decoration:none;font-size:0.9rem;transition:color .2s}
+.back-link a:hover{color:var(--accent)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;animation:fadeIn .3s;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+.toast.show{display:block}
+
+/* Breakdown Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:800;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:500px;max-width:90vw;max-height:85vh;overflow-y:auto}
+.modal-box h3{font-size:1.1rem;margin-bottom:16px}
+.modal-box .close-btn{float:right;background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer}
+.modal-box .breakdown-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.modal-box .breakdown-table td{padding:10px 0;border-bottom:1px solid rgba(30,45,69,0.3)}
+.modal-box .breakdown-table td:last-child{text-align:right;font-weight:600;font-family:'SF Mono','Menlo',monospace}
+.modal-box .breakdown-table .total-row td{border-bottom:none;font-size:0.95rem;font-weight:700;padding-top:14px}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .4s ease-out}
+
+/* Responsive */
+@media(max-width:768px){
+  .gate-box{padding:28px 20px}
+  .route-grid{grid-template-columns:1fr}
+  .charts-row{flex-direction:column}
+  .donut-wrapper{justify-content:center}
+  .results-table{font-size:0.73rem}
+  .results-table thead th,.results-table tbody td{padding:8px 10px}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════ EMAIL GATE ════════════════════════ -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">🚢</div>
+    <h1>RouteOptimizer</h1>
+    <h2>海運路線優化器</h2>
+    <p>比較全球主要航運公司即時運費、<br>運輸時間與碳排放 — 一鍵找出最優路線。</p>
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email" onkeydown="if(event.key==='Enter')enterApp()">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">🚀 開始優化航線</button>
+    <p class="note">
+      🔒 無需信用卡，即時試用<br>
+      ⚠️ <span>所有查詢資料將在 24 小時內自動銷毀</span>
+    </p>
+  </div>
+</div>
+
+<!-- ════════════════════════ MAIN APP ════════════════════════ -->
+<div class="app" id="mainApp">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="left">
+      <span class="logo"><span class="logo-icon">🚢</span> RouteOptimizer</span>
+    </div>
+    <div class="right">
+      <div class="timer">⏳ 會話剩餘: <span id="countdown">23:59:59</span></div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <div class="breadcrumb"><a href="../index.html">← 返回 Quattro Dynamics</a> <span>&nbsp;/&nbsp; RouteOptimizer</span></div>
+      <h1>🌏 海運路線優化器</h1>
+      <p class="subtitle">比較航運公司報價、運輸時間、可靠性及碳排放 — 找到最適合您的路線。</p>
+    </div>
+
+    <!-- Route Selector Card -->
+    <div class="card" id="selectorCard">
+      <h2>🛳 選擇路線</h2>
+      <div class="card-row">
+        <div class="select-group">
+          <label>起運港</label>
+          <select id="originPort" onchange="checkRouteSelection()">
+            <option value="">選擇起運港...</option>
+            <option value="shenzhen">🇨🇳 深圳鹽田 (Shenzhen Yantian)</option>
+            <option value="shanghai">🇨🇳 上海 (Shanghai)</option>
+            <option value="ningbo">🇨🇳 寧波 (Ningbo)</option>
+            <option value="hk">🇭🇰 香港 (Hong Kong)</option>
+            <option value="xiamen">🇨🇳 廈門 (Xiamen)</option>
+          </select>
+        </div>
+        <div class="select-group">
+          <label>目的港</label>
+          <select id="destPort" onchange="checkRouteSelection()">
+            <option value="">選擇目的港...</option>
+            <option value="la">🇺🇸 洛杉磯 (Los Angeles)</option>
+            <option value="ny">🇺🇸 紐約 (New York)</option>
+            <option value="rotterdam">🇳🇱 鹿特丹 (Rotterdam)</option>
+            <option value="hamburg">🇩🇪 漢堡 (Hamburg)</option>
+            <option value="london">🇬🇧 倫敦 (London)</option>
+            <option value="dubai">🇦🇪 杜拜 (Dubai)</option>
+            <option value="tokyo">🇯🇵 東京 (Tokyo)</option>
+            <option value="sydney">🇦🇺 悉尼 (Sydney)</option>
+          </select>
+        </div>
+        <div class="select-group">
+          <label>櫃型</label>
+          <select id="containerType" onchange="checkRouteSelection()">
+            <option value="40hq">40ft High Cube (40HQ)</option>
+            <option value="40ft">40ft Standard</option>
+            <option value="20ft">20ft Standard</option>
+            <option value="lcl">LCL 拼箱</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" id="searchBtn" onclick="searchRoutes()" style="width:auto;margin-top:4px">🔍 查詢路線報價</button>
+    </div>
+
+    <!-- Example Shipments -->
+    <div class="chips-section">
+      <div class="chips-label">📦 快速載入範例</div>
+      <div class="chips" id="exampleChips">
+        <div class="chip active" data-example="0" onclick="loadExample(0)">
+          <span class="chip-emoji">🍳</span> 深圳 → LA (40HQ, 2000 Air Fryers)
+        </div>
+        <div class="chip" data-example="1" onclick="loadExample(1)">
+          <span class="chip-emoji">🫖</span> 寧波 → Rotterdam (20ft, 1500 Kettles)
+        </div>
+        <div class="chip" data-example="2" onclick="loadExample(2)">
+          <span class="chip-emoji">☕</span> HK → Dubai (LCL, 200 Coffee Makers)
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Bar -->
+    <div class="context-bar" id="contextBar" style="display:none">
+      <span class="ctx-icon">📋</span>
+      <span id="contextText"></span>
+    </div>
+
+    <!-- Route Summary Cards -->
+    <div id="routeCards" style="display:none"></div>
+
+    <!-- Results Table -->
+    <div id="resultsPanel" style="display:none">
+      <div class="card">
+        <h2>📊 詳細報價比較</h2>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-col">
+            <h3>💰 費用佔比 (最佳路線)</h3>
+            <div class="donut-wrapper" id="donutContainer"></div>
+          </div>
+          <div class="chart-col">
+            <h3>📈 航線表現對比</h3>
+            <div style="display:flex;flex-direction:column;gap:14px" id="perfBars"></div>
+          </div>
+        </div>
+
+        <!-- Detailed Table -->
+        <div class="results-table-wrap">
+          <table class="results-table">
+            <thead>
+              <tr>
+                <th>航運公司</th>
+                <th>航程天數</th>
+                <th>基本運費</th>
+                <th>燃油附加</th>
+                <th>THC</th>
+                <th>文件費</th>
+                <th>總費用</th>
+                <th>可靠性</th>
+                <th>CO₂</th>
+                <th>最適合</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Hidden Fees -->
+      <div class="card">
+        <h2>⚠️ 隱藏費用揭露</h2>
+        <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px">以下附加費通常不出現在初步報價中，但會在提單確認時被加上。我們幫你預先標出。</p>
+        <div class="fees-list" id="hiddenFees"></div>
+      </div>
+
+      <!-- Pro Tip -->
+      <div class="pro-tip">
+        <span class="tip-icon">💡</span>
+        <div>
+          <strong>專業建議：</strong> 提前 4 週訂艙可節省 15-25% 運費。第四季度 (Q4) 旺季運費通常比第一季度 (Q1) 高 30-40%。<br>
+          <span style="font-size:0.78rem;color:var(--muted)">資料來源：過去 12 個月主要航線運價波動分析</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Destruct Notice -->
+    <div class="destruct">
+      <span class="dicon">⚠️</span>
+      <div><b>所有查詢結果將在 24 小時內從伺服器永久刪除。</b><br>請截圖或匯出保存您的優化方案。如需再次查詢，請重新載入。</div>
+    </div>
+
+    <!-- Back Link -->
+    <div class="back-link">
+      <a href="../index.html">← 返回 Quattro Dynamics 產品總覽</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════ BREAKDOWN MODAL ════════════════════════ -->
+<div class="modal-overlay" id="breakdownModal" onclick="closeModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="document.getElementById('breakdownModal').classList.remove('show')">✕</button>
+    <h3 id="modalTitle">費用明細</h3>
+    <table class="breakdown-table" id="modalBody"></table>
+  </div>
+</div>
+
+<!-- ════════════════════════ TOAST ════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──
+const EXAMPLE_DATA = [
+  { // 0: Shenzhen → LA 40HQ 2000 Air Fryers
+    origin: 'shenzhen', dest: 'la', container: '40hq',
+    cargo: '40HQ 櫃 · 2000 台 Air Fryer (氣炸鍋)',
+    routes: [
+      { line:'Maersk (馬士基)', vessel:'M/V Maersk Essen', etd:'每週三', days:15, base:3800, bunker:450, thc:350, docs:150, reliability:98, co2:2.1, best:'速度與可靠性並重' },
+      { line:'COSCO (中遠海運)', vessel:'M/V COSCO Pride', etd:'每週一/五', days:13, base:3500, bunker:380, thc:320, docs:130, reliability:96, co2:1.9, best:'最快航程 · 最低碳排放' },
+      { line:'ONE (海洋網聯)', vessel:'M/V ONE Continuity', etd:'每週四', days:17, base:3200, bunker:400, thc:300, docs:140, reliability:94, co2:2.3, best:'預算優先 · 最具成本效益' },
+    ]
+  },
+  { // 1: Ningbo → Rotterdam 20ft 1500 Kettles
+    origin: 'ningbo', dest: 'rotterdam', container: '20ft',
+    cargo: '20ft 櫃 · 1500 台 Kettle (電熱水壺)',
+    routes: [
+      { line:'MSC (地中海航運)', vessel:'M/V MSC Diana', etd:'每週二', days:28, base:2800, bunker:520, thc:280, docs:160, reliability:97, co2:3.2, best:'最高可靠性 · 歐洲最大網絡' },
+      { line:'Hapag-Lloyd', vessel:'M/V Al Jmeliyah', etd:'每週六', days:26, base:2600, bunker:480, thc:260, docs:145, reliability:95, co2:3.5, best:'最佳平衡 · 速度與價格' },
+      { line:'COSCO (中遠海運)', vessel:'M/V COSCO Glory', etd:'每週三', days:30, base:2400, bunker:500, thc:290, docs:150, reliability:93, co2:3.8, best:'最低總價' },
+      { line:'CMA CGM', vessel:'M/V CMA CGM Jacques', etd:'每週五', days:27, base:2700, bunker:490, thc:270, docs:155, reliability:96, co2:3.4, best:'法國/南歐進口首選' },
+    ]
+  },
+  { // 2: HK → Dubai LCL 200 Coffee Makers
+    origin: 'hk', dest: 'dubai', container: 'lcl',
+    cargo: 'LCL 拼箱 · 200 台 Coffee Maker (咖啡機) · 約 4.5 CBM',
+    routes: [
+      { line:'Maersk (馬士基)', vessel:'M/V Maersk Serangoon', etd:'每週一', days:18, base:1200, bunker:180, thc:150, docs:100, reliability:99, co2:0.8, best:'最高可靠性 · 中東網絡完善' },
+      { line:'ONE (海洋網聯)', vessel:'M/V ONE Majesty', etd:'每週三', days:20, base:1050, bunker:170, thc:140, docs:95, reliability:95, co2:0.9, best:'性價比高' },
+      { line:'Hapag-Lloyd', vessel:'M/V Prague Express', etd:'每週五', days:22, base:980, bunker:160, thc:145, docs:90, reliability:93, co2:1.0, best:'最低總費用' },
+    ]
+  }
+];
+
+let currentRoutes = [];
+let bestRouteIdx = 0;
+
+// ── Gate ──
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) { err.textContent = '請輸入有效電郵地址'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('ro_gate_passed', 'true');
+  localStorage.setItem('ro_email', email);
+  toast('✅ 歡迎使用 RouteOptimizer 海運路線優化器');
+}
+
+// ── Toast ──
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Countdown ──
+function startCountdown() {
+  let remaining = 24 * 60 * 60;
+  const el = document.getElementById('countdown');
+  setInterval(() => {
+    remaining--;
+    if (remaining <= 0) { el.textContent = '已過期'; return; }
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    const s = remaining % 60;
+    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+// ── Route Selector → Chips Sync ──
+function checkRouteSelection() {
+  const orig = document.getElementById('originPort').value;
+  const dest = document.getElementById('destPort').value;
+  const hasSelection = orig && dest;
+  document.getElementById('searchBtn').disabled = !hasSelection;
+  // Deselect chips when manual selection changes
+  if (orig || dest) {
+    document.querySelectorAll('#exampleChips .chip').forEach(c => c.classList.remove('active'));
+  }
+}
+
+// ── Load Example ──
+function loadExample(idx) {
+  const ex = EXAMPLE_DATA[idx];
+  document.getElementById('originPort').value = ex.origin;
+  document.getElementById('destPort').value = ex.dest;
+  document.getElementById('containerType').value = ex.container;
+  document.querySelectorAll('#exampleChips .chip').forEach((c,i) => c.classList.toggle('active', i === idx));
+  document.getElementById('searchBtn').disabled = false;
+  searchRoutes();
+}
+
+// ── Search Routes ──
+function searchRoutes() {
+  const orig = document.getElementById('originPort').value;
+  const dest = document.getElementById('destPort').value;
+  if (!orig || !dest) { toast('⚠️ 請選擇起運港和目的港'); return; }
+
+  const container = document.getElementById('containerType').value;
+  // Find matching example or build generic
+  let match = EXAMPLE_DATA.find(e => e.origin === orig && e.dest === dest && e.container === container);
+  if (!match) match = EXAMPLE_DATA.find(e => e.origin === orig && e.dest === dest);
+  if (!match) {
+    // Build generic routes for any port combination
+    const daysBase = { la:14, ny:28, rotterdam:27, hamburg:28, london:29, dubai:16, tokyo:5, sydney:14 };
+    const baseFees = { '20ft':2000, '40ft':3200, '40hq':3500, lcl:900 };
+    const days = daysBase[dest] || 20;
+    const base = baseFees[container] || 2500;
+    const mult = container === 'lcl' ? 0.35 : 1;
+    currentRoutes = [
+      { line:'Maersk (馬士基)', vessel:'–', etd:'每週出發', days:days, base:Math.round(base*1.15), bunker:Math.round(base*0.13*mult), thc:Math.round(base*0.09*mult), docs:145, reliability:98, co2:+(days*0.14*mult).toFixed(1), best:'可靠性首選' },
+      { line:'COSCO (中遠海運)', vessel:'–', etd:'每週出發', days:Math.round(days*0.9), base:Math.round(base*0.92), bunker:Math.round(base*0.11*mult), thc:Math.round(base*0.08*mult), docs:130, reliability:95, co2:+(days*0.12*mult).toFixed(1), best:'最佳速度與價格' },
+      { line:'ONE (海洋網聯)', vessel:'–', etd:'每週出發', days:Math.round(days*1.15), base:Math.round(base*0.85), bunker:Math.round(base*0.12*mult), thc:Math.round(base*0.08*mult), docs:140, reliability:93, co2:+(days*0.15*mult).toFixed(1), best:'最具成本效益' },
+    ];
+  } else {
+    currentRoutes = match.routes;
+    document.getElementById('contextText').textContent = match.cargo;
+    document.getElementById('contextBar').style.display = 'flex';
+  }
+
+  // Find best (lowest total cost)
+  bestRouteIdx = 0;
+  let minTotal = Infinity;
+  currentRoutes.forEach((r, i) => {
+    const total = r.base + r.bunker + r.thc + r.docs;
+    if (total < minTotal) { minTotal = total; bestRouteIdx = i; }
+  });
+
+  renderResults();
+  document.getElementById('resultsPanel').style.display = 'block';
+  document.getElementById('resultsPanel').scrollIntoView({ behavior:'smooth', block:'start' });
+  toast(`✅ 找到 ${currentRoutes.length} 條航線報價`);
+}
+
+// ── Render Results ──
+function renderResults() {
+  // Route Cards
+  const cardsDiv = document.getElementById('routeCards');
+  cardsDiv.style.display = 'block';
+  const unitLabel = document.getElementById('containerType').value === 'lcl' ? '/CBM' : '/櫃';
+  cardsDiv.innerHTML = `
+    <div style="margin-bottom:20px">
+      <h3 style="font-size:0.95rem;color:var(--muted);margin-bottom:12px">🚢 ${currentRoutes.length} 條航線報價</h3>
+    </div>
+    <div class="route-grid">
+      ${currentRoutes.map((r,i) => {
+        const total = r.base + r.bunker + r.thc + r.docs;
+        const isBest = i === bestRouteIdx;
+        return `
+        <div class="route-card${isBest?' best':''}" onclick="document.getElementById('resultsTable').scrollIntoView({behavior:'smooth'})">
+          ${isBest ? '<div class="best-badge">🏆 最佳選擇</div>' : ''}
+          <div class="line-name">${r.line}</div>
+          <div class="line-etd">${r.vessel} · ${r.etd}</div>
+          <div class="line-total">$${total.toLocaleString()}</div>
+          <div class="line-perunit">總費用 ${unitLabel} · ${r.days} 天航程</div>
+          <div class="line-meta">
+            <span class="meta-pill">🚀 ${r.days}d</span>
+            <span class="meta-pill" style="color:${r.reliability>=97?'var(--accent2)':r.reliability>=95?'var(--warn)':'var(--red)'}">📊 ${r.reliability}%</span>
+            <span class="meta-pill">🌱 ${r.co2}t CO₂</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+
+  // Results Table
+  document.getElementById('resultsBody').innerHTML = currentRoutes.map((r,i) => {
+    const total = r.base + r.bunker + r.thc + r.docs;
+    const isBest = i === bestRouteIdx;
+    const relClass = r.reliability >= 97 ? 'reliability-high' : r.reliability >= 95 ? 'reliability-mid' : 'reliability-low';
+    const relWidth = r.reliability;
+    const co2Width = Math.min(r.co2 * 30, 100);
+    return `
+    <tr class="${isBest?'best-row':''}">
+      <td><span class="line-badge">${r.line}</span></td>
+      <td><strong>${r.days} 天</strong></td>
+      <td class="cost-value">$${r.base.toLocaleString()}</td>
+      <td>$${r.bunker.toLocaleString()}</td>
+      <td>$${r.thc.toLocaleString()}</td>
+      <td>$${r.docs.toLocaleString()}</td>
+      <td class="cost-value" style="color:var(--accent)">$${total.toLocaleString()}</td>
+      <td><span class="reliability-bar ${relClass}" style="width:${relWidth}%"></span><span class="${relClass}">${r.reliability}%</span></td>
+      <td><span class="co2-bar" style="width:${co2Width}%"></span>${r.co2}t</td>
+      <td class="best-for">${r.best}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="showBreakdown(${i})">📋 明細</button></td>
+    </tr>`;
+  }).join('');
+
+  // Donut Chart (best route)
+  const best = currentRoutes[bestRouteIdx];
+  const total = best.base + best.bunker + best.thc + best.docs;
+  const parts = [
+    { label:'基本運費', val:best.base, pct:Math.round(best.base/total*100), color:'var(--chart-base)' },
+    { label:'燃油附加', val:best.bunker, pct:Math.round(best.bunker/total*100), color:'var(--chart-bunker)' },
+    { label:'THC', val:best.thc, pct:Math.round(best.thc/total*100), color:'var(--chart-thc)' },
+    { label:'文件費', val:best.docs, pct:Math.round(best.docs/total*100), color:'var(--chart-docs)' },
+  ];
+  let gradParts = [];
+  let cum = 0;
+  parts.forEach(p => {
+    gradParts.push(`${p.color} ${cum}deg ${cum + p.pct * 3.6}deg`);
+    cum += p.pct * 3.6;
+  });
+  document.getElementById('donutContainer').innerHTML = `
+    <div class="donut-chart" style="background: conic-gradient(${gradParts.join(',')})">
+      <div class="donut-hole">
+        <span class="total-label">總費用</span>
+        <span class="total-amount">$${total.toLocaleString()}</span>
+      </div>
+    </div>
+    <div class="donut-legend">
+      ${parts.map(p => `
+        <div class="legend-item">
+          <span class="legend-dot" style="background:${p.color}"></span>
+          <span>${p.label}</span>
+          <span class="legend-val">$${p.val.toLocaleString()} (${p.pct}%)</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  // Performance Bars
+  const maxDays = Math.max(...currentRoutes.map(r => r.days));
+  document.getElementById('perfBars').innerHTML = currentRoutes.map((r,i) => {
+    const t = r.base + r.bunker + r.thc + r.docs;
+    const barW = Math.round((1 - r.days/maxDays) * 60 + 40);
+    const isBest = i === bestRouteIdx;
+    const barColor = isBest ? 'var(--accent2)' : r.reliability >= 96 ? 'var(--accent)' : 'var(--muted)';
+    return `
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:130px;font-size:0.78rem;font-weight:600;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.line}">${r.line}</div>
+      <div style="flex:1;height:8px;background:rgba(30,45,69,0.5);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${barW}%;background:${barColor};border-radius:4px;transition:width .6s"></div>
+      </div>
+      <div style="width:70px;font-size:0.73rem;color:var(--muted);text-align:left">$${t.toLocaleString()}</div>
+    </div>`;
+  }).join('');
+
+  // Hidden Fees
+  const cfee = document.getElementById('containerType').value === 'lcl' ? 35 : 85;
+  document.getElementById('hiddenFees').innerHTML = `
+    <div class="fee-item">
+      <div class="fee-left">
+        <div class="fee-icon">📄</div>
+        <div><div class="fee-name">文件處理費 (Documentation Fee)</div><div class="fee-desc">提單(B/L)、產地證、裝箱單處理費用</div></div>
+      </div>
+      <div class="fee-amount">$${cfee} – $${cfee + 50}</div>
+    </div>
+    <div class="fee-item">
+      <div class="fee-left">
+        <div class="fee-icon">🔒</div>
+        <div><div class="fee-name">安全附加費 (Security Surcharge)</div><div class="fee-desc">ISPS 港口安全費 + 貨櫃安檢費</div></div>
+      </div>
+      <div class="fee-amount">$${Math.round(cfee * 0.4)} – $${Math.round(cfee * 0.7)}</div>
+    </div>
+    <div class="fee-item">
+      <div class="fee-left">
+        <div class="fee-icon">📈</div>
+        <div><div class="fee-name">旺季附加費 (Peak Season Surcharge)</div><div class="fee-desc">Q3/Q4 旺季 (8-12月) 臨時加收</div></div>
+      </div>
+      <div class="fee-amount">$150 – $450</div>
+    </div>
+    <div class="fee-item">
+      <div class="fee-left">
+        <div class="fee-icon">🔄</div>
+        <div><div class="fee-name">貨櫃不平衡費 (Container Imbalance Fee)</div><div class="fee-desc">目的港空櫃回流成本攤分</div></div>
+      </div>
+      <div class="fee-amount">$100 – $250</div>
+    </div>
+  `;
+
+  // Context Bar
+  updateContextBar();
+}
+
+function updateContextBar() {
+  const origSel = document.getElementById('originPort');
+  const destSel = document.getElementById('destPort');
+  const cont = document.getElementById('containerType');
+  const origText = origSel.options[origSel.selectedIndex]?.text?.split(' ').slice(1).join(' ') || '';
+  const destText = destSel.options[destSel.selectedIndex]?.text?.split(' ').slice(1).join(' ') || '';
+  const contText = cont.options[cont.selectedIndex]?.text || '';
+  document.getElementById('contextText').textContent = `${origText} → ${destText} · ${contText}`;
+  document.getElementById('contextBar').style.display = 'flex';
+}
+
+// ── Breakdown Modal ──
+function showBreakdown(idx) {
+  const r = currentRoutes[idx];
+  const total = r.base + r.bunker + r.thc + r.docs;
+  document.getElementById('modalTitle').textContent = `${r.line} – 費用明細`;
+  document.getElementById('modalBody').innerHTML = `
+    <tr><td>基本海運費 (Ocean Freight)</td><td>$${r.base.toLocaleString()}</td></tr>
+    <tr><td>燃油附加費 (Bunker Adjustment Factor)</td><td>$${r.bunker.toLocaleString()}</td></tr>
+    <tr><td>碼頭處理費 (Terminal Handling Charge)</td><td>$${r.thc.toLocaleString()}</td></tr>
+    <tr><td>文件費 (Documentation Fee)</td><td>$${r.docs.toLocaleString()}</td></tr>
+    <tr><td>船期: ${r.vessel} · ${r.etd}</td><td>${r.days} 天</td></tr>
+    <tr class="total-row"><td>總費用</td><td style="color:var(--accent)">$${total.toLocaleString()}</td></tr>
+  `;
+  document.getElementById('breakdownModal').classList.add('show');
+}
+
+function closeModal(e) {
+  if (e.target === document.getElementById('breakdownModal')) {
+    document.getElementById('breakdownModal').classList.remove('show');
+  }
+}
+
+// ── Init ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('breakdownModal').classList.remove('show');
+});
+
+if (localStorage.getItem('ro_gate_passed')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+</script>
+</body>
+</html>

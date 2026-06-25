@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnapListing 一影上架 — AI 產品上架助手 | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b; --gold: #fbbf24; --purple: #8b5cf6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* ── Gate Overlay ── */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;color:var(--red);font-weight:600}
+
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9}
+
+/* ── App Shell ── */
+.app{display:none}
+.app.active{display:block}
+
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+.topbar a{color:var(--muted);text-decoration:none;font-size:0.8rem}
+.topbar a:hover{color:var(--text)}
+
+.container{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+.page-header{text-align:center;margin-bottom:28px}
+.page-header h1{font-size:1.8rem;margin-bottom:6px}
+.page-header .badge{display:inline-block;background:linear-gradient(135deg,#8b5cf6,#06b6d4);color:#fff;padding:4px 12px;border-radius:4px;font-size:0.7rem;font-weight:800;vertical-align:middle;margin-left:8px}
+.page-header p{color:var(--muted);font-size:0.95rem}
+
+/* ── Upload Zone ── */
+.upload-zone{background:var(--card);border:2px dashed var(--border);border-radius:16px;padding:40px 20px;text-align:center;margin-bottom:20px;transition:all .3s;cursor:pointer}
+.upload-zone:hover{border-color:var(--accent);background:rgba(6,182,212,0.03)}
+.upload-zone.drag-over{border-color:var(--accent2);background:rgba(16,185,129,0.05)}
+.upload-zone .upload-icon{font-size:3rem;margin-bottom:12px}
+.upload-zone h3{font-size:1.1rem;margin-bottom:6px}
+.upload-zone p{color:var(--muted);font-size:0.82rem}
+.upload-zone .supported{color:var(--muted);font-size:0.72rem;margin-top:10px}
+.upload-preview{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.upload-preview .preview-thumb{width:80px;height:80px;border-radius:10px;border:2px solid var(--accent2);object-fit:cover;background:var(--card)}
+.upload-preview .preview-label{color:var(--accent2);font-size:0.82rem;font-weight:600}
+
+/* ── Example Chips ── */
+.example-section{margin-bottom:24px}
+.example-section .example-label{color:var(--muted);font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
+.example-chips{display:flex;flex-wrap:wrap;gap:10px}
+.example-chip{padding:10px 18px;border:1px solid var(--border);border-radius:24px;font-size:0.82rem;cursor:pointer;transition:all .25s;white-space:nowrap;background:var(--card);color:var(--muted);display:flex;align-items:center;gap:8px}
+.example-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(6,182,212,0.08);transform:translateY(-1px)}
+.example-chip.active{border-color:var(--purple);color:var(--purple);background:rgba(139,92,246,0.1);box-shadow:0 0 14px rgba(139,92,246,0.15)}
+.example-chip .chip-icon{font-size:1.3rem}
+
+.generate-row{text-align:center;margin:24px 0}
+.btn-generate{background:var(--gradient);color:#fff;padding:16px 48px;font-size:1.05rem;border-radius:14px;cursor:pointer;border:none;font-weight:700;box-shadow:0 4px 24px rgba(6,182,212,0.3);transition:all .25s}
+.btn-generate:hover{transform:translateY(-3px);box-shadow:0 8px 32px rgba(6,182,212,0.45)}
+.btn-generate:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* ── Results ── */
+.results-section{display:none;animation:fadeUp .5s ease-out}
+.results-section.show{display:block}
+
+/* Results Grid */
+.results-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:16px;margin-bottom:16px}
+@media(max-width:768px){.results-grid{grid-template-columns:1fr}}
+
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;transition:all .2s}
+.result-card:hover{border-color:var(--border)}
+.result-card .rc-label{display:flex;align-items:center;gap:8px;font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:12px;font-weight:700}
+.result-card .rc-label .rc-icon{font-size:1rem}
+.result-card .rc-content{font-size:0.88rem;line-height:1.7;color:var(--text)}
+
+/* Title card - full width */
+.title-card{grid-column:1/-1;border-color:rgba(139,92,246,0.3);background:linear-gradient(135deg,rgba(139,92,246,0.08),rgba(139,92,246,0.02))}
+.title-card h3{font-size:1.15rem;font-weight:700;line-height:1.5;color:#fff;background:linear-gradient(135deg,#c4b5fd,#e2e8f0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.title-card .platform-badges{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.platform-badge{padding:3px 10px;border-radius:12px;font-size:0.68rem;font-weight:600}
+.platform-badge.amazon{background:rgba(245,158,11,0.15);color:var(--warn)}
+.platform-badge.ebay{background:rgba(239,68,68,0.15);color:#f87171}
+.platform-badge.walmart{background:rgba(6,182,212,0.12);color:var(--accent)}
+.platform-badge.shopify{background:rgba(16,185,129,0.12);color:var(--accent2)}
+
+/* Bullets card */
+.bullets-card .rc-content ul{list-style:none;padding:0}
+.bullets-card .rc-content ul li{padding:8px 0;padding-left:24px;position:relative;border-bottom:1px solid rgba(30,45,69,0.5);line-height:1.6}
+.bullets-card .rc-content ul li:last-child{border-bottom:none}
+.bullets-card .rc-content ul li::before{content:'✦';position:absolute;left:0;color:var(--gold);font-size:0.7rem;top:10px}
+
+/* Description card - full width */
+.desc-card{grid-column:1/-1}
+.desc-card .rc-content{font-size:0.9rem;line-height:1.8;color:var(--muted)}
+
+/* Price card */
+.price-card{}
+.price-tier{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.price-tier:last-child{border-bottom:none}
+.price-tier .tier-name{font-size:0.82rem;color:var(--muted);font-weight:600}
+.price-tier .tier-range{font-weight:700}
+.price-tier .tier-range.budget{color:var(--accent2)}
+.price-tier .tier-range.mid{color:var(--gold)}
+.price-tier .tier-range.premium{color:var(--purple)}
+
+/* Target markets */
+.market-card{}
+.market-tags{display:flex;flex-wrap:wrap;gap:8px}
+.market-tag{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(6,182,212,0.08);border:1px solid var(--border);border-radius:10px;font-size:0.8rem;color:var(--text)}
+.market-tag .market-flag{font-size:1.1rem}
+
+/* Hashtags */
+.hashtag-card{grid-column:1/-1}
+.hashtag-card .rc-content{font-family:monospace;font-size:0.9rem;color:var(--accent2);line-height:2;word-break:break-all}
+.hashtag-card .rc-content .ht{display:inline-block;background:rgba(16,185,129,0.08);padding:3px 10px;border-radius:6px;margin:2px 4px;border:1px solid rgba(16,185,129,0.15);cursor:pointer;transition:all .2s}
+.hashtag-card .rc-content .ht:hover{background:rgba(16,185,129,0.15);border-color:var(--accent2)}
+
+/* Action row */
+.action-row{display:flex;gap:12px;justify-content:center;margin:24px 0;flex-wrap:wrap}
+.btn-action{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;border:none;transition:all .2s}
+.btn-copy{background:var(--accent2);color:#fff}
+.btn-copy:hover{background:#0ea57e;transform:translateY(-1px)}
+.btn-regenerate{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.btn-regenerate:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.btn-reset{background:transparent;border:1.5px solid var(--border);color:var(--muted);font-size:0.82rem}
+.btn-reset:hover{border-color:var(--muted);color:var(--text)}
+
+/* AI disclaimer */
+.ai-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,rgba(139,92,246,0.15),rgba(6,182,212,0.1));border:1px solid rgba(139,92,246,0.25);border-radius:20px;padding:8px 16px;font-size:0.75rem;color:var(--muted);margin-bottom:20px}
+
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 18px;margin-top:16px;display:flex;align-items:flex-start;gap:10px;font-size:0.82rem;color:var(--red)}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+.toast.show{display:block;animation:fadeIn .3s}
+
+/* ── Processing Pulse ── */
+.processing-pulse{display:none;justify-content:center;align-items:center;gap:12px;padding:28px;margin:20px 0}
+.processing-pulse.active{display:flex}
+.processing-pulse .pulse-dot{width:12px;height:12px;border-radius:50%;background:var(--accent);animation:pulse 1.2s ease-in-out infinite}
+.processing-pulse .pulse-dot:nth-child(2){animation-delay:0.2s;background:var(--purple)}
+.processing-pulse .pulse-dot:nth-child(3){animation-delay:0.4s;background:var(--accent2)}
+.processing-pulse .pulse-dot:nth-child(4){animation-delay:0.6s;background:var(--gold)}
+.processing-pulse .pulse-text{color:var(--muted);font-size:0.88rem;margin-left:8px}
+
+@keyframes pulse{0%,100%{transform:scale(0.8);opacity:0.4}50%{transform:scale(1.4);opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Footer ── */
+footer{text-align:center;padding:32px 0;color:var(--muted);font-size:0.78rem;border-top:1px solid var(--border);margin-top:40px}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ GATE ═══════════════════════════════ -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">📸</div>
+    <h2>SnapListing 一影上架</h2>
+    <p>AI Listing Engine™ — 影一影 · 自動生成全平台上架內容</p>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr">請輸入有效電郵地址</p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+    <div class="note">⚠️ <span>所有資料將在 24 小時內自動銷毀</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ APP ═══════════════════════════════ -->
+<div class="app" id="mainApp">
+  <div class="topbar">
+    <div class="logo">📸 SnapListing <span style="font-size:0.7rem;color:var(--purple);margin-left:4px">一影上架</span></div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <div class="timer">⏳ <span id="countdown">23:59:59</span></div>
+      <a href="../index.html">🏠 主頁</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>📸 SnapListing 一影上架 <span class="badge">BETA</span></h1>
+      <p>影一張產品相 → AI 自動生成 Amazon / eBay / Walmart / Shopify 上架內容</p>
+    </div>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📤</div>
+      <h3>拖放產品相片到此 · 或點擊上傳</h3>
+      <p>AI 會自動識別產品類別、特徵，生成專業上架內容</p>
+      <p class="supported">支援 JPG / PNG · 最多 10MB · 建議白底產品圖</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png" style="display:none" onchange="handleUpload(this)">
+
+    <div class="upload-preview" id="uploadPreview"></div>
+
+    <!-- Example Products -->
+    <div class="example-section">
+      <div class="example-label">或選擇範例產品即時體驗 ⚡</div>
+      <div class="example-chips" id="exampleChips">
+        <div class="example-chip" onclick="selectExample('air_fryer')">
+          <span class="chip-icon">🍟</span> Air Fryer 空氣炸鍋
+        </div>
+        <div class="example-chip" onclick="selectExample('kettle')">
+          <span class="chip-icon">🫖</span> Electric Kettle 電熱水壺
+        </div>
+        <div class="example-chip" onclick="selectExample('toaster')">
+          <span class="chip-icon">🍞</span> Toaster 多士爐
+        </div>
+        <div class="example-chip" onclick="selectExample('coffee_maker')">
+          <span class="chip-icon">☕</span> Coffee Maker 咖啡機
+        </div>
+        <div class="example-chip" onclick="selectExample('blender')">
+          <span class="chip-icon">🥤</span> Blender 攪拌機
+        </div>
+      </div>
+    </div>
+
+    <div class="generate-row">
+      <button class="btn-generate" id="generateBtn" onclick="generateListing()" disabled>✨ AI 生成上架內容</button>
+    </div>
+
+    <!-- Processing -->
+    <div class="processing-pulse" id="processingPulse">
+      <div class="pulse-dot"></div><div class="pulse-dot"></div><div class="pulse-dot"></div><div class="pulse-dot"></div>
+      <span class="pulse-text">AI 正在分析產品特徵，生成專業上架內容…</span>
+    </div>
+
+    <!-- Results -->
+    <div class="results-section" id="resultsSection">
+      <div style="text-align:center">
+        <div class="ai-badge">🤖 AI 生成內容 · 建議人手審閱後使用</div>
+      </div>
+
+      <div class="results-grid">
+        <!-- Product Title -->
+        <div class="result-card title-card">
+          <div class="rc-label"><span class="rc-icon">🏷️</span> SEO 優化產品標題</div>
+          <h3 id="listingTitle"></h3>
+          <div class="platform-badges" id="platformBadges"></div>
+        </div>
+
+        <!-- Bullet Points -->
+        <div class="result-card bullets-card">
+          <div class="rc-label"><span class="rc-icon">✨</span> 5 大賣點 (Bullet Points)</div>
+          <div class="rc-content"><ul id="listingBullets"></ul></div>
+        </div>
+
+        <!-- Suggested Pricing -->
+        <div class="result-card price-card">
+          <div class="rc-label"><span class="rc-icon">💰</span> 建議價格區間</div>
+          <div class="rc-content" id="listingPricing"></div>
+        </div>
+
+        <!-- Full Description -->
+        <div class="result-card desc-card">
+          <div class="rc-label"><span class="rc-icon">📝</span> 完整產品描述</div>
+          <div class="rc-content" id="listingDesc"></div>
+        </div>
+
+        <!-- Target Markets -->
+        <div class="result-card market-card">
+          <div class="rc-label"><span class="rc-icon">🎯</span> 目標市場推薦</div>
+          <div class="rc-content">
+            <div class="market-tags" id="listingMarkets"></div>
+          </div>
+        </div>
+
+        <!-- Hashtags -->
+        <div class="result-card hashtag-card">
+          <div class="rc-label"><span class="rc-icon">#️⃣</span> 社交媒體 Hashtags</div>
+          <div class="rc-content" id="listingHashtags"></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-row">
+        <button class="btn-action btn-copy" onclick="copyAll()">📋 Copy All 一鍵複製</button>
+        <button class="btn-action btn-regenerate" onclick="regenerateListing()">🔄 Regenerate 換版本</button>
+        <button class="btn-action btn-reset" onclick="resetListing()">↺ 重新選擇</button>
+      </div>
+
+      <div class="destruct"><span>⚠️</span><div><b>所有資料將在 24 小時內自動銷毀。</b>請自行保存生成的內容。</div></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>© 2026 <a href="../index.html">Quattro Dynamics</a> — SnapListing 一影上架 · AI Listing Engine™</p>
+      <p style="margin-top:6px">AI-powered marketplace listing generation | Amazon · eBay · Walmart · Shopify</p>
+    </div>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// DOMAIN DATA — per-product listing content
+// ═══════════════════════════════════════
+const LISTING_DATA = {
+  air_fryer: {
+    variants: [
+      {
+        title: 'ProChef 5.8QT Digital Air Fryer Oven — 450°F RapidAir Vortex, 12-in-1 Touchscreen, Extra-Large Family Size, Dishwasher-Safe Nonstick Basket, 150+ In-App Recipes',
+        bullets: [
+          '🔥 <b>450°F RAPIDAIR VORTEX TECHNOLOGY</b> — Cooks up to 50% faster than a conventional oven with zero preheat time. Circulates super-heated air at high speed for crispy, golden results with up to 85% less oil.',
+          '🍟 <b>EXTRA-LARGE 5.8 QUART CAPACITY</b> — Fits a 5 lb whole chicken, 2 lbs of fries, or 4 large chicken breasts. Perfect for families of 4-6. Square basket design maximizes cooking surface by 30% vs round baskets.',
+          '🎛️ <b>12 ONE-TOUCH COOKING PRESETS</b> — Air Fry, Roast, Broil, Bake, Reheat, Dehydrate, Keep Warm, Toast, Pizza, Chicken, Steak, Fries. Customizable time and temperature for precision cooking.',
+          '🧽 <b>EFFORTLESS CLEANUP</b> — Premium nonstick basket and crisper plate are both dishwasher-safe and PFOA-free. Removable parts wipe clean in seconds with minimal scrubbing required.',
+          '📱 <b>150+ BUILT-IN RECIPES & COMPANION APP</b> — Includes printed recipe book plus free iOS/Android app with step-by-step cooking guides, meal plans, and weekly recipe updates. ETL certified, 120V/1700W.'
+        ],
+        description: 'Meet the ProChef 5.8QT Digital Air Fryer — your all-in-one kitchen companion that redefines home cooking. Engineered with next-generation RapidAir Vortex Technology, this air fryer circulates super-heated air at 450°F to deliver restaurant-quality crispiness using up to 85% less oil than traditional deep frying. The generous 5.8-quart square basket comfortably serves a family of 4-6, accommodating everything from whole roasted chickens to perfectly crisped vegetables. Twelve intelligent cooking presets eliminate guesswork — simply tap and let the ProChef handle the rest. The bright digital touchscreen with angled display ensures easy reading without bending down. Cleanup is truly effortless: both the nonstick basket and crisper plate slide into your dishwasher. Backed by a 1-year comprehensive warranty and a thriving community of 2M+ home cooks, the ProChef Digital Air Fryer isn\'t just an appliance — it\'s the start of a healthier, faster, and more delicious way to cook every single day.',
+        pricing: [
+          { tier: '💲 Budget / Entry', range: '$45.99 – $59.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / Best Seller', range: '$69.99 – $89.99', cls: 'mid' },
+          { tier: '👑 Premium / Smart WiFi', range: '$109.99 – $139.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Amazon.com #1 category, strong Q4 demand' },
+          { flag: '🇬🇧', name: 'United Kingdom — 40% household penetration, health-conscious trend' },
+          { flag: '🇩🇪', name: 'Germany — Europe\'s largest air fryer market, premium positioning' },
+          { flag: '🇦🇺', name: 'Australia — Rapid adoption, summer grilling alternative' },
+          { flag: '🇯🇵', name: 'Japan — Compact models preferred, strong gift market' }
+        ],
+        hashtags: '#AirFryer #HealthyCooking #KitchenAppliances #OilFreeFryer #HomeCooking #CrispyWithoutOil #FamilyMeals #MealPrep #QuickDinner #KitchenGadgets #AirFried #HealthyLifestyle #CookingAtHome #SmallKitchenAppliances #FoodieApproved',
+        platforms: ['Amazon', 'eBay', 'Walmart', 'Shopify']
+      },
+      {
+        title: 'CrispPro XL 6.0QT Smart Air Fryer with WiFi — 360° TurboVortex Heating, 10 Preset Programs, Voice Control Ready, Large Viewing Window, BPA-Free',
+        bullets: [
+          '🌀 <b>360° TURBOVORTEX HEATING SYSTEM</b> — Proprietary cyclonic air circulation ensures every inch of food gets evenly crisped. No shaking or flipping needed. Achieves deep-fried taste with a tablespoon of oil or less.',
+          '👁️ <b>LARGE VIEWING WINDOW + INTERIOR LIGHT</b> — Monitor your cooking progress without opening the basket. Built-in LED light and tempered glass window let you check doneness at a glance — no heat loss, no guesswork.',
+          '🧠 <b>SMART WIFI WITH VOICE CONTROL</b> — Connects to Alexa and Google Assistant for hands-free operation. "Alexa, air fry chicken for 20 minutes." Monitor, adjust, and receive notifications right from your phone.',
+          '📦 <b>GENEROUS 6.0 QUART FAMILY SIZE</b> — Feeds 5-7 people. Extra-wide square basket holds a 6 lb chicken or 3 lbs of wings. Ideal for meal prepping and entertaining.',
+          '✅ <b>FULL CERTIFICATION SUITE</b> — ETL, FCC, FDA food contact compliant. BPA-free and PFOA-free construction. Backed by a 2-year manufacturer warranty and lifetime US-based customer support.'
+        ],
+        description: 'Take your kitchen to the next level with the CrispPro XL 6.0QT Smart Air Fryer — where cutting-edge TurboVortex technology meets seamless smart home integration. Unlike conventional air fryers that blast heat from a single direction, the CrispPro\'s 360° cyclonic airflow wraps every morsel of food in precisely controlled heat, achieving that coveted golden crunch without the hassle of shaking or rotating. The built-in viewing window and interior light give you real-time visibility, while WiFi connectivity lets you control, monitor, and schedule cooking sessions from anywhere. Whether you\'re meal prepping for the entire week or hosting a game-day gathering, the 6.0-quart capacity delivers. Pair it with the free CrispPro app for access to 200+ guided recipes tailored to your dietary preferences — keto, paleo, vegan, or classic comfort. Cleanup is a breeze with all removable parts being dishwasher-safe. Make every meal your masterpiece with CrispPro.',
+        pricing: [
+          { tier: '💲 Budget / Entry', range: '$49.99 – $64.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / Best Seller', range: '$79.99 – $99.99', cls: 'mid' },
+          { tier: '👑 Premium / Smart WiFi', range: '$119.99 – $149.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Smart home integration drives premium tier' },
+          { flag: '🇨🇦', name: 'Canada — Growing demand, bilingual packaging recommended' },
+          { flag: '🇬🇧', name: 'United Kingdom — Energy efficiency focus, cost-of-living appeal' },
+          { flag: '🇦🇺', name: 'Australia — BBQ alternative, strong summer sales' },
+          { flag: '🇰🇷', name: 'South Korea — Trendy kitchen appliance, influencer-driven market' }
+        ],
+        hashtags: '#SmartKitchen #WiFiAirFryer #AirFryerRecipes #HealthyFriedFood #SmartHome #CrispyGoodness #OilFreeCooking #KitchenInnovation #FamilySizeAirFryer #HomeChefLife #MealPrepIdeas #AlexaKitchen #ZeroOil #CrispyFried #KitchenEssentials',
+        platforms: ['Amazon', 'eBay', 'Walmart', 'Shopify']
+      }
+    ]
+  },
+  kettle: {
+    variants: [
+      {
+        title: 'PureBoil 1.7L Electric Kettle — Double-Wall Stainless Steel, 1500W Rapid Boil, Auto Shut-Off & Boil-Dry Protection, Cordless 360° Base, BPA-Free, Matte Black',
+        bullets: [
+          '⚡ <b>1500W RAPID BOIL SYSTEM</b> — Brings 1.7 liters (7 cups) of water to a rolling boil in under 5 minutes — 50% faster than a microwave and 30% faster than standard kettles. Perfect for tea, pour-over coffee, instant noodles, and baby formula.',
+          '🛡️ <b>DOUBLE-WALL COOL-TOUCH EXTERIOR</b> — Premium 304 stainless steel inner pot with a stay-cool outer wall. Water stays hot up to 30 minutes longer while the exterior remains safe to touch — ideal for homes with children.',
+          '🔒 <b>ADVANCED SAFETY FEATURES</b> — Automatic shut-off when water reaches boiling point. Boil-dry protection prevents the kettle from operating without water. Built-in Strix thermostat controller rated for 15,000+ cycles.',
+          '🔄 <b>CORDLESS 360° ROTARY BASE</b> — Lift and pour effortlessly from any angle. Integrated cord storage keeps your countertop tidy. Non-slip silicone feet ensure stability on any surface.',
+          '🧼 <b>EASY-CLEAN WIDE MOUTH DESIGN</b> — 3.5-inch opening allows full hand access for thorough cleaning and descaling. Removable, washable scale filter catches hard water deposits. BPA-free for peace of mind.'
+        ],
+        description: 'Start every morning right with the PureBoil 1.7L Double-Wall Electric Kettle — engineered for speed, safety, and style. Powered by a 1500W rapid-boil heating element concealed beneath a premium 304 stainless steel chamber, it delivers piping-hot water in under 5 minutes while using 20% less energy than stovetop alternatives. The double-wall insulation keeps your water hot longer and the exterior safely cool to the touch — no more accidental burns reaching past the kettle. We\'ve equipped every PureBoil with a world-class Strix thermostat for enterprise-grade reliability (rated for over 15,000 boil cycles). The 360° swivel base with hidden cord storage makes it equally convenient for right- and left-handed users. Whether you\'re brewing delicate oolong, preparing instant oatmeal for the kids, or filling a French press for guests, PureBoil delivers precisely heated water — quietly, quickly, and beautifully. Backed by a 2-year warranty and lifetime technical support.',
+        pricing: [
+          { tier: '💲 Budget / Plastic', range: '$14.99 – $22.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / Stainless Steel', range: '$29.99 – $44.99', cls: 'mid' },
+          { tier: '👑 Premium / Temperature Control', range: '$54.99 – $79.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇬🇧', name: 'United Kingdom — Tea culture, 95% household penetration' },
+          { flag: '🇩🇪', name: 'Germany — Premium appliance market, energy efficiency conscious' },
+          { flag: '🇺🇸', name: 'United States — Growing adoption, pour-over coffee trend' },
+          { flag: '🇦🇺', name: 'Australia — High tea consumption, standard kitchen item' },
+          { flag: '🇯🇵', name: 'Japan — Compact design preferred, hot water culture' }
+        ],
+        hashtags: '#ElectricKettle #TeaTime #RapidBoil #KitchenEssentials #StainlessSteelKettle #PourOverCoffee #HomeAppliances #TeaLover #KitchenMustHaves #MorningRoutine #HotWaterFast #KettleLife #CozyKitchen #HomeBarista #EssentialAppliances',
+        platforms: ['Amazon', 'eBay', 'Shopify']
+      },
+      {
+        title: 'TempPro 1.7L Variable Temperature Gooseneck Kettle — Precise ±1°F Control, 1200W Quick Heat, Pour-Over Coffee & Tea, LCD Display, Stainless Steel, Hold Function',
+        bullets: [
+          '🌡️ <b>PRECISION ±1°F TEMPERATURE CONTROL</b> — Dial in the exact temperature from 104°F to 212°F. Presets for delicate white tea (175°F), green tea (185°F), pour-over coffee (200°F), and black tea (212°F). LCD screen shows real-time and target temperatures.',
+          '🫖 <b>ERGONOMIC GOOSENECK SPOUT</b> — Professionally designed for pour-over coffee brewing. Precise, steady stream control ensures optimal extraction and bloom. Counterbalanced handle minimizes wrist strain during slow pours.',
+          '⏱️ <b>2-HOUR HOLD FUNCTION</b> — Set your target temperature and the TempPro maintains it for up to 120 minutes. Perfect for tea sessions, meal prep, or entertaining guests. Never re-boil or wait again.',
+          '⚡ <b>RAPID 1200W HEATING COIL</b> — Heats 1.0L of water to 200°F in just 3.5 minutes. Concealed element design prevents mineral buildup and makes cleaning effortless.',
+          '🎨 <b>PREMIUM BUILD & AESTHETICS</b> — Brushed 304 stainless steel body with matte black accents. Soft-open lid prevents hot water splash-back. Silicone-dampened base absorbs vibration for whisper-quiet operation.'
+        ],
+        description: 'Elevate your brewing ritual with the TempPro Variable Temperature Gooseneck Kettle — the precision instrument trusted by specialty coffee champions and tea connoisseurs worldwide. Unlike ordinary kettles that simply boil and stop, the TempPro gives you exact degree-by-degree control from 104°F to 212°F, unlocking the full flavor potential of every leaf and bean. The counter-balanced gooseneck spout delivers a laminar flow stream with zero dribble, giving you barista-level pour control for bloom, extraction, and agitation. The bright LCD display keeps you informed of both current and target temperatures, while the 2-hour hold function means your water is always ready when inspiration strikes. Built from food-grade 304 stainless steel with a sleek matte finish, the TempPro looks as refined as it performs. Whether you\'re chasing the perfect V60 drawdown or steeping your grandmother\'s jasmine pearls, the TempPro is the upgrade your palate deserves.',
+        pricing: [
+          { tier: '💲 Budget / Basic Gooseneck', range: '$24.99 – $36.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / Digital Control', range: '$44.99 – $64.99', cls: 'mid' },
+          { tier: '👑 Premium / Precision ±1°F', range: '$74.99 – $109.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Specialty coffee boom, third-wave cafés' },
+          { flag: '🇯🇵', name: 'Japan — Pour-over culture, precision appliance market' },
+          { flag: '🇰🇷', name: 'South Korea — Café culture trend, aesthetic kitchenware' },
+          { flag: '🇬🇧', name: 'United Kingdom — Growing specialty tea market' },
+          { flag: '🇦🇺', name: 'Australia — Flat white culture, home barista trend' }
+        ],
+        hashtags: '#PourOverCoffee #GooseneckKettle #SpecialtyCoffee #CoffeeBrewing #TeaCeremony #ThirdWaveCoffee #BaristaLife #HomeBarista #PrecisionBrewing #CoffeeGear #V60 #Chemex #FilterCoffee #TeaLovers #KitchenUpgrade',
+        platforms: ['Amazon', 'eBay', 'Shopify']
+      }
+    ]
+  },
+  toaster: {
+    variants: [
+      {
+        title: 'ToastPro 4-Slice Digital Toaster — Extra-Wide 1.5" Slots, Motorized Lift, 6 Shade Settings, Bagel/Defrost/Reheat Modes, Stainless Steel, Removable Crumb Tray, 1800W',
+        bullets: [
+          '🍞 <b>4 EXTRA-WIDE 1.5-INCH SLOTS</b> — Accommodates artisan breads, thick bagels, English muffins, Texas toast, and homemade slices without jamming. Self-centering guides ensure even browning on every slice, every time.',
+          '⚡ <b>HIGH-SPEED 1800W QUAD HEATING</b> — Four independent heating elements deliver consistent, even toasting from edge to edge. Toasts 4 slices to golden perfection in under 90 seconds.',
+          '🎛️ <b>6 DIGITAL SHADE SETTINGS + 3 SPECIALTY MODES</b> — Precise browning control from light warm to dark & crispy. Dedicated Bagel (toasts cut side, warms crust), Defrost (thaws then toasts), and Reheat (warms without browning) functions.',
+          '⬆️ <b>MOTORIZED HIGH-LIFT LEVER</b> — Smooth, motor-driven lift raises toast an extra inch so even small items like English muffins are easy to retrieve. No more fishing with forks or burning fingertips.',
+          '🧹 <b>SLIDE-OUT CRUMB TRAY + CORD STORAGE</b> — Full-width removable crumb tray catches every crumb for quick cleanup. Under-base cord wrap keeps counters tidy. Brushed stainless steel resists fingerprints.'
+        ],
+        description: 'Transform your breakfast routine with the ToastPro 4-Slice Digital Toaster — where precision engineering meets everyday convenience. Unlike cramped 2-slice models that bottleneck busy mornings, the ToastPro features four independently controlled extra-wide slots that handle everything from delicate brioche to hearty sourdough without crowding or uneven browning. The digital interface remembers your last settings, while six precise shade levels let every family member dial in their perfect toast — from barely golden to deeply bronzed. The motorized high-lift mechanism is a game-changer for shorter items like crumpets and English muffins, gliding them up smoothly with a single touch. Intelligent specialty modes mean your frozen waffles come out crispy (not soggy), your bagels emerge with a perfectly toasted face and a warm, chewy crust, and yesterday\'s toast gets revived without over-browning. Built to last with a fingerprint-resistant stainless steel housing and backed by a 2-year warranty, the ToastPro earns its spot on your countertop every single morning.',
+        pricing: [
+          { tier: '💲 Budget / 2-Slice Basic', range: '$19.99 – $29.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / 4-Slice Digital', range: '$39.99 – $59.99', cls: 'mid' },
+          { tier: '👑 Premium / Smart Toaster', range: '$74.99 – $99.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Breakfast culture, large family households' },
+          { flag: '🇬🇧', name: 'United Kingdom — Toast is a national staple, high penetration' },
+          { flag: '🇦🇺', name: 'Australia — Avocado toast trend, brunch culture' },
+          { flag: '🇨🇦', name: 'Canada — Large household sizes, cold climate comfort food' },
+          { flag: '🇩🇪', name: 'Germany — Bread culture, artisan bakery tradition' }
+        ],
+        hashtags: '#ToasterLove #BreakfastGoals #PerfectToast #KitchenAppliances #MorningRoutine #BrunchAtHome #StainlessSteelToaster #ArtisanBread #BagelLife #ToastArt #BreakfastEssentials #SmallKitchenAppliances #GoldenBrown #ToastPro #CrispyPerfection',
+        platforms: ['Amazon', 'eBay', 'Walmart', 'Shopify']
+      },
+      {
+        title: 'RetroToast 2-Slice Smeg-Style Toaster — Vintage Design, 7 Browning Levels, Bagel & Gluten-Free Modes, Extra-High Lift, Die-Cast Metal Body, Pastel Cream, 950W',
+        bullets: [
+          '🎨 <b>AUTHENTIC 1950s RETRO DESIGN</b> — Die-cast metal body with high-gloss pastel finish inspired by mid-century Italian kitchen aesthetics. Available in Cream, Mint Green, Powder Pink, and Matte Black. A statement piece that actually works beautifully.',
+          '🔧 <b>7 VARIABLE BROWNING LEVELS</b> — From barely kissed to deeply caramelized, the smooth rotary dial gives you infinite control between all seven settings. Independent lever for each slot means you and your partner never compromise on doneness.',
+          '🥯 <b>GLUTEN-FREE & BAGEL MODES</b> — Our unique Gluten-Free mode uses a gentler heat profile optimized for delicate GF breads that tend to crumble or burn in ordinary toasters. Bagel mode crisps the cut side while gently warming the crust.',
+          '⬆️ <b>EXTRA-HIGH LIFT MECHANISM</b> — Raises toast nearly 2 inches above the slot, making retrieval effortless for all hand sizes. No more awkward utensil fishing or dangerous finger poking.',
+          '✨ <b>PREMIUM CRAFTSMANSHIP</b> — Hand-assembled with chrome-plated lever, polished stainless steel trim, and anti-slip silicone feet. Removable crumb tray, built-in cord wrap. 2-year warranty against manufacturing defects.'
+        ],
+        description: 'The RetroToast isn\'t just a toaster — it\'s a design object that happens to make the best toast of your life. Inspired by the iconic Italian kitchen appliances of the 1950s, every RetroToast is crafted from a single die-cast metal body, hand-finished in a lustrous pastel enamel that catches the morning light and transforms your countertop into a curated space. But beauty is only half the story. Beneath the vintage exterior lives thoroughly modern engineering: seven precise browning levels, dedicated modes for delicate gluten-free breads and bagels, and a whisper-quiet carriage mechanism that glides your toast up nearly two inches for effortless retrieval. The RetroToast has been featured in Architectural Digest, Food & Wine, and Dwell — not as a novelty, but as the rare appliance that excels at both form and function. Whether your kitchen leans farmhouse cozy or minimalist modern, there\'s a RetroToast waiting to complete it.',
+        pricing: [
+          { tier: '💲 Budget / Basic Retro', range: '$29.99 – $44.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / Premium Finish', range: '$59.99 – $84.99', cls: 'mid' },
+          { tier: '👑 Premium / Designer Edition', range: '$99.99 – $149.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Instagram-worthy kitchen trend, gifting market' },
+          { flag: '🇬🇧', name: 'United Kingdom — Design-conscious consumers, retro revival' },
+          { flag: '🇮🇹', name: 'Italy — Home market for Smeg-style, design culture' },
+          { flag: '🇯🇵', name: 'Japan — Kawaii aesthetic, small footprint preference' },
+          { flag: '🇫🇷', name: 'France — Art de vivre, kitchen as lifestyle statement' }
+        ],
+        hashtags: '#RetroKitchen #VintageToaster #KitchenDesign #SmegStyle #KitchenAesthetic #HomeDecor #CountertopStyle #PastelKitchen #DesignAppliances #MorningToast #KitchenInspo #RetroVibes #HomeStyling #KitchenGoals #BrunchVibes',
+        platforms: ['Amazon', 'eBay', 'Shopify']
+      }
+    ]
+  },
+  coffee_maker: {
+    variants: [
+      {
+        title: 'BrewStation 12-Cup Programmable Drip Coffee Maker — LCD Timer, Auto Pause & Serve, Keep-Warm Plate, Reusable Gold-Tone Filter, Strength Selector, Stainless Steel Accents',
+        bullets: [
+          '☕ <b>12-CUP CARAFE — BREW FOR A CROWD</b> — Generous 60 oz capacity brews enough for the entire family, office team, or brunch gathering in a single cycle. Drip-free spout and comfort-grip handle make pouring effortless.',
+          '⏰ <b>24-HOUR PROGRAMMABLE TIMER</b> — Set your brew time the night before and wake up to the aroma of freshly brewed coffee. LCD clock display with easy-to-read digits. Auto shut-off after 2 hours for safety and energy savings.',
+          '⏸️ <b>AUTO PAUSE & SERVE</b> — Grab a cup mid-brew without a single drip on your warming plate. The pause valve stops flow instantly when the carafe is removed, resuming seamlessly when replaced. No waiting, no mess.',
+          '🔄 <b>REUSABLE GOLD-TONE FILTER</b> — Permanent cone-style filter eliminates the need for disposable paper filters. Enhanced flavor extraction through micro-mesh design. Top-rack dishwasher safe for easy cleaning.',
+          '💪 <b>STRENGTH SELECTOR + CLEAN CYCLE</b> — Choose Regular or Bold brew strength to match your preference. Built-in cleaning cycle indicator with auto-descaling program extends the life of your machine.'
+        ],
+        description: 'The BrewStation 12-Cup Programmable Coffee Maker is your personal barista, ready on your schedule. Program it the night before and wake up to the unmistakable aroma of freshly brewed coffee — no bleary-eyed fumbling with scoops and filters at dawn. The generous 12-cup carafe means you brew once and enjoy all morning, whether you\'re fueling a full household, hosting a weekend brunch, or powering through a team meeting. We\'ve packed in the features that matter: a reusable gold-tone filter that saves money and reduces waste, a pause-and-serve valve for those "can\'t wait" moments, and a strength selector that lets you dial between smooth and bold. The sleek stainless-accented design looks at home in any kitchen, while the intuitive LCD display with programmable timer keeps everything simple. At BrewStation, we believe great mornings start with great coffee — and great coffee shouldn\'t require a barista certification.',
+        pricing: [
+          { tier: '💲 Budget / Basic 5-Cup', range: '$19.99 – $29.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / Programmable 12-Cup', range: '$39.99 – $64.99', cls: 'mid' },
+          { tier: '👑 Premium / Thermal Carafe + Grinder', range: '$89.99 – $139.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Largest drip coffee market globally, daily ritual' },
+          { flag: '🇨🇦', name: 'Canada — High per-capita coffee consumption, cold climate demand' },
+          { flag: '🇩🇪', name: 'Germany — Filter coffee tradition, premium appliance preference' },
+          { flag: '🇧🇷', name: 'Brazil — World\'s largest coffee producer, strong domestic market' },
+          { flag: '🇦🇺', name: 'Australia — Evolving drip market, growing US-style coffee adoption' }
+        ],
+        hashtags: '#CoffeeMaker #DripCoffee #MorningCoffee #CoffeeTime #HomeBrewed #CoffeeLovers #ProgrammableCoffee #WakeUpAndSmellTheCoffee #CoffeeAddict #KitchenAppliances #MorningRoutine #FreshBrew #CoffeeGram #BaristaAtHome #BrewStation',
+        platforms: ['Amazon', 'eBay', 'Walmart', 'Shopify']
+      },
+      {
+        title: 'BaristaBrew 10-Cup Thermal Drip Coffee Maker — Stainless Steel Vacuum Carafe, Showerhead Extraction, Bloom Mode, Adjustable 950-1950m Altitude Setting, SCA Certified',
+        bullets: [
+          '🏆 <b>SCA CERTIFIED GOLD CUP STANDARD</b> — Meets the Specialty Coffee Association\'s rigorous Golden Cup certification for optimal brew temperature (197-205°F), contact time, and extraction. Brews coffee that meets professional quality standards every single cycle.',
+          '🌡️ <b>VACUUM-INSULATED THERMAL CARAFE</b> — Double-wall stainless steel carafe keeps coffee piping hot for up to 4 hours without a hot plate that continues cooking and bittering your brew. No burnt taste, no electricity waste.',
+          '🌸 <b>PRE-INFUSION BLOOM MODE</b> — Automatically wets grounds with a precise pulse of hot water before the main brew cycle, allowing CO₂ to release for optimal flavor extraction. The same technique used by world champion baristas.',
+          '⛰️ <b>ADJUSTABLE ALTITUDE CALIBRATION</b> — Dial in your elevation from 950 ft to 1,950 ft above sea level. The BaristaBrew adjusts its heating profile to maintain perfect brewing temperature regardless of your altitude.',
+          '🚿 <b>WIDE SHOWERHEAD EXTRACTION</b> — Unlike single-hole drip machines, the BaristaBrew\'s wide dispersion showerhead evenly saturates all grounds for balanced extraction. No dry spots, no over-extraction channels, just perfect coffee.'
+        ],
+        description: 'For those who refuse to compromise on coffee quality but crave the convenience of a drip machine, the BaristaBrew Thermal delivers the best of both worlds. It\'s one of the few drip coffee makers to earn the Specialty Coffee Association\'s prestigious Gold Cup certification — meaning it heats water to the precise 197-205°F window, maintains optimal contact time, and achieves the extraction ratio that specialty roasters design their beans for. The vacuum-insulated thermal carafe is the unsung hero: by eliminating the hot plate that slowly scorches coffee, your second and third cups taste as vibrant as the first, even four hours later. The bloom mode pre-infusion cycle — a technique borrowed from pour-over brewing — releases trapped CO₂ from freshly ground beans, preventing bitter under-extraction. And in a thoughtful touch for our mountain-dwelling customers, you can calibrate the BaristaBrew to your exact altitude for flawless results whether you\'re at sea level or in Denver. This isn\'t just a coffee maker — it\'s a precision brewing instrument that respects your beans.',
+        pricing: [
+          { tier: '💲 Budget / 5-Cup Basic', range: '$29.99 – $44.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / Programmable 10-Cup', range: '$59.99 – $89.99', cls: 'mid' },
+          { tier: '👑 Premium / SCA Certified Thermal', range: '$129.99 – $199.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Specialty coffee market, SCA recognition valued' },
+          { flag: '🇪🇺', name: 'European Union — Strong specialty coffee culture, premium tier' },
+          { flag: '🇯🇵', name: 'Japan — Precision appliance market, meticulous coffee culture' },
+          { flag: '🇰🇷', name: 'South Korea — Café culture, high willingness to pay for quality' },
+          { flag: '🇦🇺', name: 'Australia — Flat white capital, specialty equipment enthusiasts' }
+        ],
+        hashtags: '#SpecialtyCoffee #SCACertified #ThermalCarafe #ThirdWaveCoffee #CoffeeScience #HomeBarista #PerfectCup #CoffeeBrewing #GoldCupStandard #PourOverAlternative #PremiumCoffeeMaker #CoffeeAddict #FreshCoffee #BrewMethod #BaristaBrew',
+        platforms: ['Amazon', 'eBay', 'Shopify']
+      }
+    ]
+  },
+  blender: {
+    variants: [
+      {
+        title: 'BlendForce 1500W Professional Countertop Blender — 2.2L BPA-Free Tritan Jar, 6 Stainless Steel Blades, 10 Speed + Pulse, Ice Crush & Smoothie Auto Programs, Self-Cleaning, Black',
+        bullets: [
+          '💪 <b>1500W COMMERCIAL-GRADE MOTOR</b> — Pulverizes ice, frozen fruit, fibrous greens, and tough nuts in seconds. Hardened steel drive socket engineered for 10,000+ blending cycles. The same motor class used in smoothie shops and juice bars.',
+          '🔪 <b>6-PIECE HARDENED STAINLESS STEEL BLADE SYSTEM</b> — Multi-directional blade geometry creates a cyclonic vortex that pulls ingredients down into the blades, eliminating the need for a tamper on most recipes. Crushes, chops, blends, and liquefies.',
+          '🎛️ <b>10 VARIABLE SPEEDS + PULSE + 3 AUTO PROGRAMS</b> — Infinite control from gentle stir to full-velocity liquefy. One-touch Smoothie, Ice Crush, and Self-Cleaning programs. Pulse function for chunky salsas, dips, and precise texture control.',
+          '🥤 <b>2.2L EXTRA-LARGE TRITAN JAR</b> — BPA-free Eastman Tritan™ copolyester jar is lightweight, shatterproof, and dishwasher-safe. Generous capacity makes large batches for meal prep or entertaining in a single blend.',
+          '🧊 <b>ICE CRUSH GUARANTEE</b> — Dedicated crush program delivers perfect snow-like consistency for margaritas, smoothie bowls, frappés, and frozen desserts. We guarantee it pulverizes a full tray of ice in under 15 seconds.'
+        ],
+        description: 'Meet the BlendForce 1500W — the blender that laughs in the face of frozen fruit, pulverizes ice into snow, and transforms stringy kale into silky smoothies in 30 seconds flat. At its heart is a commercial-grade 1500-watt motor paired with a patented 6-blade stainless steel assembly that creates a cyclonic blending vortex, pulling everything down into the blades without the constant poking and prodding lesser blenders demand. The massive 2.2-liter Tritan jar handles family-sized batches — Sunday meal prep, game-day margaritas, or a week\'s worth of morning smoothies in one go. Ten variable speeds and three one-touch auto programs (Smoothie, Ice Crush, Self-Clean) make it equally capable of coarse-chopping salsa, emulsifying mayo, grinding nut butter, and whipping hot soups. When you\'re done, add a drop of soap and warm water, hit Self-Clean, and walk away. The BlendForce isn\'t just a blender — it\'s a kitchen power tool that earns its countertop real estate every single day.',
+        pricing: [
+          { tier: '💲 Budget / Personal Blender', range: '$29.99 – $44.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / 1000W Jar Blender', range: '$59.99 – $89.99', cls: 'mid' },
+          { tier: '👑 Premium / 1500W+ Professional', range: '$119.99 – $179.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Smoothie culture, largest blender market globally' },
+          { flag: '🇨🇦', name: 'Canada — Health-conscious consumers, meal prep trend' },
+          { flag: '🇦🇺', name: 'Australia — Smoothie bowl culture, summer demand spikes' },
+          { flag: '🇬🇧', name: 'United Kingdom — Growing health & wellness, NutriBullet migration' },
+          { flag: '🇲🇽', name: 'Mexico — Margarita & salsa culture, strong blender tradition' }
+        ],
+        hashtags: '#HighSpeedBlender #SmoothieTime #MealPrep #BlenderRecipes #KitchenPower #HealthyLifestyle #SmoothieBowl #GreenSmoothie #IceCrush #MargaritaTime #BlendForce #NutButter #HomeChef #KitchenGadgets #BlendLife',
+        platforms: ['Amazon', 'eBay', 'Walmart', 'Shopify']
+      },
+      {
+        title: 'NutriMax Pro 1800W Commercial Blender with Sound Enclosure — 2.5L Container, Touchscreen, 8 Auto Programs + Manual Dial, Stainless Steel Blades, Black & Stainless',
+        bullets: [
+          '🔇 <b>INTEGRATED SOUND ENCLOSURE</b> — Reduces blending noise by up to 60%. Blend early morning smoothies without waking the entire household. The transparent dome lets you monitor progress while the triple-layer acoustic shield absorbs sound.',
+          '🧠 <b>INTELLIGENT TOUCHSCREEN WITH 8 AUTO PROGRAMS</b> — Full-color LCD display with one-touch programs: Smoothie, Soup, Nut Milk, Frozen Dessert, Grind, Dip/Salsa, Baby Food, and Self-Clean. Each program auto-adjusts speed and duration for foolproof results.',
+          '💎 <b>1800W DIGITAL MOTOR WITH TORQUE SENSING</b> — Automatically detects load and adjusts power delivery to maintain constant blade speed through the toughest ingredients. Never stalls, never bogs down, even with frozen-solid contents.',
+          '🫙 <b>2.5L BPA-FREE CONTAINER + PERSONAL CUP</b> — Includes full-size 2.5L blending jar plus 700ml grab-and-go personal cup with travel lid. Blend, twist off, and go — one machine for family batches and solo servings.',
+          '🧪 <b>SELF-CLEANING WITH UV-C STERILIZATION</b> — Beyond basic self-cleaning, the NutriMax Pro includes an optional UV-C cycle that eliminates 99.9% of bacteria from the jar. Ideal for baby food, raw preparations, and peace of mind.'
+        ],
+        description: 'The NutriMax Pro 1800W solves the blender\'s oldest problem — the noise — without sacrificing an ounce of power. Its integrated acoustic enclosure reduces blending roar by up to 60%, meaning you can make your 5 AM protein shake without waking the baby, the dog, or your annoyed spouse. But quiet isn\'t the only trick: the 1800-watt digital motor features real-time torque sensing that auto-adjusts power to maintain consistent blade speed whether you\'re blending water or peanut butter. The full-color touchscreen offers eight idiot-proof auto programs, each calibrated by our test kitchen to deliver perfect results — hot soup straight from the friction of the blades, nut milk strained through the included bag, frozen desserts that need no further churning. The complete system includes both a 2.5L family-size container and a grab-and-go personal cup, making the NutriMax Pro the only blender most kitchens will ever need. Add in the industry-first UV-C sterilizing clean cycle, and you have a blender that cares as much about your health as you do.',
+        pricing: [
+          { tier: '💲 Budget / 600W Personal', range: '$39.99 – $59.99', cls: 'budget' },
+          { tier: '⭐ Mid-Range / 1200W Jar', range: '$79.99 – $129.99', cls: 'mid' },
+          { tier: '👑 Premium / 1800W+ Commercial', range: '$179.99 – $299.99', cls: 'premium' }
+        ],
+        markets: [
+          { flag: '🇺🇸', name: 'United States — Premium blender market, noise-sensitive consumers' },
+          { flag: '🇯🇵', name: 'Japan — Small living spaces, noise-conscious market' },
+          { flag: '🇰🇷', name: 'South Korea — Apartment living, premium kitchen appliances' },
+          { flag: '🇬🇧', name: 'United Kingdom — Terraced housing, neighbor noise concerns' },
+          { flag: '🇩🇪', name: 'Germany — Engineering appreciation, quiet appliance preference' }
+        ],
+        hashtags: '#QuietBlender #CommercialBlender #SoundEnclosure #MorningSmoothie #NutriMax #MealPrepLife #KitchenTech #BlenderRecipes #ProteinShake #HealthyKitchen #SilentBlending #KitchenInnovation #UVCclean #NutMilk #SmoothiePrep',
+        platforms: ['Amazon', 'eBay', 'Shopify']
+      }
+    ]
+  }
+};
+
+let currentProduct = null;
+let currentVariant = 0;
+
+// ═══════════════════════════════════════
+// GATE
+// ═══════════════════════════════════════
+function enterApp(){
+  const e = document.getElementById('gateEmail').value.trim();
+  if(!e || !e.includes('@')){
+    document.getElementById('gateErr').style.display = 'block';
+    return;
+  }
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('snl_passed', 'true');
+  toast('✅ SnapListing 一影上架 已就緒');
+}
+
+function startCountdown(){
+  let r = 24 * 60 * 60;
+  const el = document.getElementById('countdown');
+  setInterval(() => {
+    r--;
+    if(r <= 0) return;
+    el.textContent =
+      `${String(Math.floor(r/3600)).padStart(2,'0')}:${String(Math.floor((r%3600)/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`;
+  }, 1000);
+}
+
+function toast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ═══════════════════════════════════════
+// UPLOAD HANDLER (demo — simulates processing)
+// ═══════════════════════════════════════
+function handleUpload(input){
+  if(!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if(!file.type.match(/image\/(jpeg|png)/)){
+    toast('❌ 只支援 JPG / PNG 格式');
+    return;
+  }
+  if(file.size > 10 * 1024 * 1024){
+    toast('❌ 檔案不能超過 10MB');
+    return;
+  }
+
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const preview = document.getElementById('uploadPreview');
+    preview.innerHTML = `
+      <img src="${e.target.result}" class="preview-thumb" alt="Uploaded product">
+      <span class="preview-label">✅ ${file.name} (${(file.size/1024).toFixed(1)} KB)</span>
+    `;
+    document.getElementById('generateBtn').disabled = false;
+    // Highlight drop zone
+    document.getElementById('dropZone').style.borderColor = 'var(--accent2)';
+    document.getElementById('dropZone').style.background = 'rgba(16,185,129,0.05)';
+    // Clear example chips selection
+    document.querySelectorAll('.example-chip').forEach(c => c.classList.remove('active'));
+    currentProduct = 'uploaded';
+    toast('📸 已載入產品圖片 · 點擊生成內容');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ═══════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════
+const dropZone = document.getElementById('dropZone');
+['dragenter','dragover'].forEach(evt => {
+  dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+});
+['dragleave','drop'].forEach(evt => {
+  dropZone.addEventListener(evt, e => { e.preventDefault(); dropZone.classList.remove('drag-over'); });
+});
+dropZone.addEventListener('drop', e => {
+  const files = e.dataTransfer.files;
+  if(files.length) handleUpload({ files });
+});
+
+// ═══════════════════════════════════════
+// SELECT EXAMPLE PRODUCT
+// ═══════════════════════════════════════
+function selectExample(productKey){
+  currentProduct = productKey;
+  currentVariant = 0;
+  document.querySelectorAll('.example-chip').forEach((c, i) => {
+    c.classList.toggle('active', c.getAttribute('onclick').includes(productKey));
+  });
+  document.getElementById('generateBtn').disabled = false;
+  // Clear upload preview
+  document.getElementById('uploadPreview').innerHTML = '';
+  document.getElementById('dropZone').style.borderColor = 'var(--border)';
+  document.getElementById('dropZone').style.background = '';
+  document.getElementById('resultsSection').classList.remove('show');
+  toast(`✅ 已選擇範例產品 · 點擊生成內容`);
+}
+
+// ═══════════════════════════════════════
+// GENERATE LISTING
+// ═══════════════════════════════════════
+function generateListing(){
+  if(!currentProduct){
+    if(document.getElementById('fileInput').files.length){
+      currentProduct = 'uploaded';
+    } else {
+      toast('❌ 請先上傳圖片或選擇範例產品');
+      return;
+    }
+  }
+
+  // If "uploaded" product, randomly assign a demo product
+  if(currentProduct === 'uploaded'){
+    const keys = Object.keys(LISTING_DATA);
+    currentProduct = keys[Math.floor(Math.random() * keys.length)];
+  }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ AI 分析中…';
+  
+  const pulse = document.getElementById('processingPulse');
+  pulse.classList.add('active');
+  
+  document.getElementById('resultsSection').classList.remove('show');
+
+  // Simulate AI processing delay
+  setTimeout(() => {
+    currentVariant = Math.floor(Math.random() * LISTING_DATA[currentProduct].variants.length);
+    renderListing();
+
+    pulse.classList.remove('active');
+    btn.disabled = false;
+    btn.textContent = '🔄 重新生成';
+    document.getElementById('resultsSection').classList.add('show');
+    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+    toast('✨ AI 上架內容已生成！');
+  }, 1500 + Math.random() * 1000);
+}
+
+// ═══════════════════════════════════════
+// REGENERATE (pick the other variant)
+// ═══════════════════════════════════════
+function regenerateListing(){
+  if(!currentProduct || currentProduct === 'uploaded'){
+    toast('❌ 請先選擇範例產品');
+    return;
+  }
+  const variants = LISTING_DATA[currentProduct].variants;
+  if(variants.length <= 1){ toast('ℹ️ 此產品暫只有一個版本'); return; }
+
+  // Switch to the other variant
+  currentVariant = currentVariant === 0 ? 1 : 0;
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  const pulse = document.getElementById('processingPulse');
+  pulse.classList.add('active');
+  document.getElementById('resultsSection').classList.remove('show');
+
+  setTimeout(() => {
+    renderListing();
+    pulse.classList.remove('active');
+    btn.disabled = false;
+    document.getElementById('resultsSection').classList.add('show');
+    document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+    toast('🔄 已生成新版本！');
+  }, 1000 + Math.random() * 800);
+}
+
+// ═══════════════════════════════════════
+// RENDER LISTING
+// ═══════════════════════════════════════
+function renderListing(){
+  const data = LISTING_DATA[currentProduct].variants[currentVariant];
+
+  // Title
+  document.getElementById('listingTitle').textContent = data.title;
+
+  // Platform badges
+  const badgeMap = {
+    'Amazon': 'amazon',
+    'eBay': 'ebay',
+    'Walmart': 'walmart',
+    'Shopify': 'shopify'
+  };
+  document.getElementById('platformBadges').innerHTML = data.platforms.map(p =>
+    `<span class="platform-badge ${badgeMap[p]||''}">🛒 ${p}</span>`
+  ).join('');
+
+  // Bullets
+  document.getElementById('listingBullets').innerHTML = data.bullets.map(b =>
+    `<li>${b}</li>`
+  ).join('');
+
+  // Pricing
+  document.getElementById('listingPricing').innerHTML = data.pricing.map(p =>
+    `<div class="price-tier">
+      <span class="tier-name">${p.tier}</span>
+      <span class="tier-range ${p.cls}">${p.range}</span>
+    </div>`
+  ).join('');
+
+  // Description
+  document.getElementById('listingDesc').textContent = data.description;
+
+  // Markets
+  document.getElementById('listingMarkets').innerHTML = data.markets.map(m =>
+    `<div class="market-tag">
+      <span class="market-flag">${m.flag}</span> ${m.name}
+    </div>`
+  ).join('');
+
+  // Hashtags
+  const hts = data.hashtags.split(' ');
+  document.getElementById('listingHashtags').innerHTML = hts.map(h =>
+    `<span class="ht">${h}</span>`
+  ).join(' ');
+}
+
+// ═══════════════════════════════════════
+// COPY ALL
+// ═══════════════════════════════════════
+function copyAll(){
+  if(!currentProduct || currentProduct === 'uploaded'){
+    toast('❌ 沒有可複製的內容');
+    return;
+  }
+  const data = LISTING_DATA[currentProduct].variants[currentVariant];
+  
+  const plainText = `=== PRODUCT TITLE ===
+${data.title}
+
+=== 5 BULLET POINTS ===
+${data.bullets.map(b => '• ' + b.replace(/<[^>]*>/g, '')).join('\n\n')}
+
+=== FULL PRODUCT DESCRIPTION ===
+${data.description}
+
+=== SUGGESTED PRICE RANGE ===
+${data.pricing.map(p => p.tier + ' — ' + p.range).join('\n')}
+
+=== TARGET MARKETS ===
+${data.markets.map(m => m.flag + ' ' + m.name).join('\n')}
+
+=== SOCIAL MEDIA HASHTAGS ===
+${data.hashtags}
+
+---
+Generated by SnapListing 一影上架 · Quattro Dynamics AI Listing Engine™
+`;
+
+  navigator.clipboard.writeText(plainText).then(() => {
+    toast('📋 全部內容已複製到剪貼簿！');
+  }).catch(() => {
+    toast('❌ 複製失敗，請手動選取');
+  });
+}
+
+// ═══════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════
+function resetListing(){
+  currentProduct = null;
+  currentVariant = 0;
+  document.getElementById('resultsSection').classList.remove('show');
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('generateBtn').textContent = '✨ AI 生成上架內容';
+  document.querySelectorAll('.example-chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('uploadPreview').innerHTML = '';
+  document.getElementById('dropZone').style.borderColor = 'var(--border)';
+  document.getElementById('dropZone').style.background = '';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('processingPulse').classList.remove('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  toast('↺ 已重置 · 可重新選擇產品');
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+if(localStorage.getItem('snl_passed')){
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+
+document.getElementById('gateEmail').addEventListener('keydown', e => {
+  if(e.key === 'Enter') enterApp();
+});
+
+// Enter key in gate input
+document.getElementById('gateEmail').focus();
+</script>
+</body>
+</html>

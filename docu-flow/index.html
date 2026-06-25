@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DocuFlow — 出貨文件自動化</title>
+<style>
+:root {
+  --bg: #0b0f19;
+  --card: #131a2b;
+  --card2: #161e32;
+  --border: #1e2d45;
+  --accent: #06b6d4;
+  --accent2: #10b981;
+  --accent3: #f59e0b;
+  --accent4: #8b5cf6;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --danger: #ef4444;
+  --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.3);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── Topbar ── */
+.topbar {
+  background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);
+  color: #fff;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.topbar .countdown { font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+.topbar small { opacity: 0.8; font-weight: 400; font-size: 11px; }
+
+/* ── Toast ── */
+#toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  animation: toastIn 0.3s ease;
+  min-width: 280px;
+  pointer-events: auto;
+}
+.toast.success { border-left: 3px solid var(--accent2); }
+.toast.error { border-left: 3px solid var(--danger); }
+.toast.warn { border-left: 3px solid var(--accent3); }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(20px); } }
+
+/* ── Email Gate ── */
+#gate-overlay {
+  position: fixed; inset: 0; z-index: 9998;
+  background: rgba(6,8,20,0.96);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px);
+}
+#gate-overlay.hidden { display: none; }
+.gate-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px;
+  max-width: 440px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 0 60px rgba(6,182,212,0.08);
+}
+.gate-card .gate-icon { font-size: 48px; margin-bottom: 12px; }
+.gate-card h2 {
+  font-size: 24px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.gate-card p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+.gate-card input {
+  width: 100%; padding: 14px 16px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 15px; outline: none; transition: border .2s;
+}
+.gate-card input:focus { border-color: var(--accent); }
+.gate-card .gate-btn {
+  width: 100%; margin-top: 16px; padding: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: var(--radius-sm);
+  color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+  transition: opacity .2s, transform .1s;
+}
+.gate-card .gate-btn:hover { opacity: 0.92; }
+.gate-card .gate-btn:active { transform: scale(0.98); }
+.gate-card .gate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.gate-card .gate-note { font-size: 12px; color: var(--muted); margin-top: 12px; }
+.gate-error { color: var(--danger); font-size: 13px; margin-top: 8px; min-height: 20px; }
+
+/* ── Header ── */
+.header {
+  max-width: 1200px; margin: 0 auto;
+  padding: 32px 24px 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.back-link {
+  color: var(--muted); text-decoration: none; font-size: 14px;
+  transition: color .2s; display: flex; align-items: center; gap: 6px;
+}
+.back-link:hover { color: var(--accent); }
+.header-brand {
+  display: flex; align-items: center; gap: 10px;
+}
+.header-brand .logo-icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), var(--accent4));
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.header-brand span {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.3px;
+}
+
+/* ── Main ── */
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ── Hero ── */
+.hero {
+  text-align: center;
+  padding: 40px 0 32px;
+}
+.hero h1 {
+  font-size: 42px; font-weight: 800; letter-spacing: -1px;
+  line-height: 1.15; margin-bottom: 12px;
+}
+.hero h1 .grad {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero .sub {
+  color: var(--muted); font-size: 17px; max-width: 560px; margin: 0 auto;
+}
+
+/* ── Time Comparison ── */
+.time-compare {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; margin-top: 24px; flex-wrap: wrap;
+}
+.time-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 24px;
+  text-align: center;
+  min-width: 140px;
+}
+.time-box .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.time-box .val { font-size: 28px; font-weight: 800; }
+.time-box .val.old { color: var(--danger); }
+.time-box .val.new { color: var(--accent2); }
+.time-arrow { font-size: 24px; color: var(--accent); font-weight: 700; }
+.time-saved {
+  font-size: 13px; color: var(--accent2); font-weight: 600;
+  background: rgba(16,185,129,0.1);
+  padding: 6px 14px; border-radius: 100px;
+}
+
+/* ── Pro Tip Bar ── */
+.pro-tip {
+  max-width: 800px; margin: 20px auto 0;
+  background: rgba(6,182,212,0.06);
+  border: 1px solid rgba(6,182,212,0.2);
+  border-radius: var(--radius-sm);
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--accent);
+  display: flex; align-items: center; gap: 10px;
+  text-align: center; justify-content: center;
+}
+.pro-tip .tip-icon { font-size: 18px; }
+
+/* ── Feature Pills ── */
+.feature-pills {
+  display: flex; gap: 8px; justify-content: center;
+  flex-wrap: wrap; margin-top: 20px;
+}
+.feature-pill {
+  background: var(--card2); border: 1px solid var(--border);
+  color: var(--muted); font-size: 13px; padding: 6px 14px;
+  border-radius: 100px;
+}
+
+/* ── Section ── */
+.section-title {
+  font-size: 20px; font-weight: 700; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title .icon {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent)20, var(--accent2)20);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+/* ── Example Chips ── */
+.example-chips {
+  display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.example-chip {
+  padding: 12px 20px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all .2s;
+  font-weight: 500;
+  text-align: left;
+  line-height: 1.3;
+}
+.example-chip small {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 2px;
+}
+.example-chip:hover { border-color: var(--accent); background: rgba(6,182,212,0.08); }
+.example-chip.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+.example-chip.active small { color: rgba(255,255,255,0.75); }
+
+/* ── Divider ── */
+.divider {
+  display: flex; align-items: center; gap: 16px;
+  margin: 24px 0;
+  color: var(--muted); font-size: 13px;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+
+/* ── Form Fields ── */
+.form-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; margin-bottom: 16px;
+}
+@media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+.form-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+@media (max-width: 768px) { .form-row.cols-3 { grid-template-columns: 1fr; } }
+.field label {
+  display: block; font-size: 13px; font-weight: 500;
+  color: var(--muted); margin-bottom: 6px;
+}
+.field input, .field select, .field textarea {
+  width: 100%; padding: 12px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 14px; outline: none; transition: border .2s;
+  font-family: inherit;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--accent);
+}
+.field textarea { resize: vertical; min-height: 60px; }
+
+/* ── Product Table ── */
+.product-table-wrap { overflow-x: auto; margin-top: 16px; }
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.product-table th {
+  background: var(--card2);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.product-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.product-table input {
+  width: 100%; padding: 8px 10px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text);
+  font-size: 13px; outline: none; transition: border .2s;
+  font-family: inherit;
+}
+.product-table input:focus { border-color: var(--accent); }
+.product-table .del-btn {
+  background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 18px; padding: 4px 8px;
+  transition: color .2s;
+}
+.product-table .del-btn:hover { color: var(--danger); }
+.add-row-btn {
+  margin-top: 10px; padding: 8px 16px;
+  background: var(--card2); border: 1px dashed var(--border);
+  border-radius: var(--radius-sm); color: var(--accent);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all .2s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.add-row-btn:hover { background: rgba(6,182,212,0.08); border-color: var(--accent); }
+
+/* ── Generate Button ── */
+.generate-btn {
+  width: 100%; padding: 16px;
+  background: linear-gradient(135deg, var(--accent), var(--accent4));
+  border: none; border-radius: var(--radius);
+  color: #fff; font-size: 17px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  margin-top: 8px; letter-spacing: 0.3px;
+}
+.generate-btn:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 30px rgba(6,182,212,0.3); }
+.generate-btn:active { transform: scale(0.98); }
+.generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── Preview ── */
+#preview-section { margin-top: 24px; }
+#preview-section.hidden { display: none; }
+
+/* ── Document Tabs ── */
+.doc-tabs {
+  display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.doc-tab {
+  padding: 10px 20px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .2s;
+  border-bottom: 2px solid transparent;
+}
+.doc-tab:hover { color: var(--text); border-bottom-color: var(--border); }
+.doc-tab.active {
+  color: var(--accent);
+  background: var(--card);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Document Panel ── */
+.doc-panel { display: none; }
+.doc-panel.active { display: block; }
+.doc-paper {
+  background: #fafbfc;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 48px 40px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: #1a1a1a;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  max-height: 75vh;
+  overflow-y: auto;
+}
+.doc-paper .doc-header {
+  text-align: center;
+  border-bottom: 2px solid #1a1a1a;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+}
+.doc-paper .doc-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.doc-paper .doc-header .doc-no {
+  font-size: 12px;
+  color: #555;
+}
+.doc-paper table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 12px;
+}
+.doc-paper table th {
+  background: #e5e7eb;
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  border: 1px solid #cbd5e1;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+}
+.doc-paper table td {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  vertical-align: top;
+}
+.doc-paper table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.doc-paper table td.center { text-align: center; }
+.doc-paper .doc-section {
+  margin: 16px 0;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.doc-paper .doc-section:last-child { border-bottom: none; }
+.doc-paper .doc-row {
+  display: flex; justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.doc-paper .doc-row .doc-label { color: #555; min-width: 160px; }
+.doc-paper .doc-row .doc-value { font-weight: 500; }
+.doc-paper .doc-total {
+  font-size: 14px; font-weight: 700;
+  border-top: 2px solid #1a1a1a;
+  margin-top: 12px; padding-top: 12px;
+}
+.doc-paper .doc-stamp {
+  margin-top: 24px;
+  display: flex; justify-content: flex-end;
+  align-items: center; gap: 16px;
+}
+.doc-paper .doc-stamp .stamp-box {
+  border: 2px solid #d1d5db;
+  border-radius: 6px;
+  padding: 10px 18px;
+  text-align: center;
+  color: #888;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Shipping Marks ── */
+.marks-box {
+  background: #fff;
+  border: 2px solid #1a1a1a;
+  padding: 24px;
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.8;
+  letter-spacing: 1px;
+  min-width: 240px;
+  text-align: center;
+}
+
+/* ── Preview Actions ── */
+.preview-actions {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px;
+  align-items: center;
+}
+.preview-btn {
+  padding: 10px 20px;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.preview-btn:hover { border-color: var(--accent); background: rgba(6,182,212,0.06); }
+.preview-btn.primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-color: transparent;
+  color: #fff; font-weight: 600;
+}
+.preview-btn.primary:hover { opacity: 0.92; }
+.preview-btn.danger {
+  border-color: rgba(239,68,68,0.4);
+}
+.preview-btn.danger:hover { border-color: var(--danger); background: rgba(239,68,68,0.06); }
+
+/* ── CONTAINER INFO ── */
+.container-info {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px; margin-top: 12px;
+}
+.container-badge {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 13px;
+}
+.container-badge .cb-val {
+  font-size: 20px; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.container-badge .cb-label { color: var(--muted); font-size: 11px; margin-top: 4px; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .hero h1 { font-size: 30px; }
+  .doc-paper { padding: 24px 20px; font-size: 12px; }
+  .doc-paper table { font-size: 11px; }
+  .doc-tab { padding: 8px 14px; font-size: 13px; }
+}
+@media (max-width: 480px) {
+  .example-chip { font-size: 13px; padding: 10px 16px; }
+  .doc-tabs { gap: 2px; }
+  .doc-tab { padding: 8px 10px; font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Countdown Topbar ── -->
+<div class="topbar">
+  <span>⏱</span>
+  <span>Demo session — data destruct in</span>
+  <span class="countdown" id="countdown">24:00:00</span>
+  <small>| All orders auto-deleted after expiry</small>
+</div>
+
+<!-- ── Toast Container ── -->
+<div id="toast-container"></div>
+
+<!-- ── Email Gate ── -->
+<div id="gate-overlay">
+  <div class="gate-card">
+    <div class="gate-icon">📄</div>
+    <h2>DocuFlow Demo</h2>
+    <p>Enter your email to access the free demo.<br>All data is destroyed after 24 hours.</p>
+    <input type="email" id="gate-email" placeholder="you@company.com" autocomplete="email">
+    <div class="gate-error" id="gate-error"></div>
+    <button class="gate-btn" id="gate-btn" onclick="unlockGate()">Access Demo →</button>
+    <p class="gate-note">No credit card. No spam. One-click access.</p>
+  </div>
+</div>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-brand">
+    <div class="logo-icon">📄</div>
+    <span>DocuFlow</span>
+  </div>
+  <a href="../index.html" class="back-link">← Back to Quattro</a>
+</header>
+
+<!-- ── Main Content ── -->
+<main class="main" id="main-content" style="display:none">
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1><span class="grad">出貨文件自動化</span><br>Shipping docs in 3 minutes</h1>
+    <p class="sub">Generate Commercial Invoice, Packing List, Certificate of Origin & Shipping Marks — L/C‑ready, forwarder‑ready, bank‑accepted</p>
+    <div class="time-compare">
+      <div class="time-box">
+        <div class="label">Manual</div>
+        <div class="val old">~45<small style="font-size:14px">min</small></div>
+      </div>
+      <div class="time-arrow">→</div>
+      <div class="time-box">
+        <div class="label">DocuFlow</div>
+        <div class="val new">~3<small style="font-size:14px">min</small></div>
+      </div>
+      <div class="time-saved">⚡ 93% faster</div>
+    </div>
+    <div class="pro-tip">
+      <span class="tip-icon">💡</span>
+      <span><strong>Pro Tip:</strong> L/C-ready format — accepted by <strong>HSBC, Standard Chartered, BOC</strong>. All documents align with UCP 600 requirements.</span>
+    </div>
+    <div class="feature-pills">
+      <span class="feature-pill">📄 Commercial Invoice</span>
+      <span class="feature-pill">📦 Packing List</span>
+      <span class="feature-pill">🏛 Certificate of Origin</span>
+      <span class="feature-pill">🏷 Shipping Marks</span>
+      <span class="feature-pill">🏦 L/C Ready</span>
+      <span class="feature-pill">📧 Send to Forwarder</span>
+    </div>
+  </section>
+
+  <!-- Step 1: Choose Example -->
+  <div class="card">
+    <div class="section-title">
+      <div class="icon">1️⃣</div> Choose an example order
+    </div>
+    <div class="example-chips" id="example-chips">
+      <button class="example-chip" data-example="1">
+        🍟 Air Fryer — 2,000pcs to USA
+        <small>1×40HQ · Yantian → LA · $85,000</small>
+      </button>
+      <button class="example-chip" data-example="2">
+        🫖 Kettle — 3,500pcs to Germany
+        <small>1×40HQ · Ningbo → Hamburg · $66,150</small>
+      </button>
+      <button class="example-chip" data-example="3">
+        ☕ Coffee Maker — 1,200pcs to UK
+        <small>1×20GP · Shanghai → Felixstowe · $42,000</small>
+      </button>
+    </div>
+  </div>
+
+  <!-- Order Entry Form -->
+  <div class="card" id="order-form-card">
+    <div class="section-title">
+      <div class="icon">📝</div> Order Details
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Customer / Buyer Name</label>
+        <input type="text" id="customer-name" placeholder="e.g. HomeGoods Inc.">
+      </div>
+      <div class="field">
+        <label>PO / Contract Number</label>
+        <input type="text" id="po-number" placeholder="e.g. PO-2026-08842">
+      </div>
+    </div>
+    <div class="form-row cols-3">
+      <div class="field">
+        <label>Incoterms</label>
+        <select id="incoterms">
+          <option value="FOB">FOB</option>
+          <option value="CIF">CIF</option>
+          <option value="EXW">EXW</option>
+          <option value="CFR">CFR</option>
+          <option value="DAP">DAP</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Port of Loading</label>
+        <input type="text" id="port-loading" placeholder="e.g. Yantian, Shenzhen">
+      </div>
+      <div class="field">
+        <label>Port of Discharge</label>
+        <input type="text" id="port-discharge" placeholder="e.g. Los Angeles, USA">
+      </div>
+    </div>
+    <div class="form-row cols-3">
+      <div class="field">
+        <label>Container Type</label>
+        <select id="container-type">
+          <option value="1×20GP">1×20GP</option>
+          <option value="1×40HQ" selected>1×40HQ</option>
+          <option value="2×40HQ">2×40HQ</option>
+          <option value="1×40GP">1×40GP</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Payment Terms</label>
+        <select id="payment-terms">
+          <option value="T/T 30% deposit, 70% against B/L copy">T/T 30/70 against B/L</option>
+          <option value="L/C at sight">L/C at sight</option>
+          <option value="L/C 60 days">L/C 60 days</option>
+          <option value="T/T 100% before shipment">T/T 100% advance</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Vessel / Voyage</label>
+        <input type="text" id="vessel" placeholder="e.g. EVER GLOBE 0456E">
+      </div>
+    </div>
+    <div class="field" style="margin-top:8px">
+      <label>Buyer Address</label>
+      <input type="text" id="buyer-address" placeholder="e.g. 123 Commerce Blvd, Los Angeles, CA 90045, USA">
+    </div>
+  </div>
+
+  <!-- Product Line Items -->
+  <div class="card" id="products-card">
+    <div class="section-title">
+      <div class="icon">📦</div> Product Line Items
+      <span style="font-size:12px;color:var(--muted);font-weight:400;margin-left:auto" id="product-count">0 products</span>
+    </div>
+    <div class="product-table-wrap">
+      <table class="product-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Product Description</th>
+            <th>Model #</th>
+            <th>HS Code</th>
+            <th>Qty (pcs)</th>
+            <th>Unit Price (USD)</th>
+            <th>Amount (USD)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="product-tbody"></tbody>
+      </table>
+    </div>
+    <button class="add-row-btn" onclick="addProductRow()">＋ Add Product Line</button>
+  </div>
+
+  <!-- Generate Button -->
+  <button class="generate-btn" onclick="generateDocuments()">
+    ⚡ Generate Documents
+  </button>
+
+  <!-- ── PREVIEW SECTION ── -->
+  <section id="preview-section" class="hidden">
+    <div class="section-title">
+      <div class="icon">👁</div> Document Preview
+    </div>
+
+    <!-- Preview Actions -->
+    <div class="preview-actions">
+      <button class="preview-btn primary" onclick="downloadAll()">📥 Download All</button>
+      <button class="preview-btn" onclick="printDocs()">🖨 Print</button>
+      <button class="preview-btn danger" onclick="sendToForwarder()">📧 Send to Forwarder</button>
+    </div>
+
+    <!-- Container Info -->
+    <div class="container-info" id="container-info"></div>
+
+    <!-- Document Tabs -->
+    <div class="doc-tabs" id="doc-tabs">
+      <button class="doc-tab active" data-doc="invoice">📄 Commercial Invoice</button>
+      <button class="doc-tab" data-doc="packing">📦 Packing List</button>
+      <button class="doc-tab" data-doc="coo">🏛 Certificate of Origin</button>
+      <button class="doc-tab" data-doc="marks">🏷 Shipping Marks</button>
+    </div>
+
+    <!-- Document Panels -->
+    <div class="doc-panel active" id="panel-invoice"></div>
+    <div class="doc-panel" id="panel-packing"></div>
+    <div class="doc-panel" id="panel-coo"></div>
+    <div class="doc-panel" id="panel-marks"></div>
+  </section>
+
+</main>
+
+<script>
+// ── EXAMPLE DATA ──
+const EXAMPLES = {
+  1: {
+    customer: 'HomeGoods Inc.',
+    po: 'PO-2026-08842',
+    incoterms: 'FOB',
+    portLoading: 'Yantian, Shenzhen',
+    portDischarge: 'Los Angeles, CA, USA',
+    container: '1×40HQ',
+    paymentTerms: 'T/T 30% deposit, 70% against B/L copy',
+    vessel: 'EVER GLOBE 0456E',
+    buyerAddress: '123 Commerce Blvd, Los Angeles, CA 90045, USA',
+    products: [
+      { desc: '8L Digital Air Fryer', model: 'AF-8000', hs: '8516.60.90', qty: 2000, price: 42.50 }
+    ],
+    containerDetails: {
+      type: '40HQ',
+      totalCartons: 500,
+      pcsPerCtn: 4,
+      ctnSize: '45 × 35 × 30 cm',
+      gwPerCtn: '8.5',
+      nwPerCtn: '7.2',
+      totalGW: '4,250',
+      totalNW: '3,600',
+      totalCBM: '23.625'
+    },
+    marksRef: 'LA-2026',
+    cooOrigin: 'Shenzhen, Guangdong'
+  },
+  2: {
+    customer: 'KüchenPro GmbH',
+    po: 'PO-2026-77321',
+    incoterms: 'CIF',
+    portLoading: 'Ningbo, Zhejiang',
+    portDischarge: 'Hamburg, Germany',
+    container: '1×40HQ',
+    paymentTerms: 'L/C at sight',
+    vessel: 'COSCO SHIPPING ANDES 082W',
+    buyerAddress: 'Industriestraße 45, 20359 Hamburg, Germany',
+    products: [
+      { desc: '1.7L Electric Kettle', model: 'EK-3500', hs: '8516.79.00', qty: 3500, price: 18.90 }
+    ],
+    containerDetails: {
+      type: '40HQ',
+      totalCartons: 350,
+      pcsPerCtn: 10,
+      ctnSize: '52 × 40 × 35 cm',
+      gwPerCtn: '12.0',
+      nwPerCtn: '10.5',
+      totalGW: '4,200',
+      totalNW: '3,675',
+      totalCBM: '25.48'
+    },
+    marksRef: 'HAM-2026',
+    cooOrigin: 'Ningbo, Zhejiang'
+  },
+  3: {
+    customer: 'BrewKit Ltd.',
+    po: 'PO-2026-66109',
+    incoterms: 'FOB',
+    portLoading: 'Shanghai, China',
+    portDischarge: 'Felixstowe, UK',
+    container: '1×20GP',
+    paymentTerms: 'T/T 30% deposit, 70% against B/L copy',
+    vessel: 'MAERSK MCKINNEY MOLLER 123S',
+    buyerAddress: '12 Dockside Row, Felixstowe IP11 3QX, United Kingdom',
+    products: [
+      { desc: '12-Cup Drip Coffee Maker', model: 'CM-1200', hs: '8516.71.00', qty: 1200, price: 35.00 }
+    ],
+    containerDetails: {
+      type: '20GP',
+      totalCartons: 200,
+      pcsPerCtn: 6,
+      ctnSize: '48 × 38 × 40 cm',
+      gwPerCtn: '14.5',
+      nwPerCtn: '12.8',
+      totalGW: '2,900',
+      totalNW: '2,560',
+      totalCBM: '14.59'
+    },
+    marksRef: 'FLX-2026',
+    cooOrigin: 'Shanghai, China'
+  }
+};
+
+// ── State ──
+let activeExample = null;
+let sessionEnd = Date.now() + 24 * 60 * 60 * 1000;
+
+// ── Toast ──
+function showToast(msg, type = '') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.animation = 'toastOut 0.3s ease'; setTimeout(() => t.remove(), 300); }, 4000);
+}
+
+// ── Countdown ──
+function updateCountdown() {
+  const diff = Math.max(0, sessionEnd - Date.now());
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+  document.getElementById('countdown').textContent =
+    String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  if (diff <= 0) {
+    showToast('⏰ Demo session expired. Reload for a fresh session.', 'warn');
+  }
+}
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+// ── Email Gate ──
+function unlockGate() {
+  const email = document.getElementById('gate-email').value.trim();
+  const errEl = document.getElementById('gate-error');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errEl.textContent = 'Please enter a valid email address.';
+    return;
+  }
+  errEl.textContent = '';
+  const btn = document.getElementById('gate-btn');
+  btn.disabled = true;
+  btn.textContent = 'Accessing...';
+  setTimeout(() => {
+    const stored = localStorage.getItem('df_demo_email');
+    if (stored && Date.now() - JSON.parse(stored).ts < 86400000) {
+      // already valid
+    }
+    localStorage.setItem('df_demo_email', JSON.stringify({ email, ts: Date.now() }));
+    sessionEnd = Date.now() + 86400000;
+    updateCountdown();
+    document.getElementById('gate-overlay').classList.add('hidden');
+    document.getElementById('main-content').style.display = 'block';
+    showToast('Welcome! Your demo session is active for 24 hours.', 'success');
+    // Auto-select Air Fryer example
+    selectExample(1);
+    // Add one default product row
+    addProductRow();
+    btn.disabled = false;
+    btn.textContent = 'Access Demo →';
+  }, 600);
+}
+
+// Check stored session
+(function () {
+  const stored = localStorage.getItem('df_demo_email');
+  if (stored) {
+    const data = JSON.parse(stored);
+    if (Date.now() - data.ts < 86400000) {
+      document.getElementById('gate-overlay').classList.add('hidden');
+      document.getElementById('main-content').style.display = 'block';
+      sessionEnd = data.ts + 86400000;
+      updateCountdown();
+      selectExample(1);
+      addProductRow();
+    } else {
+      localStorage.removeItem('df_demo_email');
+    }
+  }
+})();
+document.getElementById('gate-email').addEventListener('keydown', e => {
+  if (e.key === 'Enter') unlockGate();
+});
+
+// ── Example Selection ──
+function selectExample(num) {
+  activeExample = num;
+  const ex = EXAMPLES[num];
+
+  document.querySelectorAll('.example-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[data-example="${num}"]`)?.classList.add('active');
+
+  // Fill form
+  document.getElementById('customer-name').value = ex.customer;
+  document.getElementById('po-number').value = ex.po;
+  document.getElementById('incoterms').value = ex.incoterms;
+  document.getElementById('port-loading').value = ex.portLoading;
+  document.getElementById('port-discharge').value = ex.portDischarge;
+  document.getElementById('container-type').value = ex.container;
+  document.getElementById('payment-terms').value = ex.paymentTerms;
+  document.getElementById('vessel').value = ex.vessel;
+  document.getElementById('buyer-address').value = ex.buyerAddress;
+
+  // Fill product table
+  const tbody = document.getElementById('product-tbody');
+  tbody.innerHTML = '';
+  ex.products.forEach(p => addProductRow());
+  // Fill product data
+  const rows = tbody.querySelectorAll('tr');
+  ex.products.forEach((p, i) => {
+    if (rows[i]) {
+      rows[i].querySelector('.prod-desc').value = p.desc;
+      rows[i].querySelector('.prod-model').value = p.model;
+      rows[i].querySelector('.prod-hs').value = p.hs;
+      rows[i].querySelector('.prod-qty').value = p.qty;
+      rows[i].querySelector('.prod-price').value = p.price;
+      updateRowAmount(rows[i]);
+    }
+  });
+  updateProductCount();
+  document.getElementById('preview-section').classList.add('hidden');
+  showToast(`Loaded "${ex.customer}" order — ${ex.container} ${ex.portLoading.split(',')[0]} → ${ex.portDischarge}`, 'success');
+}
+
+document.getElementById('example-chips').addEventListener('click', e => {
+  const chip = e.target.closest('.example-chip');
+  if (!chip) return;
+  selectExample(parseInt(chip.dataset.example));
+});
+
+// ── Product Rows ──
+function addProductRow() {
+  const tbody = document.getElementById('product-tbody');
+  const idx = tbody.querySelectorAll('tr').length + 1;
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td style="color:var(--muted);font-size:12px">${idx}</td>
+    <td><input type="text" class="prod-desc" placeholder="Product description" oninput="updateRowAmount(this.closest('tr'))"></td>
+    <td><input type="text" class="prod-model" placeholder="Model #" style="max-width:100px"></td>
+    <td><input type="text" class="prod-hs" placeholder="HS Code" style="max-width:110px"></td>
+    <td><input type="number" class="prod-qty" placeholder="Qty" min="1" style="max-width:90px" oninput="updateRowAmount(this.closest('tr'));updateProductCount()"></td>
+    <td><input type="number" class="prod-price" placeholder="0.00" step="0.01" min="0" style="max-width:110px" oninput="updateRowAmount(this.closest('tr'))"></td>
+    <td class="prod-amount num" style="color:var(--accent2);font-weight:600;font-variant-numeric:tabular-nums">—</td>
+    <td><button class="del-btn" onclick="deleteRow(this)" title="Remove">✕</button></td>
+  `;
+  tbody.appendChild(row);
+  updateProductCount();
+  renumberRows();
+  return row;
+}
+
+function deleteRow(btn) {
+  const tbody = document.getElementById('product-tbody');
+  if (tbody.querySelectorAll('tr').length <= 1) {
+    showToast('Need at least one product line.', 'warn');
+    return;
+  }
+  btn.closest('tr').remove();
+  renumberRows();
+  updateProductCount();
+}
+
+function renumberRows() {
+  const rows = document.getElementById('product-tbody').querySelectorAll('tr');
+  rows.forEach((r, i) => { r.querySelector('td').textContent = i + 1; });
+}
+
+function updateRowAmount(row) {
+  const qty = parseFloat(row.querySelector('.prod-qty')?.value) || 0;
+  const price = parseFloat(row.querySelector('.prod-price')?.value) || 0;
+  const amount = qty * price;
+  const amtCell = row.querySelector('.prod-amount');
+  if (amtCell) amtCell.textContent = amount > 0 ? '$' + amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
+}
+
+function updateProductCount() {
+  const count = document.getElementById('product-tbody').querySelectorAll('tr').length;
+  document.getElementById('product-count').textContent = count + ' product' + (count !== 1 ? 's' : '');
+}
+
+// ── Collect Form Data ──
+function collectOrderData() {
+  const products = [];
+  document.getElementById('product-tbody').querySelectorAll('tr').forEach(row => {
+    const desc = row.querySelector('.prod-desc')?.value.trim();
+    const model = row.querySelector('.prod-model')?.value.trim();
+    const hs = row.querySelector('.prod-hs')?.value.trim();
+    const qty = parseInt(row.querySelector('.prod-qty')?.value) || 0;
+    const price = parseFloat(row.querySelector('.prod-price')?.value) || 0;
+    if (desc && qty > 0 && price > 0) {
+      products.push({ desc, model, hs, qty, price });
+    }
+  });
+  return {
+    customer: document.getElementById('customer-name').value.trim(),
+    po: document.getElementById('po-number').value.trim(),
+    incoterms: document.getElementById('incoterms').value,
+    portLoading: document.getElementById('port-loading').value.trim(),
+    portDischarge: document.getElementById('port-discharge').value.trim(),
+    container: document.getElementById('container-type').value,
+    paymentTerms: document.getElementById('payment-terms').value,
+    vessel: document.getElementById('vessel').value.trim(),
+    buyerAddress: document.getElementById('buyer-address').value.trim(),
+    products
+  };
+}
+
+// ── Generate Documents ──
+function generateDocuments() {
+  const data = collectOrderData();
+
+  if (!data.customer) { showToast('Please enter a Customer / Buyer name.', 'warn'); return; }
+  if (!data.po) { showToast('Please enter a PO / Contract number.', 'warn'); return; }
+  if (data.products.length === 0) { showToast('Please add at least one product with quantity and price.', 'warn'); return; }
+  if (!data.portLoading) { showToast('Please enter Port of Loading.', 'warn'); return; }
+  if (!data.portDischarge) { showToast('Please enter Port of Discharge.', 'warn'); return; }
+
+  const invNo = 'CI-' + data.po.replace(/[^A-Za-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const date = new Date().toISOString().slice(0, 10);
+  const dateFormatted = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  // Container details based on example or defaults
+  let cd;
+  if (activeExample && EXAMPLES[activeExample]) {
+    cd = EXAMPLES[activeExample].containerDetails;
+  } else {
+    // Compute approximate container details from products
+    const totalQty = data.products.reduce((s, p) => s + p.qty, 0);
+    cd = {
+      type: data.container.includes('20') ? '20GP' : '40HQ',
+      totalCartons: Math.ceil(totalQty / 4),
+      pcsPerCtn: 4,
+      ctnSize: '45 × 35 × 30 cm',
+      gwPerCtn: '8.5',
+      nwPerCtn: '7.2',
+      totalGW: (Math.ceil(totalQty / 4) * 8.5).toLocaleString('en-US'),
+      totalNW: (Math.ceil(totalQty / 4) * 7.2).toLocaleString('en-US'),
+      totalCBM: ((Math.ceil(totalQty / 4) * 0.45 * 0.35 * 0.30).toFixed(3))
+    };
+  }
+  const marksRef = (activeExample && EXAMPLES[activeExample]) ? EXAMPLES[activeExample].marksRef : data.portDischarge.split(',')[0].trim().slice(0, 3).toUpperCase() + '-2026';
+  const cooOrigin = (activeExample && EXAMPLES[activeExample]) ? EXAMPLES[activeExample].cooOrigin : data.portLoading;
+
+  // Compute totals
+  const totalQty = data.products.reduce((s, p) => s + p.qty, 0);
+  const totalAmount = data.products.reduce((s, p) => s + (p.qty * p.price), 0);
+
+  // Build Commercial Invoice
+  const productsRows = data.products.map((p, i) => `
+    <tr>
+      <td class="center">${i + 1}</td>
+      <td>${p.desc}${p.model ? '<br><span style="font-size:11px;color:#555">Model: ' + p.model + '</span>' : ''}</td>
+      <td class="center">${p.hs || '—'}</td>
+      <td class="num">${p.qty.toLocaleString('en-US')}</td>
+      <td style="text-align:right;white-space:nowrap">US $${p.price.toFixed(2)}</td>
+      <td style="text-align:right;font-weight:600;white-space:nowrap">US $${(p.qty * p.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+    </tr>
+  `).join('');
+
+  const invoiceHTML = `
+    <div class="doc-paper">
+      <div class="doc-header">
+        <h3>Commercial Invoice</h3>
+        <div class="doc-no">Invoice No: <strong>${invNo}</strong> &nbsp;|&nbsp; Date: <strong>${dateFormatted}</strong></div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-row"><span class="doc-label">Seller / Exporter:</span><span class="doc-value">Quattro Industrial Co., Ltd.</span></div>
+        <div class="doc-row"><span class="doc-label">Address:</span><span class="doc-value">No. 1888, Binhai Road, Yantian District, Shenzhen, Guangdong, China</span></div>
+        <div class="doc-row"><span class="doc-label">TEL / FAX:</span><span class="doc-value">+86-755-8829-XXXX / +86-755-8829-XXXX</span></div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-row"><span class="doc-label">Buyer / Consignee:</span><span class="doc-value">${data.customer}</span></div>
+        <div class="doc-row"><span class="doc-label">Address:</span><span class="doc-value">${data.buyerAddress || '—'}</span></div>
+        <div class="doc-row"><span class="doc-label">PO / Contract No:</span><span class="doc-value">${data.po}</span></div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-row"><span class="doc-label">Port of Loading:</span><span class="doc-value">${data.portLoading}</span></div>
+        <div class="doc-row"><span class="doc-label">Port of Discharge:</span><span class="doc-value">${data.portDischarge}</span></div>
+        <div class="doc-row"><span class="doc-label">Vessel / Voyage:</span><span class="doc-value">${data.vessel || 'TBA'}</span></div>
+        <div class="doc-row"><span class="doc-label">Incoterms:</span><span class="doc-value">${data.incoterms} ${data.portLoading.split(',')[0] || ''}</span></div>
+        <div class="doc-row"><span class="doc-label">Payment Terms:</span><span class="doc-value">${data.paymentTerms}</span></div>
+        <div class="doc-row"><span class="doc-label">Container:</span><span class="doc-value">${data.container}</span></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th>Description of Goods</th>
+            <th style="width:100px">HS Code</th>
+            <th style="width:80px">Qty (pcs)</th>
+            <th style="width:110px;text-align:right">Unit Price</th>
+            <th style="width:120px;text-align:right">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${productsRows}</tbody>
+      </table>
+      <div class="doc-total">
+        <div class="doc-row">
+          <span class="doc-label">Total Quantity:</span>
+          <span class="doc-value">${totalQty.toLocaleString('en-US')} pcs</span>
+        </div>
+        <div class="doc-row">
+          <span class="doc-label">Total Amount (${data.incoterms}):</span>
+          <span class="doc-value" style="font-size:16px">US $${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+        </div>
+        <div class="doc-row" style="margin-top:12px">
+          <span class="doc-label">SAY TOTAL:</span>
+          <span class="doc-value"><em>U.S. DOLLARS ${numberToWords(totalAmount).toUpperCase()} ONLY</em></span>
+        </div>
+      </div>
+      <div style="margin-top:24px;font-size:11px;color:#555">
+        <div>Country of Origin: People's Republic of China</div>
+        <div>We hereby certify that the above goods are of Chinese origin.</div>
+      </div>
+      <div class="doc-stamp">
+        <div style="text-align:right;font-size:12px">
+          <div style="font-weight:700;margin-bottom:24px">Quattro Industrial Co., Ltd.</div>
+          <div>_____________________________</div>
+          <div style="margin-top:4px;color:#555">Authorized Signature</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Build Packing List
+  const plRows = data.products.map((p, i) => `
+    <tr>
+      <td class="center">${i + 1}</td>
+      <td>${p.desc}${p.model ? '<br><span style="font-size:11px;color:#555">Model: ' + p.model + '</span>' : ''}</td>
+      <td class="num">${p.qty.toLocaleString('en-US')}</td>
+      <td class="center">${cd.totalCartons}</td>
+      <td class="center">${cd.pcsPerCtn}</td>
+      <td style="white-space:nowrap">${cd.ctnSize}</td>
+      <td class="num">${cd.gwPerCtn}</td>
+      <td class="num">${cd.nwPerCtn}</td>
+      <td class="num" style="white-space:nowrap">${(cd.totalCartons * parseFloat(cd.gwPerCtn)).toLocaleString('en-US')}</td>
+      <td class="num" style="white-space:nowrap">${(cd.totalCartons * parseFloat(cd.nwPerCtn)).toLocaleString('en-US')}</td>
+      <td class="num">${cd.totalCBM}</td>
+    </tr>
+  `).join('');
+
+  const packingHTML = `
+    <div class="doc-paper">
+      <div class="doc-header">
+        <h3>Packing List</h3>
+        <div class="doc-no">Invoice No: <strong>${invNo}</strong> &nbsp;|&nbsp; Date: <strong>${dateFormatted}</strong></div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-row"><span class="doc-label">Shipper:</span><span class="doc-value">Quattro Industrial Co., Ltd.</span></div>
+        <div class="doc-row"><span class="doc-label">Consignee:</span><span class="doc-value">${data.customer}</span></div>
+        <div class="doc-row"><span class="doc-label">Vessel / Voyage:</span><span class="doc-value">${data.vessel || 'TBA'}</span></div>
+        <div class="doc-row"><span class="doc-label">Port of Loading:</span><span class="doc-value">${data.portLoading}</span></div>
+        <div class="doc-row"><span class="doc-label">Port of Discharge:</span><span class="doc-value">${data.portDischarge}</span></div>
+        <div class="doc-row"><span class="doc-label">Container No:</span><span class="doc-value">${data.container.split('×')[0] || '1'} × ${cd.type} — TCLU${Math.floor(Math.random() * 9000000) + 1000000}</span></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px">#</th>
+            <th>Description</th>
+            <th style="width:70px">Qty (pcs)</th>
+            <th style="width:55px">Ctns</th>
+            <th style="width:45px">Pcs/Ctn</th>
+            <th>Carton Size</th>
+            <th style="width:55px">GW/Ctn</th>
+            <th style="width:55px">NW/Ctn</th>
+            <th style="width:70px">Total GW</th>
+            <th style="width:70px">Total NW</th>
+            <th style="width:55px">CBM</th>
+          </tr>
+        </thead>
+        <tbody>${plRows}</tbody>
+        <tfoot>
+          <tr style="background:#f0f5ff;font-weight:700">
+            <td colspan="2">TOTALS</td>
+            <td class="num">${totalQty.toLocaleString('en-US')}</td>
+            <td class="center">${cd.totalCartons}</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="num">${(cd.totalCartons * parseFloat(cd.gwPerCtn)).toLocaleString('en-US')} kg</td>
+            <td class="num">${(cd.totalCartons * parseFloat(cd.nwPerCtn)).toLocaleString('en-US')} kg</td>
+            <td class="num">${cd.totalCBM} m³</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="doc-section">
+        <div class="doc-row"><span class="doc-label">Shipping Marks:</span><span class="doc-value">${marksRef} / ${data.po} / C/NO. 1-${cd.totalCartons}</span></div>
+        <div class="doc-row"><span class="doc-label">Total Gross Weight:</span><span class="doc-value" style="font-weight:700">${(cd.totalCartons * parseFloat(cd.gwPerCtn)).toLocaleString('en-US')} kg</span></div>
+        <div class="doc-row"><span class="doc-label">Total Net Weight:</span><span class="doc-value" style="font-weight:700">${(cd.totalCartons * parseFloat(cd.nwPerCtn)).toLocaleString('en-US')} kg</span></div>
+        <div class="doc-row"><span class="doc-label">Total Volume:</span><span class="doc-value" style="font-weight:700">${cd.totalCBM} m³</span></div>
+        <div class="doc-row"><span class="doc-label">Container Type:</span><span class="doc-value">${data.container}</span></div>
+      </div>
+      <div class="doc-stamp">
+        <div style="text-align:right;font-size:12px">
+          <div>Packed by: Quattro Industrial Co., Ltd.</div>
+          <div>_____________________________</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Build Certificate of Origin
+  const cooHTML = `
+    <div class="doc-paper">
+      <div class="doc-header">
+        <h3>Certificate of Origin</h3>
+        <div class="doc-no">Ref No: CO-${invNo.replace('CI-', '')} &nbsp;|&nbsp; Date: <strong>${dateFormatted}</strong></div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-row"><span class="doc-label">Exporter:</span><span class="doc-value">Quattro Industrial Co., Ltd.</span></div>
+        <div class="doc-row"><span class="doc-label">Address:</span><span class="doc-value">No. 1888, Binhai Road, Yantian District, Shenzhen, Guangdong, China</span></div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-row"><span class="doc-label">Consignee:</span><span class="doc-value">${data.customer}</span></div>
+        <div class="doc-row"><span class="doc-label">Address:</span><span class="doc-value">${data.buyerAddress || '—'}</span></div>
+      </div>
+      <div class="doc-section">
+        <div class="doc-row"><span class="doc-label">Country of Origin:</span><span class="doc-value" style="font-weight:700">People's Republic of China</span></div>
+        <div class="doc-row"><span class="doc-label">Place of Origin:</span><span class="doc-value">${cooOrigin}</span></div>
+        <div class="doc-row"><span class="doc-label">Transport Details:</span><span class="doc-value">By Sea — ${data.portLoading} to ${data.portDischarge}</span></div>
+        <div class="doc-row"><span class="doc-label">Vessel / Voyage:</span><span class="doc-value">${data.vessel || 'TBA'}</span></div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:30px">#</th>
+            <th>Description of Goods</th>
+            <th style="width:80px">HS Code</th>
+            <th style="width:70px">Qty</th>
+            <th style="width:80px">Origin Criterion</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.products.map((p, i) => `
+            <tr>
+              <td class="center">${i + 1}</td>
+              <td>${p.desc}${p.model ? '<br><span style="font-size:11px;color:#555">Model: ' + p.model + '</span>' : ''}</td>
+              <td class="center">${p.hs || '—'}</td>
+              <td class="num">${p.qty.toLocaleString('en-US')} pcs</td>
+              <td class="center">"P" — Wholly obtained</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <div style="margin-top:20px;font-size:11px;color:#555;line-height:1.8">
+        <div><strong>Declaration by the Exporter:</strong></div>
+        <div>The undersigned hereby declares that the above details and statements are correct; that all goods were produced in the People's Republic of China and that they comply with the origin requirements specified for these goods.</div>
+      </div>
+      <div class="doc-stamp">
+        <div class="stamp-box">
+          <div>CCPIT / CHINA COUNCIL FOR THE</div>
+          <div>PROMOTION OF INTERNATIONAL TRADE</div>
+          <div style="margin-top:8px">[ Official Stamp &amp; Seal ]</div>
+        </div>
+        <div style="text-align:right;font-size:12px">
+          <div>_____________________________</div>
+          <div style="margin-top:4px;color:#555">Authorized Signatory</div>
+        </div>
+      </div>
+    </div>`;
+
+  // Build Shipping Marks
+  const marksHTML = `
+    <div class="doc-paper" style="text-align:center">
+      <div class="doc-header">
+        <h3>Shipping Marks</h3>
+        <div class="doc-no">PO: <strong>${data.po}</strong> &nbsp;|&nbsp; Container: <strong>${data.container}</strong></div>
+      </div>
+      <div style="margin: 24px 0">This mark shall appear on <strong>ALL ${cd.totalCartons} cartons</strong> in this shipment:</div>
+      <div style="display:flex;justify-content:center;margin:24px 0">
+        <div class="marks-box">
+          <div>╔══════════════════════╗</div>
+          <div>║&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${marksRef.toUpperCase()}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;║</div>
+          <div>║&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${data.po.replace(/PO-/,'')}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;║</div>
+          <div>║&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${data.portDischarge.split(',')[0].trim().toUpperCase()}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;║</div>
+          <div>║&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MADE IN CHINA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ║</div>
+          <div>║&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;C/NO. 1-${cd.totalCartons}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;║</div>
+          <div>║&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${data.container}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;║</div>
+          <div>╚══════════════════════╝</div>
+        </div>
+      </div>
+      <div style="margin-top:24px;font-size:12px;color:#555;text-align:left;display:inline-block">
+        <div><strong>Marking Requirements:</strong></div>
+        <div>• Print on 2 adjacent sides of each carton</div>
+        <div>• Minimum font size: 36pt (port of discharge)</div>
+        <div>• Waterproof ink on white carton surface</div>
+        <div>• Mark area minimum: 25cm × 20cm</div>
+        <div>• Handling marks: ☂ (keep dry), ↑↑ (this way up), 🏋 (fragile)</div>
+      </div>
+    </div>`;
+
+  // Render container info badges
+  const containerInfoHTML = `
+    <div class="container-badge">
+      <div class="cb-val">${data.container}</div>
+      <div class="cb-label">Container</div>
+    </div>
+    <div class="container-badge">
+      <div class="cb-val">${cd.totalCartons}</div>
+      <div class="cb-label">Total Cartons</div>
+    </div>
+    <div class="container-badge">
+      <div class="cb-val">${(cd.totalCartons * parseFloat(cd.gwPerCtn)).toLocaleString('en-US')} kg</div>
+      <div class="cb-label">Gross Weight</div>
+    </div>
+    <div class="container-badge">
+      <div class="cb-val">${cd.totalCBM} m³</div>
+      <div class="cb-label">Total Volume</div>
+    </div>
+    <div class="container-badge">
+      <div class="cb-val">${data.products.length}</div>
+      <div class="cb-label">Line Items</div>
+    </div>
+    <div class="container-badge">
+      <div class="cb-val">US $${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+      <div class="cb-label">Total Value</div>
+    </div>`;
+
+  // Inject all content
+  document.getElementById('container-info').innerHTML = containerInfoHTML;
+  document.getElementById('panel-invoice').innerHTML = invoiceHTML;
+  document.getElementById('panel-packing').innerHTML = packingHTML;
+  document.getElementById('panel-coo').innerHTML = cooHTML;
+  document.getElementById('panel-marks').innerHTML = marksHTML;
+
+  // Switch to invoice tab
+  document.querySelectorAll('.doc-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('[data-doc="invoice"]').classList.add('active');
+  document.querySelectorAll('.doc-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-invoice').classList.add('active');
+
+  // Show preview
+  document.getElementById('preview-section').classList.remove('hidden');
+  document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth' });
+
+  showToast(`✅ 4 documents generated for ${data.customer} — ${data.products.length} item(s), US $${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'success');
+}
+
+// ── Tab Switching ──
+document.getElementById('doc-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.doc-tab');
+  if (!tab) return;
+  const doc = tab.dataset.doc;
+  document.querySelectorAll('.doc-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  document.querySelectorAll('.doc-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + doc).classList.add('active');
+});
+
+// ── Download All ──
+function downloadAll() {
+  const sections = document.getElementById('preview-section');
+  if (sections.classList.contains('hidden')) { showToast('Generate documents first.', 'warn'); return; }
+
+  const data = collectOrderData();
+  const invNo = 'CI-' + data.po.replace(/[^A-Za-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+
+  // Combine all documents into one printable HTML
+  const invoiceContent = document.getElementById('panel-invoice').querySelector('.doc-paper')?.outerHTML || '';
+  const packingContent = document.getElementById('panel-packing').querySelector('.doc-paper')?.outerHTML || '';
+  const cooContent = document.getElementById('panel-coo').querySelector('.doc-paper')?.outerHTML || '';
+  const marksContent = document.getElementById('panel-marks').querySelector('.doc-paper')?.outerHTML || '';
+
+  const combinedHTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${invNo} — Full Document Set</title>
+<style>
+  @page { size: A4; margin: 15mm; }
+  body { font-family: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; color: #1a1a1a; background: #fff; padding: 20px; }
+  .page-break { page-break-before: always; margin-top: 30px; }
+  .doc-paper { background: #fafbfc; border: 1px solid #d1d5db; padding: 40px; margin-bottom: 30px; }
+  .doc-paper .doc-header { text-align: center; border-bottom: 2px solid #1a1a1a; padding-bottom: 16px; margin-bottom: 20px; }
+  .doc-paper .doc-header h3 { font-size: 18px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .doc-paper table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 12px; }
+  .doc-paper table th { background: #e5e7eb; padding: 8px 10px; text-align: left; font-weight: 600; border: 1px solid #cbd5e1; }
+  .doc-paper table td { padding: 8px 10px; border: 1px solid #d1d5db; }
+  .doc-paper .doc-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
+  .doc-paper .doc-label { color: #555; min-width: 160px; }
+  .doc-paper .marks-box { border: 2px solid #1a1a1a; padding: 24px; display: inline-block; text-align: center; font-family: monospace; }
+  @media print { .page-break { page-break-before: always; } }
+</style></head><body>
+  <h1 style="text-align:center;margin-bottom:10px">${invNo} — FULL DOCUMENT SET</h1>
+  <p style="text-align:center;color:#666">Generated by DocuFlow | ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+  ${invoiceContent}
+  <div class="page-break"></div>
+  ${packingContent}
+  <div class="page-break"></div>
+  ${cooContent}
+  <div class="page-break"></div>
+  ${marksContent}
+</body></html>`;
+
+  const blob = new Blob([combinedHTML], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = invNo + '_Full-Document-Set.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥 Full document set downloaded as HTML! Open in browser → Print → Save as PDF.', 'success');
+}
+
+// ── Print ──
+function printDocs() {
+  const sections = document.getElementById('preview-section');
+  if (sections.classList.contains('hidden')) { showToast('Generate documents first.', 'warn'); return; }
+
+  // Activate all panels temporarily for print
+  const allPanels = document.querySelectorAll('.doc-panel');
+  allPanels.forEach(p => p.style.display = 'block');
+  const activePanel = document.querySelector('.doc-panel.active');
+  const originalDisplay = activePanel?.style.display;
+
+  window.print();
+
+  // Restore
+  allPanels.forEach(p => {
+    p.style.display = '';
+    if (!p.classList.contains('active')) p.style.display = 'none';
+  });
+  if (activePanel) { activePanel.style.display = 'block'; }
+}
+
+// ── Send to Forwarder (mock) ──
+function sendToForwarder() {
+  const data = collectOrderData();
+  if (!data.customer) { showToast('Generate documents first.', 'warn'); return; }
+  const forwarders = [
+    'Kuehne + Nagel',
+    'DHL Global Forwarding',
+    'Expeditors',
+    'DSV Panalpina',
+    'Kerry Logistics'
+  ];
+  const randomFW = forwarders[Math.floor(Math.random() * forwarders.length)];
+
+  showToast(`📧 Document package sent to ${randomFW}! (Demo — no actual email sent)`, 'success');
+
+  // Simulate "sent" overlay
+  const fwBtn = document.querySelector('.preview-btn.danger');
+  fwBtn.textContent = '✅ Sent to Forwarder';
+  fwBtn.disabled = true;
+  fwBtn.style.opacity = '0.6';
+  fwBtn.style.cursor = 'default';
+
+  setTimeout(() => {
+    fwBtn.textContent = '📧 Send to Forwarder';
+    fwBtn.disabled = false;
+    fwBtn.style.opacity = '';
+    fwBtn.style.cursor = '';
+  }, 5000);
+}
+
+// ── Number to Words (simplified for display) ──
+function numberToWords(amount) {
+  const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+  if (amount === 0) return 'zero';
+
+  const dollars = Math.floor(amount);
+  const cents = Math.round((amount - dollars) * 100);
+
+  function convertHundreds(n) {
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? '-' + ones[n % 10] : '');
+    return ones[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' ' + convertHundreds(n % 100) : '');
+  }
+
+  function convertLarge(n) {
+    if (n === 0) return '';
+    if (n < 1000) return convertHundreds(n);
+    const thousands = Math.floor(n / 1000);
+    const remainder = n % 1000;
+    return convertHundreds(thousands) + ' thousand' + (remainder ? ' ' + convertLarge(remainder) : '');
+  }
+
+  let result = convertLarge(dollars);
+  if (cents > 0) {
+    result += ' and ' + cents + '/100';
+  }
+  return result;
+}
+</script>
+</body>
+</html>

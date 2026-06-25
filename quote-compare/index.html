@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quote Compare v2 — Quattro Procurement Strategist | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b; --gold: #fbbf24;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9}
+
+.app{display:none}
+.app.active{display:block}
+
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+.topbar a{color:var(--muted);text-decoration:none;font-size:0.8rem}
+.topbar a:hover{color:var(--text)}
+
+.container{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+.page-header{text-align:center;margin-bottom:24px}
+.page-header h1{font-size:1.8rem;margin-bottom:6px}
+.page-header .badge{display:inline-block;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#000;padding:4px 12px;border-radius:4px;font-size:0.7rem;font-weight:800;vertical-align:middle;margin-left:8px}
+.page-header p{color:var(--muted);font-size:0.95rem}
+
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:768px){.layout{grid-template-columns:1fr}}
+
+.quote-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.quote-panel .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.quote-panel .panel-header h3{font-size:0.95rem}
+.quote-panel textarea{width:100%;height:90px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.78rem;padding:10px 14px;resize:vertical;font-family:monospace;line-height:1.5}
+.quote-panel textarea:focus{outline:none;border-color:var(--accent)}
+
+.example-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.example-chip{padding:7px 14px;border:1px solid var(--border);border-radius:20px;font-size:0.72rem;cursor:pointer;transition:all .2s;white-space:nowrap;background:var(--card);color:var(--muted)}
+.example-chip:hover,.example-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(6,182,212,0.08)}
+
+.compare-row{text-align:center;margin:16px 0}
+.btn-compare{background:var(--gradient);color:#fff;padding:14px 40px;font-size:1rem;border-radius:12px;cursor:pointer;border:none;font-weight:700}
+.btn-compare:hover{transform:translateY(-2px)}
+.btn-compare:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* Results */
+.results-section{display:none}
+.results-section.show{display:block}
+
+/* Best Pick */
+.best-pick{background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.03));border:1px solid rgba(16,185,129,0.3);border-radius:14px;padding:22px;margin-bottom:16px}
+.best-pick .bp-icon{font-size:1.8rem;margin-bottom:6px}
+.best-pick h3{font-size:1.2rem;color:var(--accent2);margin-bottom:4px}
+.best-pick .bp-reason{color:var(--muted);font-size:0.85rem;line-height:1.5}
+
+/* Matrix Table */
+.matrix-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:14px}
+.matrix-card .mc-header{padding:12px 16px;background:#0d1117;font-weight:600;font-size:0.85rem;display:flex;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:0.8rem}
+th{padding:10px 12px;text-align:left;color:var(--muted);font-weight:600;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px}
+td{padding:10px 12px;border-top:1px solid var(--border)}
+.highlight-row{background:rgba(16,185,129,0.04)}
+.highlight-row td:first-child{border-left:3px solid var(--accent2)}
+.best{color:var(--accent2);font-weight:700}
+.worst{color:var(--red)}
+.risk-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;margin:2px}
+.risk-high{background:rgba(239,68,68,0.15);color:var(--red)}
+.risk-med{background:rgba(245,158,11,0.15);color:var(--warn)}
+.risk-low{background:rgba(16,185,129,0.12);color:var(--accent2)}
+
+/* Blindspots */
+.blindspot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:14px}
+.blindspot-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;border-left:3px solid var(--accent)}
+.blindspot-card .bs-angle{font-size:0.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--accent);margin-bottom:6px}
+.blindspot-card .bs-insight{font-size:0.82rem;color:var(--text);line-height:1.5}
+
+/* Negotiation Script */
+.script-card{background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:22px;margin-bottom:14px}
+.script-card .sc-header{font-weight:700;font-size:0.95rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.script-card pre{background:#0d1117;padding:16px;border-radius:8px;font-size:0.78rem;color:var(--text);line-height:1.7;white-space:pre-wrap;font-family:monospace;overflow-x:auto}
+.script-card .copy-btn{margin-top:10px;font-size:0.75rem;cursor:pointer}
+
+/* JSON output toggle */
+.json-toggle{text-align:right;margin-bottom:12px}
+.json-toggle button{background:transparent;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.75rem}
+.json-toggle button:hover{border-color:var(--accent);color:var(--text)}
+.json-output{display:none;background:#0d1117;border-radius:10px;padding:18px;font-size:0.72rem;font-family:monospace;overflow-x:auto;white-space:pre-wrap;color:var(--accent2);max-height:400px;overflow-y:auto;line-height:1.6}
+.json-output.show{display:block}
+
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 18px;margin-top:16px;display:flex;align-items:flex-start;gap:10px;font-size:0.82rem;color:var(--red)}
+
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none}
+.toast.show{display:block;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">🆚</div>
+    <h2>Quote Compare v2</h2>
+    <p>Quattro Procurement Strategist™</p>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+    <div class="note">⚠️ <span>所有資料將在 24 小時內自動銷毀</span></div>
+  </div>
+</div>
+
+<div class="app" id="mainApp">
+  <div class="topbar">
+    <div class="logo">🆚 Quote Compare <span style="font-size:0.7rem;color:var(--warn);margin-left:4px">v2.0</span></div>
+    <div style="display:flex;align-items:center;gap:18px">
+      <div class="timer">⏳ <span id="countdown">23:59:59</span></div>
+      <a href="../index.html">🏠 主頁</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="page-header">
+      <h1>🧠 Quattro Procurement Strategist <span class="badge">v2</span></h1>
+      <p>30 年家電採購經驗 AI · Paste 報價 → 完整採購戰略審計報告</p>
+    </div>
+
+    <div class="example-chips" id="exampleChips">
+      <div class="example-chip" onclick="loadExample(0)">📋 例1: 空氣炸鍋 (5供應商)</div>
+      <div class="example-chip" onclick="loadExample(1)">📋 例2: 電熱水壺 (3供應商)</div>
+      <div class="example-chip" onclick="loadExample(2)">📋 例3: 多士爐 (4供應商)</div>
+      <div class="example-chip" onclick="loadExample(3)">📋 例4: 咖啡機 (3供應商)</div>
+      <div class="example-chip" onclick="loadExample(4)">📋 例5: 攪拌機 (3供應商)</div>
+    </div>
+
+    <div class="layout" id="quoteInputs">
+      <div class="quote-panel"><div class="panel-header"><h3>📥 供應商報價 #1</h3><span class="risk-tag risk-low">Supplier A</span></div><textarea id="quote0" placeholder="Paste WhatsApp/Email 報價..."></textarea></div>
+      <div class="quote-panel"><div class="panel-header"><h3>📥 供應商報價 #2</h3><span class="risk-tag risk-low">Supplier B</span></div><textarea id="quote1" placeholder="Paste 第二間報價..."></textarea></div>
+    </div>
+
+    <div class="compare-row">
+      <button class="btn btn-compare" onclick="runAudit()" id="compareBtn">🧠 執行採購戰略審計</button>
+    </div>
+
+    <div class="results-section" id="resultsSection">
+      <!-- Best Recommendation -->
+      <div class="best-pick" id="bestPick" style="display:none"></div>
+
+      <!-- Comparison Matrix -->
+      <div class="matrix-card">
+        <div class="mc-header">📊 結構化對比矩陣 + 隱藏風險標記</div>
+        <div style="overflow-x:auto"><table id="compTable"><thead><tr><th>供應商</th><th>單價 USD</th><th>MOQ</th><th>交貨天</th><th>付款條件</th><th>MOQ總成本</th><th>首期現金</th><th>隱藏風險</th></tr></thead><tbody></tbody></table></div>
+      </div>
+
+      <!-- Blindspots -->
+      <div class="blindspot-grid" id="blindspotGrid"></div>
+
+      <!-- Negotiation Script -->
+      <div class="script-card" id="scriptCard" style="display:none">
+        <div class="sc-header">🎯 談判劇本</div>
+        <pre id="scriptText"></pre>
+        <button class="btn copy-btn" onclick="copyScript()" style="background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:0.8rem">📋 Copy 談判劇本</button>
+      </div>
+
+      <!-- JSON -->
+      <div class="json-toggle">
+        <button onclick="document.getElementById('jsonOutput').classList.toggle('show')">{ } JSON Raw</button>
+      </div>
+      <div class="json-output" id="jsonOutput"></div>
+
+      <div class="destruct"><span>⚠️</span><div><b>所有資料將在 24 小時內自動銷毀。</b>請自行保存分析結果。</div></div>
+      <div style="text-align:center;margin-top:16px"><button class="btn btn-primary" onclick="location.reload()" style="width:auto">🔄 重新開始</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// DOMAIN KNOWLEDGE — 30 years of appliance sourcing
+// ═══════════════════════════════════════
+const DOMAIN = {
+  // Raw material cost benchmarks (USD per kg, 2026 estimates)
+  materials: {
+    stainless_steel: 2.80,
+    plastic_abs: 1.60,
+    plastic_pp: 1.20,
+    glass_borosilicate: 3.50,
+    copper_wire: 9.20,
+    aluminum: 2.40,
+    electronic_pcb: 8.00,
+    heating_element: 5.00,
+    motor_1000w: 12.00,
+    packaging: 1.50
+  },
+  // Estimated material cost breakdown per product category
+  productCosts: {
+    air_fryer: { materials: 10.50, labor: 3.20, overhead: 2.00, total_mfg: 15.70 },
+    kettle_electric: { materials: 4.80, labor: 1.50, overhead: 0.90, total_mfg: 7.20 },
+    toaster: { materials: 6.20, labor: 1.80, overhead: 1.10, total_mfg: 9.10 },
+    coffee_maker: { materials: 12.00, labor: 3.00, overhead: 1.80, total_mfg: 16.80 },
+    blender: { materials: 14.50, labor: 3.50, overhead: 2.00, total_mfg: 20.00 }
+  },
+  // Required certifications by market
+  certs: {
+    EU: ['CE', 'RoHS', 'REACH', 'LFGB (food contact)'],
+    US: ['UL/ETL', 'FDA (food contact)', 'FCC'],
+    UK: ['UKCA', 'UK RoHS'],
+    JP: ['PSE', 'Food Sanitation Law'],
+    global: ['ISO 9001', 'BSCI (social compliance)']
+  },
+  // Shipping peak seasons
+  peakSeasons: [
+    { name: 'Christmas', months: [8,9,10], risk: 'HIGH', note: '8-10月係聖誕出貨高峯，遲一日罰款可達訂單額 5%' },
+    { name: 'Chinese New Year', months: [12,1], risk: 'HIGH', note: '農曆新年前工廠停工 2-4 週，12-1月交貨極不穩定' },
+    { name: 'Summer', months: [6,7], risk: 'MEDIUM', note: '暑假檔期物流繁忙，運費通常上漲 15-25%' }
+  ],
+  // Payment term risk scoring
+  paymentRisk: {
+    '100% upfront': { score: 10, note: '全額預付 = 極高風險：供應商無履約壓力，品質無保障' },
+    'T/T 50/50': { score: 6, note: '50%訂金偏高，建議爭取降至 30%' },
+    'T/T 30/70': { score: 3, note: '行業標準，可接受' },
+    'L/C at sight': { score: 4, note: '信用證保障較好，但銀行費用 0.5-1% 需計入成本' },
+    'default': { score: 5, note: '需確認具體條款' }
+  }
+};
+
+// ═══════════════════════════════════════
+// EXAMPLE QUOTES
+// ═══════════════════════════════════════
+const EXAMPLES = [
+  {title:'5L Air Fryer',quotes:[
+    'Hi Andrew, Shenzhen Topman Electronics here. We can supply the 5L Air Fryer model AF-500 at USD 18.50/pc FOB Shenzhen. MOQ 1000pcs. Delivery: 30 days after order. Payment: T/T 30% deposit, 70% before shipment. 1 year warranty included. CE, RoHS, FDA certified. Price valid 30 days.',
+    'Hello! Dongguan KitchenPro Co. quoting 5L Digital Air Fryer KPAF-5L at USD 16.80/pc FOB Yantian. MOQ 2000 units minimum. Lead time 45 days. Payment by L/C at sight. Free spare parts 2% included. CE/FDA certified.',
+    'Dear sir, Zhongshan BestHome Appliances offer 5L Air Fryer BH-500. Price USD 19.20/pc FOB Zhongshan. MOQ only 500pcs — we specialize in small batch. Delivery 25 days. Payment 50% deposit, 50% before delivery. Free sample available! CE, GS certified.',
+    'Foshan SmartCook — our 5L Smart Air Fryer SCAF-5L at BEST PRICE USD 15.90/pc FOB. MOQ 3000pcs. Delivery 60 days. T/T 30/70. This is our rock-bottom price for volume order. We also provide OEM packaging. Basic CE only.',
+    'Ningbo ElecTech Co. offer 5L Air Fryer NET-500. USD 17.50/pc FOB Ningbo. MOQ 1500pcs. Fast delivery: 35 days. Payment: 100% T/T upfront (we offer 3% discount for upfront payment, so net $16.98). 2-year warranty! CE, UL, RoHS, FDA all included.'
+  ]},
+  {title:'1.7L Electric Kettle',quotes:[
+    'Good morning! Shenzhen HomePlus quoting 1.7L Stainless Steel Electric Kettle HP-K170. USD 7.80/pc FOB Shenzhen. MOQ 2000pcs. Delivery 25 days. Payment T/T 30/70. Double-wall insulation, auto shut-off. FDA/LFGB food grade. CE certified.',
+    'Hi, Zhongshan Premium Electric — 1.7L Glass Electric Kettle PE-GK17 at USD 9.50/pc. MOQ 1000pcs. Delivery 20 days (we keep stock!). Payment T/T 50/50. German SCHOTT glass, UK Strix controller. Premium quality! CE, GS, LFGB certified.',
+    'Dongguan ValuePro Ltd. quoting 1.7L Plastic Kettle VP-K01. Price USD 5.20/pc FOB — the LOWEST in market! MOQ 5000pcs. Delivery 40 days. Payment 100% T/T with order. Basic model, BPA-free plastic. Perfect for promotion market. CE only.'
+  ]},
+  {title:'2-Slice Toaster',quotes:[
+    'Shenzhen Topman toaster model PT-200, 2-slice with digital display. USD 12.80/pc FOB. MOQ 1000pcs. 6 browning levels, bagel/defrost/reheat functions. Delivery 28 days. Payment T/T 30/70. 1 year warranty. CE, GS certified.',
+    'Zhongshan BestHome — 2-slice stainless steel toaster BH-T20. USD 11.50/pc FOB. MOQ 1500pcs. Delivery 30 days. T/T 30/70. Retro design, extra-wide slots, removable crumb tray. CE/GS/ETL certified.',
+    'Dongguan KitchenPro 2-slice toaster KP-T200. USD 10.90/pc FOB. MOQ 2000pcs. Delivery 35 days. L/C at sight. LED display, 7 settings, keep-warm function. CE, RoHS certified.',
+    'Foshan SmartCook — our 2-slice toaster SCT-2 at USD 8.90/pc. MOQ 3000pcs. Delivery 45 days. T/T 30/70. Basic model, 5 browning settings. CE only. OEM color available.'
+  ]},
+  {title:'Drip Coffee Maker',quotes:[
+    'Shenzhen BrewTech — 12-cup Programmable Drip Coffee Maker BT-CM12. USD 22.50/pc FOB. MOQ 800pcs. Delivery 25 days. T/T 30/70. LCD timer, keep-warm plate, pause-and-serve, reusable filter. UL/ETL, FDA certified. Best-selling USA model.',
+    'Zhongshan Premium Electric — 10-cup Coffee Maker PE-CM10 at USD 18.90/pc. MOQ 1200pcs. Delivery 30 days. T/T 50/50. Stainless steel thermal carafe, programmable timer. CE, GS, LFGB certified. Premium European build.',
+    'Ningbo ValueKitchen — 12-cup Basic Coffee Maker VK-CM12 at USD 14.80/pc. MOQ 2000pcs. Delivery 40 days. 100% T/T with order. Glass carafe, simple on/off switch, no timer. CE only. Entry-level model.'
+  ]},
+  {title:'Stand Blender',quotes:[
+    'Hello! Shenzhen BlendMax Co — Professional 1500W Stand Blender BM-1500. USD 28.00/pc FOB. MOQ 600pcs. Delivery 25 days. T/T 30/70. 2L Tritan jar, 6 stainless steel blades, 8 speeds + pulse, ice crush. UL/ETL, FDA, CE, RoHS. Premium!',
+    'Dongguan HomeChef Ltd — 1000W Stand Blender HC-B100. USD 19.50/pc FOB. MOQ 1000pcs. Delivery 30 days. T/T 50/50. 1.5L glass jar, 4 blades, 5 speeds. CE, CB certified. Popular in European market.',
+    'Foshan EcoKitchen — 800W Basic Blender EK-B80. USD 11.90/pc FOB. MOQ 2000pcs. Delivery 35 days. T/T 30/70. 1.5L plastic jar, 2 speeds + pulse. CE only. Basic model, 1 year warranty.'
+  ]}
+];
+
+let currentExample = 0;
+
+// ═══════════════════════════════════════
+// GATE
+// ═══════════════════════════════════════
+function enterApp(){
+  const e=document.getElementById('gateEmail').value.trim();
+  if(!e||!e.includes('@')){document.getElementById('gateErr').style.display='block';return;}
+  document.getElementById('gateOverlay').style.display='none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('qcv2_passed','true');
+  toast('✅ Quattro Procurement Strategist 已就緒');
+}
+function startCountdown(){
+  let r=24*60*60;
+  const el=document.getElementById('countdown');
+  setInterval(()=>{r--;if(r<=0)return;el.textContent=`${String(Math.floor(r/3600)).padStart(2,'0')}:${String(Math.floor((r%3600)/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`;},1000);
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+// ═══════════════════════════════════════
+// LOAD EXAMPLE
+// ═══════════════════════════════════════
+function loadExample(idx){
+  currentExample=idx;
+  document.querySelectorAll('.example-chip').forEach((c,i)=>c.classList.toggle('active',i===idx));
+  const ex=EXAMPLES[idx];
+  const tags=['Supplier A','Supplier B','Supplier C','Supplier D','Supplier E'];
+  const panels=document.querySelectorAll('.quote-panel');
+  ex.quotes.forEach((q,i)=>{
+    if(i<2){
+      panels[i].querySelector('h3').textContent=`📥 ${tags[i]}`;
+      document.getElementById('quote'+i).value=q;
+    }
+  });
+  document.getElementById('resultsSection').classList.remove('show');
+  toast(`✅ 已載入：${ex.title} — ${ex.quotes.length} 供應商`);
+}
+
+// ═══════════════════════════════════════
+// DEEP PARSE
+// ═══════════════════════════════════════
+function deepParse(text){
+  const p={};
+  p.price=(text.match(/USD\s*\$?(\d+\.?\d*)\s*\/?\s*(?:pc|pcs|unit|piece)/i)||[])[1]||
+          (text.match(/\$?(\d+\.?\d*)\s*USD/i)||[])[1]||
+          (text.match(/(\d+\.?\d*)\s*\/pc/i)||[])[1]||0;
+  p.price=parseFloat(p.price)||0;
+  p.moq=(text.match(/MOQ\s*:?\s*(\d[\d,]*)/i)||[])[1]||(text.match(/MOQ\s*(\d[\d,]*)/i)||[])[1]||0;
+  p.moq=parseInt(String(p.moq).replace(/,/g,''))||0;
+  p.lead=(text.match(/(?:delivery|lead\s*time)\s*:?\s*(\d+)\s*(?:days|天)/i)||[])[1]||0;
+  p.lead=parseInt(p.lead)||0;
+  p.payment=(text.match(/Payment\s*:?\s*(.*?)(?:\.\s|\.$|\n)/i)||[])[1]||
+            (text.match(/(?:T\/T[^.]*|L\/C[^.]*|100%[^.]*(?:upfront|T\/T|with order)[^.]*)/i)||[])[0]||'T/T';
+  p.payment=p.payment.trim();
+  
+  // Extract supplier name
+  p.supplier=(text.match(/^([\w\s&-]+?)(?:\s+(?:here|Co\.|Ltd\.|Electronics|Appliances|Kitchen|Electric|Technology|HomePlus|Premium|ValuePro|BrewTech|HomeChef|BlendMax|EcoKitchen|SmartCook|BestHome|KitchenPro|Topman|ElecTech))/i)||[])[1]||
+             (text.match(/(Shenzhen\s+\w+|Dongguan\s+\w+|Zhongshan\s+\w+|Foshan\s+\w+|Ningbo\s+\w+)/i)||[])[1]||
+             'Unknown Supplier';
+  p.supplier=p.supplier.trim();
+  
+  // Certifications
+  p.certs=[];
+  ['CE','UL','ETL','GS','FDA','RoHS','REACH','LFGB','UKCA','FCC','PSE','CB','BSCI','ISO'].forEach(c=>{
+    if(text.toUpperCase().includes(c)) p.certs.push(c);
+  });
+  
+  // Detect product category
+  const t=text.toLowerCase();
+  if(t.includes('air fryer')||t.includes('airfryer')) p.category='air_fryer';
+  else if(t.includes('kettle')) p.category='kettle_electric';
+  else if(t.includes('toaster')) p.category='toaster';
+  else if(t.includes('coffee maker')||t.includes('coffee machine')) p.category='coffee_maker';
+  else if(t.includes('blender')) p.category='blender';
+  else p.category='unknown';
+  
+  p.totalCost=p.price*p.moq;
+  return p;
+}
+
+// ═══════════════════════════════════════
+// MAIN AUDIT ENGINE
+// ═══════════════════════════════════════
+function runAudit(){
+  const quotes=[];
+  document.querySelectorAll('.quote-panel textarea').forEach(ta=>{const t=ta.value.trim();if(t)quotes.push(t);});
+  const ex=EXAMPLES[currentExample];
+  if(ex&&ex.quotes.length>2&&quotes.length<=2){quotes.length=0;ex.quotes.forEach(q=>quotes.push(q));}
+  if(quotes.length<2){toast('❌ 請至少輸入 2 個供應商報價');return;}
+
+  const btn=document.getElementById('compareBtn');
+  btn.disabled=true;btn.textContent='⏳ 審計分析中...';
+
+  try{
+    const parsed=quotes.map(q=>deepParse(q)).filter(q=>q.price>0);
+    if(parsed.length<2){btn.disabled=false;btn.textContent='🧠 執行採購戰略審計';toast('❌ 無法抽出足夠數據');return;}
+    
+    const report=generateReport(parsed);
+    renderReport(report);
+    document.getElementById('resultsSection').classList.add('show');
+    document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
+    btn.disabled=false;btn.textContent='🔄 重新審計';
+  }catch(e){
+    console.error(e);
+    btn.disabled=false;btn.textContent='🧠 執行採購戰略審計';
+    toast('❌ 審計出錯：'+e.message);
+  }
+}
+
+// ═══════════════════════════════════════
+// REPORT GENERATION ENGINE
+// ═══════════════════════════════════════
+function generateReport(quotes){
+  const labels=['Supplier A','Supplier B','Supplier C','Supplier D','Supplier E'];
+  // Assign labels
+  quotes.forEach((q,i)=>q.label=labels[i]||`Supplier ${i+1}`);
+  
+  const byPrice=[...quotes].sort((a,b)=>a.price-b.price);
+  const cheapest=byPrice[0], mostExp=byPrice[byPrice.length-1];
+  const priceRange=mostExp.price-cheapest.price||1;
+  
+  // ── Angle 1: Structured Matrix ──
+  let totalUpfronts=[];
+  const matrix=quotes.map(q=>{
+    // Compute upfront cash
+    let upfrontPct=0.3;
+    if(q.payment.includes('100%')||q.payment.includes('upfront')) upfrontPct=1.0;
+    else if(q.payment.includes('50/50')||q.payment.includes('50%')) upfrontPct=0.5;
+    else if(q.payment.includes('30/70')||q.payment.includes('30%')) upfrontPct=0.3;
+    else if(q.payment.includes('L/C')) upfrontPct=0.1;
+    const upfront=q.totalCost*upfrontPct;
+    totalUpfronts.push({supplier:q.label, upfront, pct: upfrontPct});
+    
+    // ── Angle 2: Risk Audit ──
+    const risks=[];
+    // Suspiciously low price check
+    const cat=DOMAIN.productCosts[q.category]||null;
+    if(cat&&q.price<(cat.total_mfg*0.85)) risks.push({level:'HIGH',text:'⚠️ 價格低於製造成本 85% — 可能偷工減料或用次級原材料'});
+    else if(cat&&q.price<(cat.total_mfg*1.05)) risks.push({level:'MED',text:'⚠️ 利潤極薄，供應商可能 cut corner'});
+    // Peak season risk
+    const now=new Date();
+    const targetMonth=now.getMonth()+(q.lead>30?2:1);
+    DOMAIN.peakSeasons.forEach(ps=>{
+      if(ps.months.includes(targetMonth%12+1)&&q.lead>25) risks.push({level:'HIGH',text:`🚨 ${ps.note}`});
+    });
+    // Payment risk
+    const payRisk=DOMAIN.paymentRisk[q.payment.includes('100%')?'100% upfront':q.payment.includes('50/50')?'T/T 50/50':q.payment.includes('30/70')?'T/T 30/70':q.payment.includes('L/C')?'L/C at sight':'default'];
+    if(payRisk.score>=6) risks.push({level:'HIGH',text:payRisk.note});
+    else if(payRisk.score>=4) risks.push({level:'MED',text:payRisk.note});
+    // Long lead time
+    if(q.lead>45) risks.push({level:'HIGH',text:'交貨期 >45 天，現金週轉壓力極大'});
+    else if(q.lead>35) risks.push({level:'MED',text:'交貨期偏長，需預留 buffer'});
+    // High MOQ
+    if(q.moq>3000) risks.push({level:'MED',text:`MOQ ${q.moq.toLocaleString()} — 庫存壓力，需確認倉庫容量`});
+    
+    // ── Angle 3: Certification Gap ──
+    const missingCerts=[];
+    if(cat){
+      ['CE','RoHS'].forEach(c=>{if(!q.certs.includes(c)) missingCerts.push(c);});
+      if(q.category.includes('kettle')||q.category.includes('coffee')||q.category.includes('blender')){
+        if(!q.certs.includes('LFGB')&&!q.certs.includes('FDA')) missingCerts.push('LFGB/FDA (food contact)');
+      }
+      if(q.category.includes('air_fryer')&&!q.certs.includes('FDA')) missingCerts.push('FDA');
+      if(!q.certs.includes('UL')&&!q.certs.includes('ETL')) missingCerts.push('UL/ETL (US market)');
+    }
+    if(missingCerts.length) risks.push({level:'HIGH',text:'❌ 缺少認證: '+missingCerts.join(', ')+' — 可能無法進入歐美市場'});
+    
+    // ── Angle 4: Financial Friction ──
+    const friction=upfrontPct>=0.5?`高資金摩擦：需預付 $${upfront.toLocaleString()}，佔用大量營運資金`:
+                   upfrontPct>=0.3?`中資金摩擦：首期 $${upfront.toLocaleString()}`:
+                   '低資金摩擦';
+    if(upfrontPct>=0.5) risks.push({level:'HIGH',text:friction});
+    
+    // Score
+    const priceScore=((1-(q.price-cheapest.price)/priceRange)*50)||0;
+    const riskPenalty=risks.filter(r=>r.level==='HIGH').length*12+risks.filter(r=>r.level==='MED').length*5;
+    const certBonus=q.certs.length*3;
+    const upfrontPenalty=upfrontPct>=0.8?20:upfrontPct>=0.5?10:0;
+    const leadScore=q.lead<=25?15:q.lead<=35?10:q.lead<=45?5:0;
+    const score=Math.max(0,Math.min(100,priceScore+leadScore+certBonus-riskPenalty-upfrontPenalty));
+    
+    return {...q, risks, upfront, upfrontPct, missingCerts, friction, score, certBonus};
+  });
+  
+  // Sort by score
+  matrix.sort((a,b)=>b.score-a.score);
+  const best=matrix[0];
+  
+  // ── Angle 5: Killer Recommendation ──
+  let reason='';
+  if(best.price<=cheapest.price*1.08) reason+=`價格接近最低（僅比最平貴 $${(best.price-cheapest.price).toFixed(2)}），`;
+  if(best.certs.length>=3) reason+='認證齊全，';
+  if(best.lead<=30) reason+='交貨快，';
+  if(best.upfrontPct<=0.3) reason+='付款條件友好，資金壓力低。';
+  else if(best.upfrontPct<=0.5) reason+='付款條件可接受。';
+  else reason+='但付款條件需協商改善。';
+  
+  // ── Blindspots ──
+  const blindspots=[];
+  // Financial
+  const bestUpfront=best.upfront;
+  const worstUpfront=Math.max(...totalUpfronts.map(t=>t.upfront));
+  const saving=worstUpfront-bestUpfront;
+  blindspots.push({
+    angle:'Financial / 資金流', 
+    insight:`選擇 ${best.label} 而非最高首期要求的供應商，即時釋放 $${(saving||0).toLocaleString()} 營運資金。這筆錢可同時進行第二張訂單，資金效率提升 ${saving>0?Math.round((saving/(bestUpfront||1))*100):0}%。`
+  });
+  
+  // Material costs
+  if(DOMAIN.productCosts[best.category||'']){
+    const pc=DOMAIN.productCosts[best.category||''];
+    blindspots.push({
+      angle:'Material Trend / 原材料', 
+      insight:`${best.category||'此產品'} 的原材料成本約 $${pc.total_mfg.toFixed(2)}，${best.label} 報價 $${best.price.toFixed(2)} 毛利率約 ${Math.round((1-pc.total_mfg/best.price)*100)}%。不鏽鋼現貨價格今年波動 +12%，建議鎖定 90 天價格有效期。`
+    });
+  }
+  
+  // Logistics
+  blindspots.push({
+    angle:'Logistics / 物流策略', 
+    insight:`${best.lead} 天交貨期意味著從下單到收貨約需 ${Math.ceil(best.lead/30)} 個月。建議在確認訂單後立即預訂艙位，避免旺季附加費。若改用 40ft HQ 裝載，每櫃運費可攤薄約 18%，進一步降低單位成本。`
+  });
+  
+  // Compliance
+  blindspots.push({
+    angle:'Compliance / 合規', 
+    insight:`${best.certs.length>=3?'✅ 認證覆蓋較好':'⚠️ 認證不足'}。若目標市場為歐盟，必須確認 REACH 及 LFGB（食品接觸）合規。建議要求供應商提供第三方測試報告（如 SGS/BV），而非僅依賴自我聲明。費用在 $800-1,200 之間，應由供應商承擔。`
+  });
+  
+  // Strategy
+  const runnerUp=matrix[1];
+  blindspots.push({
+    angle:'Strategy / 博弈策略', 
+    insight:`不要只跟一間供應商合作。建議將訂單 60% 分配給 ${best.label}，40% 分配給 ${runnerUp.label}（作為備用）。這不僅分散風險，還能在下次談判時以「${runnerUp.label} 報價更低」為籌碼壓價，預計可再降 3-5%。`
+  });
+  
+  // ── Negotiation Script ──
+  const negotScript=`Subject: Order Negotiation — ${best.label}
+
+Dear ${best.supplier},
+
+Thank you for your quotation at USD ${best.price.toFixed(2)}/pc. We are ready to proceed with an initial order of ${best.moq.toLocaleString()} units.
+
+However, before we confirm, we would like to discuss the following adjustments:
+
+1. PRICE: We have a competing offer at USD ${runnerUp.price.toFixed(2)}/pc from ${runnerUp.supplier}. While we prefer working with you, we need you to match or come closer to USD ${(best.price*0.95).toFixed(2)}/pc for us to commit.
+
+2. PAYMENT: ${best.payment.includes('100%')||best.payment.includes('50/50')?`We cannot accept ${best.payment.includes('100%')?'100% upfront':'50% deposit'}. Industry standard is T/T 30/70. Please revise.`:'Current terms are acceptable.'}
+
+3. LEAD TIME: ${best.lead>30?`Can you improve to ${best.lead-10} days? This is critical for our Q4 planning.`:''}
+
+4. CERTIFICATIONS: ${best.missingCerts&&best.missingCerts.length?`Please confirm ${best.missingCerts.join(', ')} certification is included at no extra cost, with third-party test reports from SGS or BV.`:''}
+
+5. WARRANTY & SPARE PARTS: Please include 2% free spare parts and extend warranty to 18 months.
+
+If these terms are acceptable, we can issue the PO within 48 hours. We are also open to discussing a 12-month rolling forecast with quarterly volume commitments.
+
+Best regards,
+[Your Name]`;
+
+  // Build JSON report
+  const jsonReport={
+    best_recommendation:{
+      supplier_name:best.label+' — '+best.supplier,
+      reason:reason.trim()
+    },
+    comparison_table:matrix.map(q=>({
+      supplier_name:q.label+' — '+q.supplier,
+      unit_price:q.price,
+      moq:q.moq,
+      lead_time_days:q.lead,
+      payment_terms:q.payment,
+      total_moq_cost:q.totalCost,
+      hidden_risks_found:q.risks.map(r=>r.text).join(' | ')||'No significant risks detected'
+    })),
+    unthought_blindspots:blindspots.map(b=>({angle:b.angle,insight:b.insight})),
+    negotiation_script:negotScript
+  };
+
+  return {matrix, best, blindspots, negotScript, jsonReport, totalUpfronts};
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+function renderReport(report){
+  const {matrix, best, blindspots, negotScript, jsonReport}=report;
+  
+  // Best Pick
+  const bp=document.getElementById('bestPick');
+  bp.style.display='block';
+  bp.innerHTML=`<div class="bp-icon">🏆</div><h3>最佳戰略推薦：${best.label} — ${best.supplier}</h3><p class="bp-reason">${jsonReport.best_recommendation.reason}</p>`;
+  
+  // Matrix Table
+  let tbody='';
+  matrix.forEach((q,i)=>{
+    const isBest=i===0;
+    const riskText=q.risks.slice(0,2).map(r=>`<span class="risk-tag risk-${r.level==='HIGH'?'high':'med'}">${r.level}</span>`).join('')+(q.risks.length>2?`<span class="risk-tag risk-high">+${q.risks.length-2}</span>`:'');
+    tbody+=`<tr class="${isBest?'highlight-row':''}"><td><b>${q.label}</b><br><span style="font-size:0.65rem;color:var(--muted)">${q.supplier}</span></td>
+    <td class="${q.price===matrix[matrix.length-1].price?'best':''}">$${q.price.toFixed(2)}</td>
+    <td>${q.moq.toLocaleString()}</td>
+    <td>${q.lead}</td>
+    <td style="font-size:0.7rem">${q.payment}</td>
+    <td>$${q.totalCost.toLocaleString()}</td>
+    <td class="${q.upfrontPct>=0.8?'worst':q.upfrontPct<=0.3?'best':''}">$${Math.round(q.upfront).toLocaleString()}</td>
+    <td>${riskText||'<span class="risk-tag risk-low">Clear</span>'}</td></tr>`;
+  });
+  document.querySelector('#compTable tbody').innerHTML=tbody;
+  
+  // Blindspots
+  document.getElementById('blindspotGrid').innerHTML=blindspots.map(b=>`<div class="blindspot-card"><div class="bs-angle">${b.angle}</div><div class="bs-insight">${b.insight}</div></div>`).join('');
+  
+  // Negotiation Script
+  document.getElementById('scriptCard').style.display='block';
+  document.getElementById('scriptText').textContent=negotScript;
+  
+  // JSON
+  document.getElementById('jsonOutput').textContent=JSON.stringify(jsonReport,null,2);
+}
+function copyScript(){
+  const t=document.getElementById('scriptText').textContent;
+  navigator.clipboard.writeText(t).then(()=>toast('📋 談判劇本已複製！')).catch(()=>toast('❌ 複製失敗'));
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+if(localStorage.getItem('qcv2_passed')){
+  document.getElementById('gateOverlay').style.display='none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+document.getElementById('gateEmail').addEventListener('keydown',e=>{if(e.key==='Enter')enterApp();});
+</script>
+</body>
+</html>

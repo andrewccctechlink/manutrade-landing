@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About Andrew Chan — Trademind AI</title>
+<style>
+:root{--bg:#0b0f19;--card:#131a2b;--border:#1e2d45;--accent:#06b6d4;--accent2:#10b981;--text:#e2e8f0;--muted:#94a3b8;--gradient:linear-gradient(135deg,#06b6d4 0%,#3b82f6 100%);--warn:#f59e0b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
+
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 28px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar a{color:var(--muted);text-decoration:none;font-size:0.85rem}
+.topbar a:hover{color:var(--text)}
+
+.container{max-width:900px;margin:0 auto;padding:40px 24px}
+
+/* Hero */
+.hero{text-align:center;padding:40px 0}
+.hero .avatar{width:150px;height:150px;border-radius:50%;background:var(--gradient);margin:0 auto 20px;display:flex;align-items:center;justify-content:center;font-size:5rem}
+.hero h1{font-size:2.2rem;font-weight:800;margin-bottom:6px}
+.hero .title{color:var(--accent);font-size:1.1rem;margin-bottom:12px}
+.hero .contact{color:var(--muted);font-size:0.85rem}
+
+/* Stats */
+.stats{display:flex;justify-content:center;gap:40px;flex-wrap:wrap;padding:20px 0 40px;border-bottom:1px solid var(--border);margin-bottom:40px}
+.stat{text-align:center}
+.stat .num{font-size:2rem;font-weight:800;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat .label{color:var(--muted);font-size:0.8rem;margin-top:4px}
+
+/* Section */
+.section{margin-bottom:48px}
+.section h2{font-size:1.4rem;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.section h2 .icon{font-size:1.6rem}
+
+/* Timeline */
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:28px;padding-left:28px}
+.tl-item::before{content:'';position:absolute;left:-22px;top:8px;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.tl-item .date{font-size:0.75rem;color:var(--accent);font-weight:700;margin-bottom:4px}
+.tl-item h3{font-size:1rem;margin-bottom:4px}
+.tl-item .company{font-size:0.85rem;color:var(--warn);margin-bottom:6px}
+.tl-item .desc{color:var(--muted);font-size:0.85rem;line-height:1.6}
+.tl-item .highlight{display:inline-block;background:rgba(6,182,212,0.1);color:var(--accent);padding:2px 8px;border-radius:4px;font-size:0.7rem;margin:2px 4px 2px 0}
+
+/* Brands */
+.brands{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.brand-chip{background:var(--card);border:1px solid var(--border);padding:8px 16px;border-radius:8px;font-size:0.8rem;color:var(--text)}
+
+/* Education */
+.edu-card{background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:28px;text-align:center;margin-bottom:20px}
+.edu-card .edu-icon{font-size:2.5rem;margin-bottom:12px}
+.edu-card h3{font-size:1.3rem;color:var(--accent);margin-bottom:4px}
+.edu-card p{color:var(--muted);font-size:0.9rem}
+
+footer{text-align:center;padding:40px 0;color:var(--muted);font-size:0.8rem;border-top:1px solid var(--border);margin-top:40px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">⚡ Trademind AI</div>
+  <a href="../index.html">🏠 返回主頁</a>
+</div>
+
+<div class="container">
+  <div class="hero">
+    <div class="avatar">👔</div>
+    <h1>Andrew Chan 陳智昌</h1>
+    <p class="title">Founder & AI Architect · Trademind AI Co. Ltd.</p>
+    <p class="contact">📧 andrew@trademindai.com · 📍 香港 · 深圳 · 越南</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="num">20+</div><div class="label">年製造業及貿易經驗</div></div>
+    <div class="stat"><div class="num">USD 20M+</div><div class="label">年度營業額管理</div></div>
+    <div class="stat"><div class="num">14</div><div class="label">全球知名品牌客戶</div></div>
+    <div class="stat"><div class="num">🇭🇰🇨🇳🇻🇳</div><div class="label">3 個國家實戰</div></div>
+  </div>
+
+  <!-- Education -->
+  <div class="edu-card">
+    <div class="edu-icon">🎓</div>
+    <h3>Master Degree in Marketing</h3>
+    <p>市場營銷碩士學位 — 將學術理論轉化為實戰銷售策略，驅動過億美元營業額。</p>
+  </div>
+
+  <!-- Summary -->
+  <div class="section">
+    <h2><span class="icon">📋</span>專業概要</h2>
+    <p style="color:var(--muted);font-size:0.95rem;line-height:1.8">
+      20+ 年製造業及貿易實戰經驗，跨越香港、中國內地及越南三地。專精於全球出口營銷、OEM/ODM 品牌組合管理，以及 B2B/B2C 雙引擎業務開發。近年率先將 Agentic AI 技術應用於市場研究、工作流程自動化及商業決策，成功將 AI 研發成果商品化。
+    </p>
+    <div style="margin-top:16px">
+      <span class="highlight">🔹 B2B 品牌管理</span>
+      <span class="highlight">🔹 B2C 電商渠道</span>
+      <span class="highlight">🔹 AI 工作流程自動化</span>
+      <span class="highlight">🔹 全球市場拓展</span>
+      <span class="highlight">🔹 跨境團隊管理</span>
+      <span class="highlight">🔹 OEM/ODM 合約談判</span>
+    </div>
+  </div>
+
+  <!-- Career Timeline -->
+  <div class="section">
+    <h2><span class="icon">💼</span>工作經歷</h2>
+    <div class="timeline">
+
+      <div class="tl-item">
+        <div class="date">Sep 2023 – Jun 2025</div>
+        <h3>Senior Technical Marketing Manager</h3>
+        <div class="company">CAiRS — InnoHK 創新中心（香港）</div>
+        <div class="desc">帶領 8 人營銷團隊，將 AI 及 Deep Learning 研究成果商品化。為主要公私營機構提供 AI 解決方案，包括<b>港鐵 MTR、港燈 HK Electric、有利建築、昂坪 360</b>。主導開發高影響力營銷資產，包括數碼平台及技術案例研究，在大型行業活動中代表中心提升品牌曝光。</div>
+        <div style="margin-top:8px"><span class="highlight">AI 商品化</span><span class="highlight">團隊管理 (8人)</span><span class="highlight">公私營合作</span></div>
+      </div>
+
+      <div class="tl-item">
+        <div class="date">Mar 2020 – Jun 2023</div>
+        <h3>Marketing Director — Household Products</h3>
+        <div class="company">Tech-link Silicones Co. Ltd.（越南胡志明市 & 香港）</div>
+        <div class="desc">策劃全球出口營銷及銷售策略，管理主要 OEM/ODM 品牌帳戶：<b>Tefal、Fissler、Tupperware、Zwilling</b>。連續 3 年保持年度營業額超過 <b>USD 12M</b>，帶領國際銷售團隊拓展歐洲及北美零售市場。運用 AI 工具優化預算預測及營銷活動 ROI 分析。</div>
+        <div style="margin-top:8px"><span class="highlight">硅膠製品</span><span class="highlight">USD 12M+</span><span class="highlight">歐洲及北美市場</span></div>
+      </div>
+
+      <div class="tl-item">
+        <div class="date">Nov 2014 – Mar 2020</div>
+        <h3>Senior Sales & Marketing Manager</h3>
+        <div class="company">Hondaraya Engineering Co. Ltd.（東莞 & 香港）</div>
+        <div class="desc">帶領 6 人團隊實現年度銷售超過 <b>USD 20M</b>，通過專利電子模組方案管理 Tier-1 全球品牌：<b>Whirlpool、Vitamix、GE/Haier</b>。處理端到端 RFQ 流程及複雜合約談判，與研發團隊合作提供整合軟硬件方案。</div>
+        <div style="margin-top:8px"><span class="highlight">電子模組</span><span class="highlight">USD 20M+</span><span class="highlight">專利方案</span></div>
+      </div>
+
+      <div class="tl-item">
+        <div class="date">Oct 2011 – Oct 2014</div>
+        <h3>Project Manager</h3>
+        <div class="company">Johnson Electric International Ltd.（深圳 & 香港）</div>
+        <div class="desc">推廣電機平台至全球客戶群，涵蓋 HVAC、智能家居及工業 4.0 應用。帶領跨功能團隊（工程、品質、供應鏈）確保高質量項目交付。撰寫策略性投資建議書及技術文件供管理層審批。</div>
+        <div style="margin-top:8px"><span class="highlight">電機馬達</span><span class="highlight">工業4.0</span><span class="highlight">HVAC</span></div>
+      </div>
+
+      <div class="tl-item">
+        <div class="date">Jun 2006 – Sep 2011</div>
+        <h3>Sales & Marketing Manager</h3>
+        <div class="company">Tiansen Electrical Appliances Co. Ltd.（中國）</div>
+        <div class="desc">開發多個 OEM/ODM 項目，與美國零售商合作：<b>Walmart、JC Penney、Kohl's</b>。產品範圍包括小家電、多士爐、切肉機、絞肉機等。帶領團隊在有限時間及預算內達成銷售目標，制定成本分析及營銷計劃。</div>
+        <div style="margin-top:8px"><span class="highlight">小家電</span><span class="highlight">美國零售</span><span class="highlight">Walmart</span></div>
+      </div>
+
+      <div class="tl-item">
+        <div class="date">Jul 2003 – Jun 2006</div>
+        <h3>Senior Sales & Marketing Executive</h3>
+        <div class="company">Main Power Electrical Factory Ltd.（中國）</div>
+        <div class="desc">小型家電製造商，負責海外市場銷售及營銷推廣。</div>
+        <div style="margin-top:8px"><span class="highlight">小家電製造</span><span class="highlight">出口營銷</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Brands -->
+  <div class="section">
+    <h2><span class="icon">🏢</span>曾服務品牌</h2>
+    <div class="brands">
+      <div class="brand-chip">Walmart</div>
+      <div class="brand-chip">Whirlpool</div>
+      <div class="brand-chip">Vitamix</div>
+      <div class="brand-chip">GE / Haier</div>
+      <div class="brand-chip">Tefal</div>
+      <div class="brand-chip">Fissler</div>
+      <div class="brand-chip">Tupperware</div>
+      <div class="brand-chip">Zwilling</div>
+      <div class="brand-chip">JC Penney</div>
+      <div class="brand-chip">Kohl's</div>
+      <div class="brand-chip">MTR 港鐵</div>
+      <div class="brand-chip">HK Electric 港燈</div>
+      <div class="brand-chip">昂坪 360</div>
+      <div class="brand-chip">有利建築</div>
+    </div>
+  </div>
+
+  <!-- Why Trademind -->
+  <div class="section">
+    <h2><span class="icon">🤖</span>點解創立 Trademind AI？</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;border-left:3px solid var(--accent)">
+        <h3 style="font-size:1rem;margin-bottom:8px">B2B + B2C 雙引擎</h3>
+        <p style="color:var(--muted);font-size:0.85rem">從 Walmart 貨架到 Amazon 平台，從 OEM 代工到自有品牌 — 我深知兩個世界嘅遊戲規則，亦知道 AI 可以點樣打通佢哋。</p>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;border-left:3px solid var(--accent2)">
+        <h3 style="font-size:1rem;margin-bottom:8px">AI 實戰 · 唔係理論</h3>
+        <p style="color:var(--muted);font-size:0.85rem">由工廠生產線到 AI 研發中心，我親身經歷咗傳統製造業嘅每一個痛點。Trademind AI 嘅每一個產品都係由真實痛點出發。</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:24px;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-top:20px">
+    <p style="font-size:1rem;margin-bottom:8px">📧 有意合作或查詢？</p>
+    <p style="color:var(--accent);font-size:1.1rem;font-weight:700">andrew@trademindai.com</p>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 Trademind AI Co. Ltd. — Manufacturing & Trading AI Architect</p>
+</footer>
+</body>
+</html>

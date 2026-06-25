@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PricePulse 原料價格預警 — Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* ═══════════════════════════════════════
+   GATE OVERLAY
+   ═══════════════════════════════════════ */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9}
+.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent}
+.btn-outline:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.btn-accent{background:var(--accent);color:#fff;width:100%}
+.btn-accent:hover{opacity:0.85}
+.btn-sm{padding:8px 18px;font-size:0.8rem;border-radius:8px}
+
+/* ═══════════════════════════════════════
+   MAIN APP
+   ═══════════════════════════════════════ */
+.app{display:none}
+.app.active{display:block}
+
+/* Topbar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+.topbar a{color:var(--muted);text-decoration:none;font-size:0.8rem}
+.topbar a:hover{color:var(--text)}
+
+.container{max-width:1100px;margin:0 auto;padding:28px 24px}
+
+/* Page Header */
+.page-header{text-align:center;margin-bottom:28px}
+.page-header h1{font-size:1.8rem;margin-bottom:6px}
+.page-header h1 .pulse{display:inline-block;animation:pulse 2s infinite}
+.page-header .badge{display:inline-block;background:rgba(6,182,212,0.15);color:var(--accent);padding:4px 12px;border-radius:4px;font-size:0.7rem;font-weight:700;vertical-align:middle;margin-left:8px}
+.page-header p{color:var(--muted);font-size:0.95rem;max-width:600px;margin:0 auto}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* Section */
+.section-title{font-size:1.15rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* ═══════════════════════════════════════
+   MATERIAL SELECTOR
+   ═══════════════════════════════════════ */
+.material-selector{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.mat-chip{padding:8px 16px;border:1px solid var(--border);border-radius:20px;font-size:0.78rem;cursor:pointer;transition:all .2s;background:var(--card);color:var(--muted);white-space:nowrap;user-select:none}
+.mat-chip:hover{border-color:var(--accent);color:var(--accent)}
+.mat-chip.selected{border-color:var(--accent);background:rgba(6,182,212,0.12);color:var(--accent);font-weight:600}
+.selector-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.selector-bar .btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ═══════════════════════════════════════
+   PRICE CARDS
+   ═══════════════════════════════════════ */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-bottom:24px}
+.price-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;transition:all .2s;position:relative;overflow:hidden}
+.price-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.price-card.alert-active{border-color:rgba(239,68,68,0.4);box-shadow:0 0 20px rgba(239,68,68,0.06)}
+.price-card .mat-name{font-size:0.9rem;font-weight:700;margin-bottom:4px}
+.price-card .mat-unit{font-size:0.72rem;color:var(--muted);margin-bottom:10px}
+.price-card .mat-price{font-size:1.8rem;font-weight:800;margin-bottom:10px}
+.price-card .trends{display:flex;gap:16px;flex-wrap:wrap}
+.price-card .trend{display:flex;align-items:center;gap:4px;font-size:0.82rem;font-weight:600}
+.price-card .trend.up{color:var(--red)}
+.price-card .trend.down{color:var(--accent2)}
+.price-card .trend.flat{color:var(--muted)}
+.price-card .alert-badge{position:absolute;top:12px;right:12px;font-size:0.65rem;padding:3px 10px;border-radius:12px;font-weight:700}
+.price-card .alert-badge.triggered{background:rgba(239,68,68,0.15);color:var(--red)}
+.price-card .alert-badge.set{background:rgba(245,158,11,0.12);color:var(--warn)}
+.price-card .card-actions{margin-top:12px;display:flex;gap:8px}
+
+/* Mini sparkline bar */
+.spark-bar{display:flex;align-items:flex-end;gap:2px;height:32px;margin-bottom:8px}
+.spark-bar .bar{flex:1;border-radius:2px 2px 0 0;min-width:4px}
+.spark-bar .bar.up{background:var(--red);opacity:0.6}
+.spark-bar .bar.down{background:var(--accent2);opacity:0.6}
+.spark-bar .bar.flat{background:var(--muted);opacity:0.3}
+
+/* ═══════════════════════════════════════
+   ALERT THRESHOLD SECTION
+   ═══════════════════════════════════════ */
+.alert-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:24px}
+.alert-section h3{font-size:1rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.alert-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.alert-row input[type="number"]{width:80px;padding:10px 14px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9rem;text-align:center}
+.alert-row input[type="number"]:focus{outline:none;border-color:var(--accent)}
+.alert-row input[type="email"]{flex:1;min-width:200px;padding:10px 14px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9rem}
+.alert-row input[type="email"]:focus{outline:none;border-color:var(--accent)}
+.alert-row .alert-label{font-size:0.85rem;color:var(--muted);white-space:nowrap}
+.alert-status{margin-top:10px;font-size:0.82rem;color:var(--accent2)}
+
+/* ═══════════════════════════════════════
+   IMPACT SECTION
+   ═══════════════════════════════════════ */
+.impact-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:24px}
+.impact-section .section-title{font-size:1rem}
+.impact-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px}
+.impact-card{background:#0d1117;border:1px solid var(--border);border-radius:10px;padding:14px}
+.impact-card .impact-material{font-size:0.72rem;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.impact-card .impact-cats{font-size:0.82rem;color:var(--text);line-height:1.5}
+
+/* Calculator */
+.calc-card{background:#0d1117;border:1px solid var(--accent);border-radius:12px;padding:20px;margin-top:14px}
+.calc-card h4{font-size:0.95rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.calc-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.calc-row label{font-size:0.82rem;color:var(--muted);min-width:100px}
+.calc-row select,.calc-row input{padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem}
+.calc-row select:focus,.calc-row input:focus{outline:none;border-color:var(--accent)}
+.calc-row input{width:120px}
+.calc-result{background:var(--card);border:1px solid var(--accent2);border-radius:10px;padding:16px;margin-top:12px}
+.calc-result .cr-amount{font-size:1.6rem;font-weight:800;color:var(--accent2);margin-bottom:4px}
+.calc-result .cr-detail{font-size:0.82rem;color:var(--muted);line-height:1.5}
+
+/* ═══════════════════════════════════════
+   ALERT LOG
+   ═══════════════════════════════════════ */
+.log-section{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px}
+.log-section h3{font-size:1rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.log-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:0.82rem}
+.log-item:last-child{border-bottom:none}
+.log-item .log-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.log-item .log-dot.critical{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,0.4)}
+.log-item .log-dot.warning{background:var(--warn)}
+.log-item .log-dot.info{background:var(--accent)}
+.log-item .log-time{color:var(--muted);font-size:0.72rem;min-width:50px}
+
+/* ═══════════════════════════════════════
+   DESTRUCT + TOAST
+   ═══════════════════════════════════════ */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 18px;margin-top:24px;display:flex;align-items:flex-start;gap:10px;font-size:0.82rem;color:var(--red)}
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;border:1px solid var(--border);box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+.toast.show{display:block;animation:fadeIn .3s}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Back link */
+.back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.82rem;margin-bottom:12px;transition:color .2s}
+.back-link:hover{color:var(--text)}
+
+/* Responsive */
+@media(max-width:768px){
+  .price-grid{grid-template-columns:1fr}
+  .impact-grid{grid-template-columns:1fr}
+  .alert-row{flex-direction:column;align-items:stretch}
+  .alert-row input[type="email"]{width:100%}
+  .selector-bar{flex-direction:column;align-items:stretch}
+  .page-header h1{font-size:1.4rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     GATE OVERLAY
+     ═══════════════════════════════════════ -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">📡</div>
+    <h2>PricePulse 原料價格預警</h2>
+    <p>輸入公司電郵，即刻追蹤原料價格走勢。<br>完全免費 · 無需註冊 · 24 小時自動銷毀。</p>
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr">請輸入有效的電郵地址</p>
+    <button class="btn btn-primary" onclick="enterApp()">🚀 進入 PricePulse</button>
+    <div class="note">
+      🔒 你的電郵只用於發送價格警報<br>
+      <span>⚠️ 所有 Demo 數據將在 24 小時內自動銷毀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MAIN APP
+     ═══════════════════════════════════════ -->
+<div class="app" id="mainApp">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <span class="logo">📡 PricePulse</span>
+      <span style="font-size:0.72rem;color:var(--muted);margin-left:8px">原料價格預警 · Demo</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="timer">⏳ 24h 內銷毀 · <span id="countdown">23:59:59</span></div>
+      <a href="../index.html">← Quattro Dynamics</a>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Back -->
+    <a href="../index.html" class="back-link">← 返回 Quattro Dynamics</a>
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1><span class="pulse">📡</span> PricePulse 原料價格預警</h1>
+      <span class="badge">🆓 免費 Demo</span>
+      <p>追蹤關鍵原料價格走勢，設定自動警報，計算價格變動對產品成本的實際影響。</p>
+    </div>
+
+    <!-- Material Selector -->
+    <div class="section-title">🏷️ 選擇你要追蹤的原料</div>
+    <div class="selector-bar">
+      <div class="material-selector" id="materialSelector"></div>
+      <div class="btn-group">
+        <button class="btn btn-sm btn-outline" onclick="selectAll()">全選</button>
+        <button class="btn btn-sm btn-outline" onclick="clearAll()">清除</button>
+        <button class="btn btn-sm" style="background:var(--accent);color:#fff" onclick="loadDemo()">📊 Load Demo</button>
+      </div>
+    </div>
+
+    <!-- Price Cards -->
+    <div class="section-title">📈 即時價格追蹤</div>
+    <div class="price-grid" id="priceGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted)">
+        <div style="font-size:3rem;margin-bottom:12px">📡</div>
+        <p>請選擇上方原料，然後點擊 <b>Load Demo</b> 載入示範數據</p>
+        <p style="font-size:0.8rem;margin-top:8px">或手動添加原料開始追蹤</p>
+      </div>
+    </div>
+
+    <!-- Alert Threshold -->
+    <div class="alert-section">
+      <h3>🔔 價格警報設定</h3>
+      <p style="color:var(--muted);font-size:0.82rem;margin-bottom:12px">當任何已選原料的 30 天價格變動超過此百分比，系統將自動發送電郵警報。</p>
+      <div class="alert-row">
+        <span class="alert-label">觸發門檻：</span>
+        <input type="number" id="alertThreshold" value="5" min="1" max="50" step="0.5"> <span class="alert-label">%</span>
+        <span class="alert-label">通知電郵：</span>
+        <input type="email" id="alertEmail" placeholder="you@company.com">
+        <button class="btn btn-sm btn-primary" style="width:auto" onclick="saveAlert()">💾 儲存設定</button>
+      </div>
+      <div class="alert-status" id="alertStatus"></div>
+    </div>
+
+    <!-- Impact Analysis -->
+    <div class="impact-section">
+      <div class="section-title">🏭 原料價格變動對你產品的影響</div>
+      <p style="color:var(--muted);font-size:0.82rem;margin-bottom:14px">以下顯示每種原料對應的產品類別 — 當原料價格波動時，這些產品的成本將直接受影響。</p>
+      <div class="impact-grid" id="impactGrid"></div>
+
+      <!-- Product Impact Calculator -->
+      <div class="calc-card">
+        <h4>🧮 Product Impact Calculator</h4>
+        <p style="color:var(--muted);font-size:0.8rem;margin-bottom:12px">計算原料價格變動對你具體產品的成本影響</p>
+        <div class="calc-row">
+          <label>產品：</label>
+          <select id="calcProduct" onchange="updateCalc()">
+            <option value="">— 選擇產品 —</option>
+            <option value="airfryer">Air Fryer 氣炸鍋</option>
+            <option value="toaster">Toaster 多士爐</option>
+            <option value="coffeemaker">Coffee Maker 咖啡機</option>
+            <option value="blender">Blender 攪拌機</option>
+            <option value="kettle">Electric Kettle 電熱水壺</option>
+            <option value="fan">Tower Fan 塔扇</option>
+            <option value="cooker">Rice Cooker 電飯煲</option>
+          </select>
+          <label>訂單數量：</label>
+          <input type="number" id="calcQty" value="5000" min="100" step="100" onchange="updateCalc()">
+        </div>
+        <div class="calc-result" id="calcResult" style="display:none">
+          <div class="cr-amount" id="calcAmount">—</div>
+          <div class="cr-detail" id="calcDetail">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Log -->
+    <div class="log-section">
+      <h3>📋 警報記錄</h3>
+      <div id="alertLog">
+        <div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:20px">尚無警報 — 設定門檻後，當價格變動超過閾值即自動記錄</div>
+      </div>
+    </div>
+
+    <!-- Destruct Notice -->
+    <div class="destruct">
+      <span>⚠️</span>
+      <div><b>所有 Demo 數據將在 24 小時內自動銷毀。</b>請自行保存分析結果。PricePulse 完整版支援持續追蹤及歷史數據導出。</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+const MATERIALS = [
+  { id:'ss304', name:'Stainless Steel 304', unit:'USD / ton', price:2850, change30:3.2, change90:8.7,
+    history:[2720,2750,2780,2760,2790,2810,2830,2840,2820,2850],
+    impacts:['Kitchen Appliances 廚房電器','Cookware 廚具','Sink & Faucet 水槽龍頭','Medical Equipment 醫療器材','Food Processing 食品加工設備'],
+    productUsage:{airfryer:0.0018, toaster:0.0013, coffeemaker:0.0008, blender:0.0006, kettle:0.0011, fan:0.0004, cooker:0.0015}
+  },
+  { id:'abs', name:'ABS Plastic', unit:'USD / ton', price:1620, change30:-1.1, change90:2.3,
+    history:[1580,1600,1590,1610,1630,1640,1620,1610,1630,1620],
+    impacts:['Small Appliances 小型家電','Consumer Electronics 消費電子','Toys 玩具','Automotive Parts 汽車零件','Luggage 行李箱'],
+    productUsage:{airfryer:0.0025, toaster:0.0010, coffeemaker:0.0018, blender:0.0013, kettle:0.0009, fan:0.0035, cooker:0.0008}
+  },
+  { id:'copper', name:'Copper', unit:'USD / ton', price:9450, change30:5.8, change90:14.2,
+    history:[8300,8450,8600,8700,8850,9000,9100,9250,9350,9450],
+    impacts:['Motor & Wiring 摩打及線材','Electronics 電子產品','HVAC 冷暖系統','Power Tools 電動工具','Transformer 變壓器'],
+    productUsage:{airfryer:0.00063, toaster:0.00008, coffeemaker:0.00012, blender:0.00020, kettle:0.00006, fan:0.00035, cooker:0.00014}
+  },
+  { id:'aluminum', name:'Aluminum', unit:'USD / ton', price:2380, change30:1.9, change90:4.5,
+    history:[2260,2280,2300,2320,2340,2350,2370,2360,2380,2380],
+    impacts:['Cookware 廚具','Heat Sink 散熱器','Construction 建材','Automotive 汽車','Packaging 包裝'],
+    productUsage:{airfryer:0.0009, toaster:0.0003, coffeemaker:0.0005, blender:0.0002, kettle:0.0006, fan:0.0005, cooker:0.0011}
+  },
+  { id:'glass', name:'Glass', unit:'USD / ton', price:580, change30:0.3, change90:1.8,
+    history:[565,570,572,575,574,578,576,579,580,580],
+    impacts:['Oven Door 焗爐門','Lid 鍋蓋','Display Panel 顯示面板','Lighting 照明'],
+    productUsage:{airfryer:0.0002, toaster:0.0001, coffeemaker:0.00015, blender:0.0001, kettle:0.00008, fan:0.0, cooker:0.0003}
+  },
+  { id:'pcb', name:'PCB Assembly', unit:'USD / unit', price:8.20, change30:2.1, change90:6.8,
+    history:[7.60,7.65,7.70,7.75,7.85,7.90,8.00,8.05,8.10,8.20],
+    impacts:['Smart Appliances 智能家電','IoT Devices 物聯網設備','Control Board 控制板','Digital Display 數碼顯示'],
+    productUsage:{airfryer:1, toaster:0.5, coffeemaker:1, blender:0.3, kettle:0.3, fan:0.5, cooker:0.8}
+  },
+  { id:'heating', name:'Heating Element', unit:'USD / unit', price:3.40, change30:1.5, change90:4.2,
+    history:[3.22,3.25,3.28,3.30,3.32,3.35,3.36,3.38,3.39,3.40],
+    impacts:['Heating Appliances 發熱電器','Hair Dryer 風筒','Oven 焗爐','Water Heater 熱水器'],
+    productUsage:{airfryer:1, toaster:0.8, coffeemaker:0.5, blender:0, kettle:0.9, fan:0, cooker:0.75}
+  },
+  { id:'packaging', name:'Packaging', unit:'USD / unit', price:1.85, change30:-0.5, change90:1.2,
+    history:[1.80,1.82,1.83,1.84,1.86,1.85,1.84,1.86,1.85,1.85],
+    impacts:['All Products 所有產品','E-commerce 電商包裝','Retail Box 零售盒','Shipping Carton 運輸紙箱'],
+    productUsage:{airfryer:1, toaster:1, coffeemaker:1, blender:1, kettle:1, fan:1, cooker:1}
+  }
+];
+
+const PRODUCTS = {
+  airfryer:{name:'Air Fryer 氣炸鍋', unitCost:38.50},
+  toaster:{name:'Toaster 多士爐', unitCost:12.80},
+  coffeemaker:{name:'Coffee Maker 咖啡機', unitCost:22.50},
+  blender:{name:'Blender 攪拌機', unitCost:18.00},
+  kettle:{name:'Electric Kettle 電熱水壺', unitCost:9.50},
+  fan:{name:'Tower Fan 塔扇', unitCost:25.00},
+  cooker:{name:'Rice Cooker 電飯煲', unitCost:28.00}
+};
+
+// State
+let selectedMaterials = new Set();
+let alertThreshold = 5;
+let alertEmail = '';
+let alertLog = [];
+
+// ═══════════════════════════════════════
+// GATE
+// ═══════════════════════════════════════
+function enterApp(){
+  const e = document.getElementById('gateEmail').value.trim();
+  if(!e || !e.includes('@')){ document.getElementById('gateErr').style.display='block'; return; }
+  document.getElementById('gateOverlay').style.display='none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('pp_passed','true');
+  initMaterialSelector();
+  toast('✅ PricePulse 原料價格預警已就緒');
+}
+
+function startCountdown(){
+  let r = 24*60*60;
+  const el = document.getElementById('countdown');
+  setInterval(()=>{
+    r--;
+    if(r<=0) return;
+    el.textContent = `${String(Math.floor(r/3600)).padStart(2,'0')}:${String(Math.floor((r%3600)/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`;
+  },1000);
+}
+
+function toast(m){
+  const t = document.getElementById('toast');
+  t.textContent = m;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ═══════════════════════════════════════
+// MATERIAL SELECTOR
+// ═══════════════════════════════════════
+function initMaterialSelector(){
+  const container = document.getElementById('materialSelector');
+  container.innerHTML = '';
+  MATERIALS.forEach((m,i)=>{
+    const chip = document.createElement('div');
+    chip.className = 'mat-chip';
+    chip.textContent = m.name;
+    chip.dataset.idx = i;
+    chip.onclick = ()=>toggleMaterial(i, chip);
+    container.appendChild(chip);
+  });
+}
+
+function toggleMaterial(idx, chip){
+  const m = MATERIALS[idx];
+  if(selectedMaterials.has(idx)){
+    selectedMaterials.delete(idx);
+    chip.classList.remove('selected');
+  }else{
+    selectedMaterials.add(idx);
+    chip.classList.add('selected');
+  }
+  renderPriceCards();
+  renderImpactGrid();
+  updateCalc();
+}
+
+function selectAll(){
+  document.querySelectorAll('.mat-chip').forEach((chip,i)=>{
+    selectedMaterials.add(i);
+    chip.classList.add('selected');
+  });
+  renderPriceCards();
+  renderImpactGrid();
+  updateCalc();
+}
+
+function clearAll(){
+  selectedMaterials.clear();
+  document.querySelectorAll('.mat-chip').forEach(c=>c.classList.remove('selected'));
+  renderPriceCards();
+  renderImpactGrid();
+  updateCalc();
+}
+
+function loadDemo(){
+  // Select all materials
+  document.querySelectorAll('.mat-chip').forEach((chip,i)=>{
+    selectedMaterials.add(i);
+    chip.classList.add('selected');
+  });
+  renderPriceCards();
+  renderImpactGrid();
+  updateCalc();
+  // Pre-fill alert email from gate
+  const gateEmail = document.getElementById('gateEmail').value.trim();
+  if(gateEmail && gateEmail.includes('@')){
+    document.getElementById('alertEmail').value = gateEmail;
+  }
+  document.getElementById('alertThreshold').value = 5;
+  toast('📊 Demo 數據已載入 — 追蹤 8 種關鍵原料價格');
+}
+
+// ═══════════════════════════════════════
+// PRICE CARDS
+// ═══════════════════════════════════════
+function renderPriceCards(){
+  const grid = document.getElementById('priceGrid');
+  if(selectedMaterials.size === 0){
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted)">
+      <div style="font-size:3rem;margin-bottom:12px">📡</div>
+      <p>請選擇上方原料，然後點擊 <b>Load Demo</b> 載入示範數據</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  const selected = [...selectedMaterials].sort((a,b)=>a-b);
+  selected.forEach(idx=>{
+    const m = MATERIALS[idx];
+    const alertTriggered = Math.abs(m.change30) >= alertThreshold;
+    const hasAlertSet = alertThreshold > 0;
+
+    // Sparkline
+    const maxVal = Math.max(...m.history);
+    const minVal = Math.min(...m.history);
+    const range = maxVal - minVal || 1;
+    let sparkBars = '';
+    m.history.forEach((v,i)=>{
+      const h = ((v - minVal) / range) * 100;
+      const cls = i>0 ? (v>=m.history[i-1]?'up':'down') : (v>=m.history[0]?'up':'down');
+      sparkBars += `<div class="bar ${cls}" style="height:${Math.max(h,10)}%"></div>`;
+    });
+
+    const trend30 = m.change30 > 0 ? 'up' : (m.change30 < 0 ? 'down' : 'flat');
+    const trend90 = m.change90 > 0 ? 'up' : (m.change90 < 0 ? 'down' : 'flat');
+    const arrow30 = m.change30 > 0 ? '↑' : (m.change30 < 0 ? '↓' : '→');
+    const arrow90 = m.change90 > 0 ? '↑' : (m.change90 < 0 ? '↓' : '→');
+
+    grid.innerHTML += `
+      <div class="price-card ${alertTriggered ? 'alert-active' : ''}">
+        ${alertTriggered ? '<div class="alert-badge triggered">⚠️ ALERT</div>' : (hasAlertSet ? '<div class="alert-badge set">⏳ WATCHING</div>' : '')}
+        <div class="mat-name">${m.name}</div>
+        <div class="mat-unit">${m.unit}</div>
+        <div class="spark-bar">${sparkBars}</div>
+        <div class="mat-price">$${m.price.toLocaleString()}</div>
+        <div class="trends">
+          <div class="trend ${trend30}">${arrow30} ${Math.abs(m.change30).toFixed(1)}% <span style="font-size:0.68rem;color:var(--muted);font-weight:400">30d</span></div>
+          <div class="trend ${trend90}">${arrow90} ${Math.abs(m.change90).toFixed(1)}% <span style="font-size:0.68rem;color:var(--muted);font-weight:400">90d</span></div>
+        </div>
+      </div>`;
+  });
+
+  // Check alerts after rendering
+  checkAlerts();
+}
+
+// ═══════════════════════════════════════
+// ALERT SYSTEM
+// ═══════════════════════════════════════
+function saveAlert(){
+  alertThreshold = parseFloat(document.getElementById('alertThreshold').value) || 5;
+  alertEmail = document.getElementById('alertEmail').value.trim();
+
+  if(!alertEmail || !alertEmail.includes('@')){
+    toast('⚠️ 請輸入有效的通知電郵');
+    return;
+  }
+
+  document.getElementById('alertStatus').textContent = `✅ 警報已啟用 — 當任何原料 30 天變動超過 ±${alertThreshold}%，將發送通知至 ${alertEmail}`;
+  toast('✅ 價格警報已儲存');
+
+  // Re-render cards to show alert badges
+  renderPriceCards();
+}
+
+function checkAlerts(){
+  if(!alertEmail) return;
+
+  const selected = [...selectedMaterials];
+  const now = new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'});
+
+  selected.forEach(idx=>{
+    const m = MATERIALS[idx];
+    if(Math.abs(m.change30) >= alertThreshold){
+      // Check if already logged
+      const alreadyLogged = alertLog.some(l=>l.matId===m.id && l.type==='threshold');
+      if(!alreadyLogged){
+        const dir = m.change30 > 0 ? '↑' : '↓';
+        alertLog.unshift({
+          matId: m.id,
+          matName: m.name,
+          type: 'threshold',
+          level: Math.abs(m.change30) >= 10 ? 'critical' : 'warning',
+          message: `${m.name} 30 天變動 ${dir}${Math.abs(m.change30).toFixed(1)}%，超過 ${alertThreshold}% 門檻。已發送通知至 ${alertEmail}`,
+          time: now
+        });
+        toast(`🔔 ${m.name} 觸發價格警報！`);
+      }
+    }
+  });
+
+  renderAlertLog();
+}
+
+function renderAlertLog(){
+  const log = document.getElementById('alertLog');
+  if(alertLog.length === 0){
+    log.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;text-align:center;padding:20px">尚無警報 — 設定門檻後，當價格變動超過閾值即自動記錄</div>';
+    return;
+  }
+  log.innerHTML = alertLog.map(l=>`
+    <div class="log-item">
+      <div class="log-dot ${l.level}"></div>
+      <div class="log-time">${l.time}</div>
+      <div>${l.message}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// IMPACT GRID
+// ═══════════════════════════════════════
+function renderImpactGrid(){
+  const grid = document.getElementById('impactGrid');
+  if(selectedMaterials.size === 0){
+    grid.innerHTML = '<div style="grid-column:1/-1;color:var(--muted);font-size:0.82rem;text-align:center;padding:20px">請選擇原料以查看產品影響分析</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  const selected = [...selectedMaterials].sort((a,b)=>a-b);
+  selected.forEach(idx=>{
+    const m = MATERIALS[idx];
+    const arrow = m.change90 > 0 ? '↑' : (m.change90 < 0 ? '↓' : '→');
+    grid.innerHTML += `
+      <div class="impact-card">
+        <div class="impact-material">${m.name} <span style="color:${m.change90>=0?'var(--red)':'var(--accent2)'}">${arrow}${Math.abs(m.change90).toFixed(1)}% 90d</span></div>
+        <div class="impact-cats">${m.impacts.map(c=>'<div style="margin-bottom:2px">• '+c+'</div>').join('')}</div>
+      </div>
+    `;
+  });
+}
+
+// ═══════════════════════════════════════
+// PRODUCT IMPACT CALCULATOR
+// ═══════════════════════════════════════
+function updateCalc(){
+  const productKey = document.getElementById('calcProduct').value;
+  const qty = parseInt(document.getElementById('calcQty').value) || 0;
+  const resultDiv = document.getElementById('calcResult');
+
+  if(!productKey || qty <= 0){
+    resultDiv.style.display = 'none';
+    return;
+  }
+
+  const product = PRODUCTS[productKey];
+  const selected = [...selectedMaterials];
+
+  if(selected.length === 0){
+    resultDiv.style.display = 'block';
+    document.getElementById('calcAmount').textContent = '請先選擇原料';
+    document.getElementById('calcDetail').textContent = '';
+    return;
+  }
+
+  // Find the highest-impact material for this product
+  let biggestImpact = null;
+  let biggestCost = 0;
+  let totalExtra = 0;
+  let details = [];
+
+  selected.forEach(idx=>{
+    const m = MATERIALS[idx];
+    const usage = m.productUsage[productKey] || 0;
+    if(usage <= 0) return;
+
+    // Calculate: usage kg/units per product * price change per unit * qty
+    const priceChange90d = m.price * (m.change90 / 100);
+    const extraPerUnit = usage * priceChange90d;
+    const extraTotal = extraPerUnit * qty;
+
+    totalExtra += extraTotal;
+
+    if(extraTotal > biggestCost){
+      biggestCost = extraTotal;
+      biggestImpact = { mat:m, extraPerUnit, extraTotal, usage };
+    }
+
+    details.push({ mat:m, extraPerUnit, extraTotal, usage });
+  });
+
+  resultDiv.style.display = 'block';
+
+  if(!biggestImpact){
+    document.getElementById('calcAmount').textContent = '無顯著影響';
+    document.getElementById('calcDetail').textContent = '所選原料對該產品的成本結構影響較小。';
+    return;
+  }
+
+  const bi = biggestImpact;
+
+  // Build detail text
+  let detailText = `<b>成本拆解：</b><br>`;
+  details.sort((a,b)=>b.extraTotal - a.extraTotal).forEach(d=>{
+    const sign = d.extraTotal >= 0 ? '+' : '';
+    detailText += `• ${d.mat.name}：${d.usage} ${d.mat.unit.split(' / ')[1] || 'unit'}/pc × ${sign}$${d.extraPerUnit.toFixed(3)}/pc = ${sign}$${d.extraTotal.toFixed(0)} total<br>`;
+  });
+
+  const sign = totalExtra >= 0 ? '+' : '';
+  document.getElementById('calcAmount').textContent =
+    `${sign}$${totalExtra.toFixed(0)} 本季度額外成本`;
+
+  // Build the main narrative (matching demo spec format)
+  let mainNarrative = '';
+  if(biggestImpact && details.length > 0){
+    const top = details.sort((a,b)=>b.extraTotal - a.extraTotal)[0];
+    const arrow = top.mat.change90 >= 0 ? '↑' : '↓';
+    const verb = top.mat.change90 >= 0 ? '增加' : '減少';
+    const dirWord = top.mat.change90 >= 0 ? 'extra' : 'saved';
+    mainNarrative = `如果你訂購 <b>${qty.toLocaleString()} ${product.name}</b>，${top.mat.name} 價格 ${arrow}${Math.abs(top.mat.change90).toFixed(1)}% 意味著每單位成本${verb} ~$${top.extraPerUnit.toFixed(2)} = <b>$${Math.abs(top.extraTotal).toFixed(0)} ${dirWord} this quarter</b>。`;
+  }
+
+  document.getElementById('calcDetail').innerHTML =
+    mainNarrative +
+    `<br><br>${detailText}<br><span style="font-size:0.75rem;color:var(--muted)">* 基於 90 天價格變動估算，實際影響可能因供應商合約而異</span>`;
+
+  // Auto-add to alert log
+  if(biggestImpact && totalExtra > 0 && alertEmail){
+    const now = new Date().toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'});
+    const calcMsg = `Impact Calculator: ${qty.toLocaleString()} ${product.name} → +$${totalExtra.toFixed(0)} extra cost (${biggestImpact.mat.name} ${biggestImpact.mat.change90>=0?'↑':'↓'}${Math.abs(biggestImpact.mat.change90).toFixed(1)}%)`;
+    const alreadyLogged = alertLog.some(l=>l.message===calcMsg);
+    if(!alreadyLogged){
+      alertLog.unshift({matId:'calc',matName:'Calculator',type:'impact',level:'info',message:calcMsg,time:now});
+      renderAlertLog();
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+// Check if already passed gate (same session)
+if(localStorage.getItem('pp_passed')==='true'){
+  document.getElementById('gateOverlay').style.display='none';
+  document.getElementById('mainApp').classList.add('active');
+  initMaterialSelector();
+  startCountdown();
+}
+</script>
+
+</body>
+</html>

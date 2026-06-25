@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeadSniper — 展會跟進系統 | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b; --purple: #8b5cf6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* Gate Overlay */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{color:var(--warn);font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* Main App */
+.app{display:none}
+.app.active{display:block}
+
+/* Top Bar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:8px}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent);display:flex;align-items:center;gap:8px}
+.topbar .logo .sub{font-size:0.7rem;color:var(--muted);font-weight:400}
+.topbar .timer{color:var(--warn);font-size:0.8rem;white-space:nowrap}
+.topbar .timer span{font-weight:700}
+
+.main-container{max-width:1200px;margin:0 auto;padding:28px 24px}
+
+/* Hero Section */
+.app-hero{text-align:center;padding:32px 0 40px}
+.app-hero h1{font-size:2rem;font-weight:800;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:8px}
+.app-hero .subtitle{color:var(--muted);font-size:1rem;max-width:600px;margin:0 auto 16px}
+.app-hero .stats-row{display:flex;justify-content:center;gap:40px;flex-wrap:wrap}
+.hero-stat{text-align:center}
+.hero-stat .num{font-size:2rem;font-weight:800;color:var(--accent)}
+.hero-stat .label{font-size:0.75rem;color:var(--muted)}
+
+/* Two-column Layout */
+.two-col{display:grid;grid-template-columns:380px 1fr;gap:24px;margin-top:8px}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}}
+
+/* Upload Zone */
+.upload-section{position:sticky;top:80px;align-self:start}
+.upload-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px}
+.upload-card h3{font-size:1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:28px 16px;text-align:center;cursor:pointer;transition:all .3s;margin-bottom:16px;background:rgba(6,182,212,0.03)}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(6,182,212,0.06)}
+.drop-zone .dz-icon{font-size:2rem;margin-bottom:8px}
+.drop-zone p{color:var(--muted);font-size:0.8rem}
+.drop-zone input[type=file]{display:none}
+.drop-zone .file-loaded{display:none;color:var(--accent2);font-weight:600;font-size:0.85rem;margin-top:8px}
+.drop-zone.loaded .file-loaded{display:block}
+.drop-zone.loaded .dz-hint{display:none}
+
+/* Trade Show Selector */
+.show-selector{margin-bottom:16px}
+.show-selector label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:6px}
+.show-selector select{width:100%;padding:10px 14px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9rem;cursor:pointer}
+.show-selector select:focus{outline:none;border-color:var(--accent)}
+
+/* Example Leads */
+.example-leads{margin-bottom:16px}
+.example-leads .section-label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;font-weight:600}
+.lead-chips{display:flex;flex-wrap:wrap;gap:8px}
+.lead-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:var(--card);border:1px solid var(--border);border-radius:20px;font-size:0.78rem;cursor:pointer;transition:all .2s;color:var(--muted);white-space:nowrap}
+.lead-chip:hover{border-color:var(--accent);color:var(--text);background:rgba(6,182,212,0.08);transform:translateY(-1px)}
+.lead-chip.active{border-color:var(--accent);color:var(--accent);background:rgba(6,182,212,0.12);box-shadow:0 0 12px rgba(6,182,212,0.15)}
+.lead-chip .chip-flag{font-size:1rem}
+
+/* Process button */
+.process-btn{width:100%;padding:12px;background:var(--gradient);color:#fff;border:none;border-radius:10px;font-weight:600;font-size:0.9rem;cursor:pointer;transition:all .2s}
+.process-btn:hover{opacity:0.9;transform:translateY(-1px)}
+.process-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.process-btn .spinner{display:none;width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;margin-right:6px}
+.process-btn.loading .spinner{display:inline-block}
+.process-btn.loading .btn-text{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Analysis Panel */
+.analysis-panel{display:none}
+.analysis-panel.active{display:block}
+
+/* Result Cards */
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px;animation:fadeUp .3s}
+.result-card h3{font-size:1rem;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.result-card h3 .badge{font-size:0.7rem;padding:3px 10px;border-radius:10px;background:rgba(6,182,212,0.12);color:var(--accent);font-weight:600}
+
+/* Lead Header */
+.lead-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.lead-avatar{width:52px;height:52px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:700;color:#fff;flex-shrink:0}
+.lead-info h2{font-size:1.2rem;margin-bottom:2px}
+.lead-info .lead-meta{font-size:0.8rem;color:var(--muted)}
+
+/* Info Grid */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:640px){.info-grid{grid-template-columns:1fr}}
+.info-item{background:#0d1117;border-radius:8px;padding:10px 14px}
+.info-item .info-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+.info-item .info-value{font-size:0.9rem;color:var(--text);word-break:break-all}
+
+/* Company Insights */
+.insight-list{list-style:none}
+.insight-list li{padding:8px 0;border-bottom:1px solid var(--border);font-size:0.85rem;display:flex;align-items:flex-start;gap:10px}
+.insight-list li:last-child{border-bottom:none}
+.insight-list .insight-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+
+/* Email Preview */
+.email-preview{background:#0d1117;border-radius:10px;padding:16px;font-size:0.82rem;line-height:1.7;color:var(--muted);font-family:system-ui,sans-serif;white-space:pre-wrap}
+.email-preview .email-subject{color:var(--text);font-weight:700;margin-bottom:8px;display:block;font-size:0.9rem}
+.email-preview .email-highlight{color:var(--accent);font-weight:600}
+
+/* LinkedIn Badge */
+.linkedin-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:rgba(10,102,194,0.12);border:1px solid rgba(10,102,194,0.3);border-radius:10px;font-size:0.8rem;color:#0a66c2;margin-right:8px;margin-bottom:4px}
+
+/* Follow-up Timing */
+.timing-block{background:#0d1117;border-radius:10px;padding:14px 18px;margin-top:8px}
+.timing-block .timing-row{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:0.85rem}
+.timing-block .timing-icon{font-size:1rem;flex-shrink:0}
+
+/* Date Picker */
+.date-picker-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.date-picker-row input[type=date]{padding:10px 14px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem}
+.date-picker-row input[type=date]:focus{outline:none;border-color:var(--accent)}
+
+/* Export Button Row */
+.export-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap}
+.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent;display:inline-flex;align-items:center;gap:6px}
+.btn-outline:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.btn-sm{padding:10px 20px;font-size:0.85rem}
+.btn-success{background:var(--accent2);color:#fff}
+.btn-success:hover{opacity:0.9}
+
+/* Export Table */
+.export-table-wrap{overflow-x:auto;margin-top:16px}
+.export-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.export-table th{text-align:left;padding:10px 12px;background:var(--card);color:var(--muted);font-weight:600;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid var(--border);white-space:nowrap}
+.export-table td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:0.82rem}
+.export-table tr:hover td{background:rgba(6,182,212,0.03)}
+.export-table .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.export-table .status-warm{background:var(--warn)}
+.export-table .status-hot{background:var(--red)}
+.export-table .status-new{background:var(--accent)}
+.export-table .status-cold{background:var(--muted)}
+
+/* Destruct Notice */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:24px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* Back Link */
+.back-link{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:0.85rem;margin-top:24px;transition:color .2s}
+.back-link:hover{color:var(--text)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;animation:fadeIn .3s;box-shadow:0 8px 24px rgba(0,0,0,0.4);border:1px solid var(--border)}
+.toast.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* Empty State */
+.empty-state{text-align:center;padding:60px 24px}
+.empty-state .empty-icon{font-size:3rem;margin-bottom:16px}
+.empty-state h3{font-size:1.2rem;margin-bottom:8px}
+.empty-state p{color:var(--muted);font-size:0.9rem}
+
+/* Responsive */
+@media(max-width:768px){
+  .app-hero h1{font-size:1.5rem}
+  .two-col{grid-template-columns:1fr}
+  .upload-section{position:static}
+  .info-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== GATE OVERLAY ====== -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">🎯</div>
+    <h2>LeadSniper 展會跟進系統</h2>
+    <p>Trade Show Lead Intelligence — AI-Powered Follow-up</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+
+    <div class="note">
+      ⚠️ <span>所有上傳資料將在 24 小時內自動銷毀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MAIN APP ====== -->
+<div class="app" id="mainApp">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="logo">🎯 LeadSniper <span class="sub">| 展會跟進系統</span></div>
+    <div class="timer">⏳ 資料保留: <span id="countdown">23:59:59</span></div>
+  </div>
+
+  <div class="main-container">
+    <!-- Hero -->
+    <div class="app-hero">
+      <h1>從展會名片到成交訂單</h1>
+      <p class="subtitle">AI 自動識別名片 → 公司分析 → 客製化跟進郵件 → 排程提醒，一條龍跟進系統</p>
+      <div class="stats-row">
+        <div class="hero-stat"><div class="num">98%</div><div class="label">OCR Accuracy</div></div>
+        <div class="hero-stat"><div class="num">3.2x</div><div class="label">Follow-up Rate</div></div>
+        <div class="hero-stat"><div class="num">&lt;30s</div><div class="label">Per Lead</div></div>
+        <div class="hero-stat"><div class="num">5</div><div class="label">Shows Supported</div></div>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="two-col">
+      <!-- LEFT: Upload + Selector -->
+      <div class="upload-section">
+        <div class="upload-card">
+          <h3>📸 上傳名片 + 選擇展會</h3>
+
+          <!-- Example Lead Chips -->
+          <div class="example-leads">
+            <div class="section-label">🔬 或選擇範例客戶試用：</div>
+            <div class="lead-chips" id="leadChips">
+              <div class="lead-chip" data-lead="0" onclick="loadExample(0)">
+                <span class="chip-flag">🇺🇸</span> John Smith
+              </div>
+              <div class="lead-chip" data-lead="1" onclick="loadExample(1)">
+                <span class="chip-flag">🇪🇸</span> Maria Garcia
+              </div>
+              <div class="lead-chip" data-lead="2" onclick="loadExample(2)">
+                <span class="chip-flag">🇯🇵</span> Kenji Tanaka
+              </div>
+              <div class="lead-chip" data-lead="3" onclick="loadExample(3)">
+                <span class="chip-flag">🇦🇪</span> Ahmed Al-Rashid
+              </div>
+              <div class="lead-chip" data-lead="4" onclick="loadExample(4)">
+                <span class="chip-flag">🇩🇪</span> Sophie Müller
+              </div>
+            </div>
+          </div>
+
+          <!-- Drop Zone -->
+          <div class="drop-zone" id="dropZone" onclick="document.getElementById('cardFile').click()">
+            <div class="dz-icon">🪪</div>
+            <div class="dz-hint">
+              <p><b>點擊或拖放名片圖片</b></p>
+              <p style="margin-top:4px">支援 JPG / PNG / HEIC</p>
+            </div>
+            <div class="file-loaded">✅ 名片已上傳</div>
+            <input type="file" id="cardFile" accept=".jpg,.jpeg,.png,.heic" onchange="handleCardUpload(this.files)">
+          </div>
+
+          <!-- Trade Show Selector -->
+          <div class="show-selector">
+            <label>🏛️ 展會來源</label>
+            <select id="showSelect" onchange="onShowChange()">
+              <option value="">— 選擇展會 —</option>
+              <option value="canton">🏮 廣交會 Canton Fair (廣州)</option>
+              <option value="hk-electronics">🇭🇰 香港電子展 HK Electronics Fair</option>
+              <option value="ambiente">🍽️ Ambiente 法蘭克福消費品展</option>
+              <option value="ifa">📺 IFA 柏林消費電子展</option>
+              <option value="ces">💻 CES 拉斯維加斯消費電子展</option>
+              <option value="custom">✏️ 其他展會（自訂）</option>
+            </select>
+            <input type="text" id="customShow" placeholder="請輸入展會名稱..." style="display:none;width:100%;margin-top:8px;padding:10px 14px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem" oninput="document.getElementById('showSelect').value='custom'">
+          </div>
+
+          <!-- Process Button -->
+          <button class="process-btn" id="processBtn" onclick="processLead()">
+            <span class="spinner"></span>
+            <span class="btn-text">🔍 AI 分析名片</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT: Analysis Results -->
+      <div class="analysis-panel" id="analysisPanel">
+        <!-- Empty State -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-icon">🎯</div>
+          <h3>選擇或上傳一張名片開始分析</h3>
+          <p>點擊上方範例客戶，或者上傳真實展會名片<br>AI 會自動擷取資訊、分析公司、生成跟進郵件</p>
+        </div>
+
+        <!-- Results will be rendered here -->
+        <div id="resultsContainer"></div>
+
+        <!-- Schedule + Export -->
+        <div id="actionsContainer" style="display:none">
+          <div class="result-card" style="border-left:3px solid var(--accent)">
+            <h3>📅 排程跟進</h3>
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px">設定跟進提醒，LeadSniper 會在你指定日期發送提醒</p>
+            <div class="date-picker-row">
+              <input type="date" id="followUpDate" min="">
+              <select id="followUpAction" style="padding:10px 14px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.85rem">
+                <option>📧 發送跟進郵件</option>
+                <option>📞 電話跟進</option>
+                <option>💬 WhatsApp / WeChat 跟進</option>
+                <option>📎 發送報價單</option>
+                <option>🎥 安排視像會議</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="scheduleFollowUp()" style="width:auto">⏰ 排程</button>
+            </div>
+            <div id="scheduledReminder" style="display:none;margin-top:10px;padding:10px 14px;background:rgba(16,185,129,0.1);border-radius:8px;font-size:0.85rem;color:var(--accent2)"></div>
+          </div>
+
+          <div class="btn-row export-row">
+            <button class="btn btn-success btn-sm" onclick="addToExport()">➕ 加入匯出列表</button>
+            <button class="btn btn-outline btn-sm" onclick="toggleExportTable()">📊 匯出全部客戶</button>
+            <a href="../index.html" class="btn btn-outline btn-sm">🏠 返回主頁</a>
+          </div>
+
+          <!-- Export Table -->
+          <div id="exportTableWrap" style="display:none;margin-top:16px">
+            <div class="result-card">
+              <h3>📊 展會客戶匯總表</h3>
+              <div class="export-table-wrap">
+                <table class="export-table" id="exportTable">
+                  <thead>
+                    <tr>
+                      <th>狀態</th><th>姓名</th><th>職位</th><th>公司</th><th>國家</th><th>Email</th><th>展會</th><th>進口規模</th><th>跟進日</th>
+                    </tr>
+                  </thead>
+                  <tbody id="exportTbody">
+                    <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">尚無客戶匯出 — 點擊「加入匯出列表」開始</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="btn-row" style="margin-top:14px">
+                <button class="btn btn-primary btn-sm" onclick="downloadCSV()" style="width:auto">📥 下載 CSV</button>
+                <button class="btn btn-outline btn-sm" onclick="clearExport()" style="width:auto">🗑️ 清空列表</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Destruct Notice -->
+        <div class="destruct">
+          <div class="dicon">⚠️</div>
+          <div><b>所有上傳名片及分析資料將在 24 小時內從伺服器永久刪除。</b><br>請自行匯出需要的客戶資料。如需再次使用，請重新上傳。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// DATA: Example Leads
+// ═══════════════════════════════════════
+const EXAMPLE_LEADS = [
+  {
+    id: 0,
+    name: 'John Smith',
+    title: 'Purchasing Director',
+    company: 'Global Retail Inc.',
+    country: 'USA',
+    flag: '🇺🇸',
+    email: 'john.smith@globalretail.com',
+    phone: '+1 (212) 555-0198',
+    website: 'globalretail.com',
+    show: 'CES',
+    showIcon: '💻',
+    // Market-specific pain points
+    importVolume: '$45M/year (Home Appliances)',
+    categories: 'Air Fryers, Blenders, Coffee Makers, Toasters',
+    yearsBusiness: 28,
+    employees: '12,000+',
+    market: 'US',
+    painPoint: 'price',
+    insights: {
+      pain: 'US retailers are extremely price-sensitive in the current tariff environment — every cent matters on shelf pricing.',
+      volume: 'Estimated annual import volume: $45M in small kitchen appliances, with Q4 representing 40% of annual orders.',
+      market: 'Key competitors: Walmart, Target private labels. Global Retail positions as affordable quality — "better than budget, cheaper than premium."',
+    },
+    email: {
+      subject: 'Re: Great meeting you at CES — Air Fryer opportunities for Q4',
+      body: `Hi John,
+
+It was a pleasure meeting you at the Global Retail booth during CES. I was impressed by your vision for expanding the small kitchen appliance category — especially the air fryer segment, which continues to grow at 18% YoY in North America.
+
+Based on our conversation, I wanted to follow up on three key areas where we can deliver immediate value:
+
+1. Price Competitiveness: Our factory-direct pricing on the 5L Digital Air Fryer (model AF-500D) comes in at $12.80 FOB — that's roughly 15-18% below what you're currently paying through intermediaries. At your volume of 50,000 units/quarter, that's $320K+ in annual savings.
+
+2. Tariff Mitigation: We've structured our Vietnam facility to handle US-bound production, fully compliant with current tariff classifications. This alone could save you the 25% Section 301 tariff on select SKUs.
+
+3. Q4 Readiness: Our 45-day lead time means if we lock in by early August, shelves are stocked for Black Friday. I've attached a preliminary pricing sheet with 5 SKUs that match your top sellers.
+
+I know price sensitivity is your #1 concern right now — I'd love to walk you through our cost structure so you can see exactly where the savings come from. Would Wednesday or Thursday work for a 20-minute call?
+
+Best regards,
+[Your Name]
+Quattro Dynamics`,
+    },
+    linkedin: 'Also connected to 3 mutual contacts in home appliance industry: VP Sourcing at Target, Category Director at Wayfair, and former colleague now at SharkNinja',
+    timing: {
+      bestTime: 'Wednesday 10:00 AM EST (your end-of-week is too busy)',
+      window: 'Within 48 hours — CES leads go cold fast',
+      attach: 'Preliminary pricing sheet (5 SKUs), factory audit report, 3 customer references in US retail',
+    },
+  },
+  {
+    id: 1,
+    name: 'Maria Garcia',
+    title: 'Import Manager',
+    company: 'ElectroHogar S.L.',
+    country: 'Spain',
+    flag: '🇪🇸',
+    email: 'maria.garcia@electrohogar.es',
+    phone: '+34 91 555 0234',
+    website: 'electrohogar.es',
+    show: 'Ambiente',
+    showIcon: '🍽️',
+    importVolume: '€18M/year (Kitchen & Home)',
+    categories: 'Small Kitchen Appliances, Cookware, Tabletop',
+    yearsBusiness: 35,
+    employees: '850',
+    market: 'EU/Spain',
+    painPoint: 'esg',
+    insights: {
+      pain: 'EU retailers face stringent ESG compliance requirements — every product must meet EU Ecodesign, WEEE, and REACH standards. Non-compliance means market exclusion.',
+      volume: 'Estimated annual import volume: €18M, with kitchen electrics being the fastest-growing segment at 22% YoY.',
+      market: 'ElectroHogar supplies major Spanish retailers including El Corte Inglés and MediaMarkt. Their customers increasingly demand sustainability certifications.',
+    },
+    email: {
+      subject: 'Following up from Ambiente — ESG-compliant kitchen range for ElectroHogar',
+      body: `Hola Maria,
+
+It was wonderful connecting with you at Ambiente in Frankfurt. I really appreciated your candid insights about the challenges ElectroHogar faces with the new EU Ecodesign regulations taking effect next year.
+
+I've been thinking about our conversation, and here's what we can offer specifically for your compliance needs:
+
+1. Full ESG Documentation Package: Every product comes with complete REACH, RoHS, and WEEE compliance certificates. We also provide the new Digital Product Passport (DPP) — which becomes mandatory under EU ESPR from 2027. You'll be ahead of the curve.
+
+2. Sustainable Materials: Our new ECO-line uses 65% recycled plastics in housing, FSC-certified packaging, and we offset 100% of production carbon through verified credits. Perfect for El Corte Inglés' "Compromiso Sostenible" shelf.
+
+3. Energy Efficiency: All motors are already compliant with the new EU energy efficiency Class A standard — no re-engineering needed on your side.
+
+I know ESG compliance is non-negotiable for your European retail partners. Let me send over our complete sustainability dossier — it covers every certification and audit report your compliance team would need. Shall I have it in your inbox by Friday?
+
+Un saludo,
+[Your Name]
+Quattro Dynamics`,
+    },
+    linkedin: 'Also connected to 2 mutual contacts at El Corte Inglés sourcing team and 1 at Barcelona Home & Living Expo',
+    timing: {
+      bestTime: 'Tuesday or Thursday 10:00–11:30 CET (team meetings Monday AM)',
+      window: 'Within 5 days — Ambiente follow-ups peak at day 3-7',
+      attach: 'ESG compliance dossier, EU Ecodesign roadmap 2025-2027, ECO-line product catalog, lab test reports',
+    },
+  },
+  {
+    id: 2,
+    name: 'Kenji Tanaka',
+    title: 'Senior Buyer',
+    company: 'Tokyo HomeStyle Co.',
+    country: 'Japan',
+    flag: '🇯🇵',
+    email: 'k.tanaka@tokyohomestyle.jp',
+    phone: '+81 3 5550 0123',
+    website: 'tokyohomestyle.co.jp',
+    show: 'HK Electronics Fair',
+    showIcon: '🇭🇰',
+    importVolume: '¥6.2B/year (Home & Electronics)',
+    categories: 'Premium Rice Cookers, Hot Water Dispensers, Induction Cooktops',
+    yearsBusiness: 52,
+    employees: '3,200',
+    market: 'Japan',
+    painPoint: 'quality',
+    insights: {
+      pain: 'Japanese consumers have the highest quality expectations globally. Defect rates above 0.1% are unacceptable. Every unit must be flawless — "monozukuri" philosophy is non-negotiable.',
+      volume: 'Estimated annual procurement: ¥6.2B. Tokyo HomeStyle operates 280 retail locations across Japan plus a growing e-commerce channel.',
+      market: 'Tokyo HomeStyle is the #3 home appliance retailer in Japan. Their buyers are known to make 3+ factory visits before committing to any new supplier.',
+    },
+    email: {
+      subject: 'HK Electronics Fair follow-up — Premium IH Rice Cooker collaboration',
+      body: `田中様
+
+先日は香港電子展の弊社ブースにお立ち寄りいただき、誠にありがとうございました。東京ホームスタイル様の品質に対する真摯な姿勢に深く感銘を受けました。
+
+Our engineering team has reviewed your technical requirements for the induction heating (IH) rice cooker line, and I believe we are uniquely positioned to meet your quality standards:
+
+1. Quality Assurance Protocol: We implement a 3-stage inspection process — incoming component inspection (AQL 0.65), in-line QC with real-time SPC monitoring, and 100% functional testing before packaging. Our defect rate for Japanese OEM partners consistently runs below 0.05%.
+
+2. IH Technology: Our 7-layer IH coil design with fuzzy logic temperature control matches the performance of Japanese domestic brands. I've attached a comparison whitepaper showing side-by-side test results against Zojirushi and Tiger models.
+
+3. Factory Audit: We welcome your QA team for a multi-day factory audit. We have dedicated Japanese-speaking QC engineers on staff, and our production line is configurable for Japanese voltage (100V) and PSE certification.
+
+I understand that for Tokyo HomeStyle, quality is everything. I'd be happy to ship you 3 evaluation samples at no cost — you can test them against your current suppliers' products. The results speak for themselves.
+
+何卒よろしくお願いいたします。
+
+[Your Name]
+Quattro Dynamics`,
+    },
+    linkedin: 'Also connected to Panasonic sourcing team member (former colleague) and 2 Japan External Trade Organization (JETRO) trade advisors',
+    timing: {
+      bestTime: 'Wednesday 14:00 JST or Friday 10:00 JST (avoid Monday morning meetings)',
+      window: 'Within 7 days — Japanese buyers expect thorough, well-prepared follow-ups, not rushed responses',
+      attach: 'IH technology comparison whitepaper, factory quality manual (Japanese), PSE certification samples, video: factory tour with Japanese subtitles',
+    },
+  },
+  {
+    id: 3,
+    name: 'Ahmed Al-Rashid',
+    title: 'Procurement Head',
+    company: 'Gulf Traders International',
+    country: 'UAE',
+    flag: '🇦🇪',
+    email: 'a.alrashid@gulftraders.ae',
+    phone: '+971 4 555 0678',
+    website: 'gulftraders.ae',
+    show: 'Canton Fair',
+    showIcon: '🏮',
+    importVolume: '$120M/year (Multi-category)',
+    categories: 'Home Appliances, Electronics, Housewares, Building Materials',
+    yearsBusiness: 42,
+    employees: '4,500',
+    market: 'Middle East',
+    painPoint: 'volume',
+    insights: {
+      pain: 'Gulf traders operate on razor-thin margins across 22 countries. Volume pricing and regional distribution rights are everything. They need a supplier that can handle massive consolidated orders.',
+      volume: 'Estimated annual import: $120M across multiple categories. Gulf Traders supplies 22 markets across MENA and parts of East Africa. Container consolidation is critical for their logistics efficiency.',
+      market: 'Gulf Traders is one of the top 3 re-exporters in the Jebel Ali Free Zone. Their model is high-volume, low-margin, multi-destination consolidation.',
+    },
+    email: {
+      subject: 'Canton Fair follow-up — Consolidated home appliance program for Gulf markets',
+      body: `Dear Ahmed,
+
+As-salamu alaykum. It was a pleasure meeting you and the Gulf Traders team at the Canton Fair. Your scale of operations across 22 markets is truly impressive.
+
+Following up on our discussion about a consolidated home appliance program — here's the framework I'm proposing:
+
+1. Volume Tier Pricing: At 100,000+ units per SKU annually, I can offer you $11.20 FOB on the air fryer range, $7.50 on electric kettles, and $10.80 on toasters. These are our "GCC Partner" rates — reserved for volume buyers like Gulf Traders with multi-country distribution.
+
+2. Mixed Container Loading: We'll consolidate 3-4 SKUs per 40HQ container to optimize your freight costs. Our Container Optimizer AI shows 23% better space utilization vs. single-SKU loading — that's roughly $1,800 saved per container.
+
+3. Regional Customization: We can provide different plug types (BS 1363 for UAE, Type G for Kuwait, Type D for India sub-markets) and Arabic/English bilingual packaging and manuals at no extra charge for orders above 50,000 units.
+
+4. Exclusivity: I'm prepared to offer 18-month regional distribution exclusivity for select SKUs in GCC markets, subject to minimum annual volume commitments.
+
+I know volume pricing and logistics efficiency make or break your margins. Let's schedule a detailed call with your logistics team to model the full landed cost across your 22 markets.
+
+Best regards,
+[Your Name]
+Quattro Dynamics`,
+    },
+    linkedin: 'Also connected to Logistics Director at DP World Jebel Ali and Category Head at Lulu Group International',
+    timing: {
+      bestTime: 'Sunday 11:00 GST or Tuesday 15:00 GST (UAE work week is Sun–Thu)',
+      window: 'Within 3 days — Canton Fair leads are highly competitive with rival factories chasing the same buyers',
+      attach: 'Volume pricing matrix (6 tiers), container optimization simulation, plug/market compatibility matrix, draft exclusivity agreement terms',
+    },
+  },
+  {
+    id: 4,
+    name: 'Sophie Müller',
+    title: 'Category Manager',
+    company: 'HausGut GmbH',
+    country: 'Germany',
+    flag: '🇩🇪',
+    email: 's.mueller@hausgut.de',
+    phone: '+49 40 5550 0456',
+    website: 'hausgut.de',
+    show: 'IFA',
+    showIcon: '📺',
+    importVolume: '€35M/year (Premium Home)',
+    categories: 'Premium Kitchen Appliances, Smart Home, Design Housewares',
+    yearsBusiness: 18,
+    employees: '620',
+    market: 'Germany',
+    painPoint: 'certification',
+    insights: {
+      pain: 'German market demands GS/TÜV certification on every product. CE marking alone is not enough — retailers like MediaMarkt and Otto require GS mark. Certification delays kill launch timelines.',
+      volume: 'Estimated annual import: €35M. HausGut has grown 40% in the last 3 years by positioning as "design meets German engineering standards" at mid-premium pricing.',
+      market: 'HausGut supplies Otto, MediaMarkt, Galeria, and Amazon DE. Their brand promise is "Qualität, auf die Sie sich verlassen können" — quality you can rely on.',
+    },
+    email: {
+      subject: 'IFA Nachbereitung — Zertifizierte Küchengeräte für HausGut',
+      body: `Hallo Sophie,
+
+es war mir eine große Freude, Sie auf der IFA in Berlin kennenzulernen. Ihr Vortrag über die steigenden Zertifizierungsanforderungen im deutschen Einzelhandel war sehr aufschlussreich.
+
+Following up on our discussion — here's specifically how we address the German certification challenge:
+
+1. GS-Zeichen Ready: All our products are pre-certified by TÜV Rheinland with GS mark. This means no 8-12 week certification delay when you list with Otto or MediaMarkt. We maintain continuous GS certification — just add your brand and go.
+
+2. Stiftung Warentest Standards: Our engineering team designs specifically for German test criteria. Our latest kettle model scored "Gut (1,8)" in internal pre-testing against Stiftung Warentest standards. I can share the test protocol.
+
+3. ElektroG / VerpackG Compliance: Full compliance with German Electrical and Electronic Equipment Act and Packaging Act. We handle EAR registration and dual-system packaging licensing — your legal team doesn't need to lift a finger.
+
+4. Documentation Package: Complete technical file in both German and English, including CE declaration, GS certificate, EMC test reports, food contact material certificates (LFGB), and the new EU Product Safety Regulation (GPSR) compliance statement.
+
+I know certification bottlenecks have delayed your last two product launches. With our pre-certified products, you could go from sourcing meeting to shelf-ready in 6 weeks instead of 20.
+
+Would Wednesday at 11:00 or Thursday at 15:00 work for a detailed walkthrough of our certification package?
+
+Mit freundlichen Grüßen,
+[Your Name]
+Quattro Dynamics`,
+    },
+    linkedin: 'Also connected to TÜV Rheinland certification manager and 2 product compliance leads at major German retailers',
+    timing: {
+      bestTime: 'Wednesday 11:00 CET or Thursday 15:00 CET (German lunch is sacred 12:00-13:00)',
+      window: 'Within 5 days — IFA is the biggest show of the year and competition for HausGut's attention is fierce',
+      attach: 'GS certification package (all products), TÜV test reports, Stiftung Warentest pre-evaluation, GPSR compliance statement, LFGB certificates',
+    },
+  },
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let currentLead = null;
+let exportList = [];
+let scheduledFollowUps = [];
+let hasUploadedCard = false;
+
+// ═══════════════════════════════════════
+// GATE
+// ═══════════════════════════════════════
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) { err.textContent = '請輸入有效電郵'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('leadsniper_gate_passed', 'true');
+  localStorage.setItem('leadsniper_email', email);
+  toast('✅ 歡迎使用 LeadSniper');
+}
+
+// ═══════════════════════════════════════
+// COUNTDOWN
+// ═══════════════════════════════════════
+function startCountdown() {
+  let remaining = 24 * 60 * 60;
+  const el = document.getElementById('countdown');
+  setInterval(() => {
+    remaining--;
+    if (remaining <= 0) { el.textContent = '已過期'; return; }
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    const s = remaining % 60;
+    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+// ═══════════════════════════════════════
+// SHOW SELECTOR
+// ═══════════════════════════════════════
+function onShowChange() {
+  const val = document.getElementById('showSelect').value;
+  const customInput = document.getElementById('customShow');
+  if (val === 'custom') {
+    customInput.style.display = 'block';
+    customInput.focus();
+  } else {
+    customInput.style.display = 'none';
+    customInput.value = '';
+  }
+}
+
+// ═══════════════════════════════════════
+// UPLOAD
+// ═══════════════════════════════════════
+function handleCardUpload(files) {
+  if (!files.length) return;
+  hasUploadedCard = true;
+  document.getElementById('dropZone').classList.add('loaded');
+  document.getElementById('processBtn').disabled = false;
+  toast('📸 名片已上傳：' + files[0].name);
+}
+
+// ═══════════════════════════════════════
+// LOAD EXAMPLE
+// ═══════════════════════════════════════
+function loadExample(index) {
+  const lead = EXAMPLE_LEADS[index];
+  currentLead = lead;
+
+  // Update chips
+  document.querySelectorAll('.lead-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.lead-chip[data-lead="${index}"]`).classList.add('active');
+
+  // Set show selector
+  document.getElementById('showSelect').value = lead.show.toLowerCase().replace(/\s+/g, '-').replace('hk-electronics-fair', 'hk-electronics');
+  // Manual mapping
+  const showMap = { 'CES': 'ces', 'Ambiente': 'ambiente', 'HK Electronics Fair': 'hk-electronics', 'Canton Fair': 'canton', 'IFA': 'ifa' };
+  document.getElementById('showSelect').value = showMap[lead.show] || '';
+  document.getElementById('customShow').style.display = 'none';
+
+  // Simulate processing
+  document.getElementById('processBtn').disabled = true;
+  const btn = document.getElementById('processBtn');
+  btn.classList.add('loading');
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    renderAnalysis(lead);
+  }, 800);
+}
+
+// ═══════════════════════════════════════
+// PROCESS
+// ═══════════════════════════════════════
+function processLead() {
+  if (currentLead) {
+    // Already loaded via example
+    return;
+  }
+  if (!hasUploadedCard) {
+    toast('⚠️ 請先上傳名片或選擇範例客戶');
+    return;
+  }
+  const show = getSelectedShow();
+  if (!show) {
+    toast('⚠️ 請選擇展會來源');
+    return;
+  }
+  // Simulate for uploaded card - pick random example
+  const btn = document.getElementById('processBtn');
+  btn.classList.add('loading');
+  setTimeout(() => {
+    btn.classList.remove('loading');
+    const idx = Math.floor(Math.random() * 5);
+    currentLead = EXAMPLE_LEADS[idx];
+    currentLead.customCard = true;
+    renderAnalysis(currentLead);
+    toast('✅ AI 分析完成');
+  }, 1200);
+}
+
+function getSelectedShow() {
+  const sel = document.getElementById('showSelect').value;
+  if (sel === 'custom') return document.getElementById('customShow').value.trim();
+  return sel;
+}
+
+// ═══════════════════════════════════════
+// RENDER ANALYSIS
+// ═══════════════════════════════════════
+function renderAnalysis(lead) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('analysisPanel').classList.add('active');
+  document.getElementById('actionsContainer').style.display = 'block';
+  document.getElementById('processBtn').disabled = false;
+
+  const painLabels = {
+    price: '💰 Price Sensitivity',
+    esg: '🌱 ESG Compliance',
+    quality: '🔬 Quality Standards',
+    volume: '📦 Volume Pricing',
+    certification: '📋 Certification',
+  };
+
+  const html = `
+    <!-- Lead Header -->
+    <div class="lead-header">
+      <div class="lead-avatar">${lead.flag}</div>
+      <div class="lead-info">
+        <h2>${lead.name}</h2>
+        <div class="lead-meta">${lead.title} · ${lead.company} · ${lead.country}</div>
+      </div>
+    </div>
+
+    <!-- OCR: Contact Info -->
+    <div class="result-card" style="border-left:3px solid var(--accent)">
+      <h3>📋 OCR 名片識別 <span class="badge">AI Extracted</span></h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-label">姓名</div>
+          <div class="info-value">${lead.name}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">職位</div>
+          <div class="info-value">${lead.title}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">公司</div>
+          <div class="info-value">${lead.company}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Email</div>
+          <div class="info-value">${lead.email}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">電話</div>
+          <div class="info-value">${lead.phone}</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">網站</div>
+          <div class="info-value">${lead.website}</div>
+        </div>
+        <div class="info-item" style="grid-column:1/-1">
+          <div class="info-label">展會來源</div>
+          <div class="info-value">${lead.showIcon} ${lead.show}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Company Insights -->
+    <div class="result-card" style="border-left:3px solid var(--purple)">
+      <h3>🏢 公司分析 <span class="badge">AI Research</span></h3>
+      <ul class="insight-list">
+        <li><span class="insight-icon">📊</span> <b>估計年度進口額：</b>${lead.importVolume}</li>
+        <li><span class="insight-icon">📦</span> <b>主要產品類別：</b>${lead.categories}</li>
+        <li><span class="insight-icon">🏛️</span> <b>成立年數：</b>${lead.yearsBusiness} 年</li>
+        <li><span class="insight-icon">👥</span> <b>員工人數：</b>${lead.employees}</li>
+        <li><span class="insight-icon">🎯</span> <b>市場痛點：</b><span style="color:var(--red);font-weight:600">${painLabels[lead.painPoint]}</span></li>
+      </ul>
+      <div style="background:#0d1117;border-radius:8px;padding:12px;margin-top:12px;font-size:0.82rem;color:var(--muted);line-height:1.7">
+        <div style="margin-bottom:8px"><b style="color:var(--warn)">🔍 Market Intelligence:</b></div>
+        <div>${lead.insights.pain}</div>
+        <div style="margin-top:8px">${lead.insights.volume}</div>
+        <div style="margin-top:8px">${lead.insights.market}</div>
+      </div>
+    </div>
+
+    <!-- Follow-up Email Draft -->
+    <div class="result-card" style="border-left:3px solid var(--accent2)">
+      <h3>✉️ 個人化跟進郵件 <span class="badge">AI Generated</span></h3>
+      <div class="email-preview">
+        <span class="email-subject">📨 Subject: ${lead.email.subject}</span>
+        ${lead.email.body}
+      </div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-outline btn-sm" onclick="copyEmail(${lead.id})">📋 複製郵件內容</button>
+        <button class="btn btn-primary btn-sm" onclick="simulateSend(${lead.id})" style="width:auto">📤 模擬發送</button>
+      </div>
+    </div>
+
+    <!-- LinkedIn Enrichment -->
+    <div class="result-card" style="border-left:3px solid #0a66c2">
+      <h3>🔗 LinkedIn 社群分析 <span class="badge">Enriched</span></h3>
+      <div class="linkedin-badge">🔗 ${lead.linkedin}</div>
+    </div>
+
+    <!-- Suggested Follow-up Timing -->
+    <div class="result-card" style="border-left:3px solid var(--warn)">
+      <h3>⏰ 建議跟進時機 <span class="badge">AI Recommended</span></h3>
+      <div class="timing-block">
+        <div class="timing-row"><span class="timing-icon">🕐</span> <b>最佳聯絡時間：</b>${lead.timing.bestTime}</div>
+        <div class="timing-row"><span class="timing-icon">⚡</span> <b>跟進窗口：</b>${lead.timing.window}</div>
+        <div class="timing-row"><span class="timing-icon">📎</span> <b>建議附件：</b>${lead.timing.attach}</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('resultsContainer').innerHTML = html;
+  document.getElementById('resultsContainer').style.animation = 'fadeUp 0.4s ease-out';
+
+  // Set min date for date picker
+  const today = new Date().toISOString().slice(0, 10);
+  document.getElementById('followUpDate').min = today;
+  document.getElementById('followUpDate').value = '';
+
+  // Scroll to results
+  document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ═══════════════════════════════════════
+// COPY / SEND EMAIL
+// ═══════════════════════════════════════
+function copyEmail(leadId) {
+  const lead = EXAMPLE_LEADS[leadId];
+  const fullEmail = `Subject: ${lead.email.subject}\n\n${lead.email.body}`;
+  navigator.clipboard.writeText(fullEmail).then(() => {
+    toast('📋 郵件內容已複製到剪貼簿');
+  }).catch(() => {
+    toast('⚠️ 無法複製，請手動選取文字');
+  });
+}
+
+function simulateSend(leadId) {
+  const lead = EXAMPLE_LEADS[leadId];
+  // Simulate sending
+  const btn = event.target;
+  btn.disabled = true;
+  btn.textContent = '📤 發送中...';
+  setTimeout(() => {
+    btn.textContent = '✅ 已模擬發送';
+    btn.style.background = 'var(--accent2)';
+    toast(`✅ 模擬郵件已發送至 ${lead.email}`);
+  }, 1500);
+}
+
+// ═══════════════════════════════════════
+// SCHEDULE FOLLOW-UP
+// ═══════════════════════════════════════
+function scheduleFollowUp() {
+  const date = document.getElementById('followUpDate').value;
+  const action = document.getElementById('followUpAction').value;
+  if (!date) { toast('⚠️ 請選擇跟進日期'); return; }
+  if (!currentLead) { toast('⚠️ 請先選擇客戶'); return; }
+
+  scheduledFollowUps.push({
+    lead: currentLead,
+    date: date,
+    action: action,
+    scheduled: new Date().toISOString(),
+  });
+
+  const reminder = document.getElementById('scheduledReminder');
+  reminder.style.display = 'block';
+  reminder.innerHTML = `✅ 已排程：<b>${date}</b> — ${action} — 對象：${currentLead.name} (${currentLead.company})<br><span style="font-size:0.75rem;color:var(--muted)">LeadSniper 會在指定日期發送提醒</span>`;
+  toast('⏰ 跟進已排程');
+}
+
+// ═══════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════
+function addToExport() {
+  if (!currentLead) { toast('⚠️ 請先選擇客戶'); return; }
+
+  // Check duplicate
+  if (exportList.find(l => l.email === currentLead.email)) {
+    toast('⚠️ 此客戶已在匯出列表中');
+    return;
+  }
+
+  exportList.push(currentLead);
+  renderExportTable();
+  toast('➕ 已加入匯出列表');
+  document.getElementById('exportTableWrap').style.display = 'block';
+}
+
+function toggleExportTable() {
+  const wrap = document.getElementById('exportTableWrap');
+  wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+  if (wrap.style.display === 'block') renderExportTable();
+}
+
+function renderExportTable() {
+  const tbody = document.getElementById('exportTbody');
+  if (!exportList.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">尚無客戶匯出</td></tr>';
+    return;
+  }
+
+  const statusIcons = { 0: '<span class="status-dot status-hot"></span>Hot Lead', 1: '<span class="status-dot status-warm"></span>Warm', 2: '<span class="status-dot status-warm"></span>Warm', 3: '<span class="status-dot status-hot"></span>Hot Lead', 4: '<span class="status-dot status-new"></span>New' };
+
+  tbody.innerHTML = exportList.map((l, i) => {
+    const followUp = scheduledFollowUps.find(f => f.lead.email === l.email);
+    return `
+      <tr>
+        <td>${statusIcons[l.id] || '<span class="status-dot status-new"></span>New'}</td>
+        <td><b>${l.name}</b></td>
+        <td>${l.title}</td>
+        <td>${l.company}</td>
+        <td>${l.flag} ${l.country}</td>
+        <td style="font-size:0.78rem">${l.email}</td>
+        <td>${l.showIcon} ${l.show}</td>
+        <td style="font-size:0.78rem">${l.importVolume.split('/')[0]}</td>
+        <td>${followUp ? followUp.date : '—'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function downloadCSV() {
+  if (!exportList.length) { toast('⚠️ 尚無客戶可匯出'); return; }
+
+  const headers = ['Status','Name','Title','Company','Country','Email','Phone','Trade Show','Import Volume','Categories','Years','Employees'];
+  const rows = exportList.map(l => [
+    l.painPoint.toUpperCase(),
+    l.name,
+    `"${l.title}"`,
+    `"${l.company}"`,
+    l.country,
+    l.email,
+    l.phone,
+    l.show,
+    l.importVolume.split('/')[0],
+    `"${l.categories}"`,
+    l.yearsBusiness,
+    l.employees
+  ]);
+
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `LeadSniper_Export_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('📥 CSV 已下載');
+}
+
+function clearExport() {
+  if (confirm('確定清空所有匯出客戶？')) {
+    exportList = [];
+    scheduledFollowUps = [];
+    renderExportTable();
+    document.getElementById('scheduledReminder').style.display = 'none';
+    document.getElementById('exportTableWrap').style.display = 'none';
+    toast('🗑️ 匯出列表已清空');
+  }
+}
+
+// ═══════════════════════════════════════
+// DRAG & DROP
+// ═══════════════════════════════════════
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('dragover');
+  handleCardUpload(e.dataTransfer.files);
+});
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+if (localStorage.getItem('leadsniper_gate_passed')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+</script>
+</body>
+</html>

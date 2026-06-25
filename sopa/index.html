@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOPA — Smart Order Processing Automation | Quattro Dynamics</title>
+<style>
+:root {
+  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
+  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --red: #ef4444; --warn: #f59e0b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+
+/* Gate Overlay */
+.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
+.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
+.gate-box .icon{font-size:3rem;margin-bottom:16px}
+.gate-box h2{font-size:1.4rem;margin-bottom:8px}
+.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
+.gate-box input:focus{outline:none;border-color:var(--accent)}
+.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
+.gate-box .note{color:var(--warn);font-size:0.75rem;margin-top:16px;line-height:1.5}
+.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
+.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:var(--gradient);color:#fff;width:100%}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+/* Validation */
+.valid-box{display:none;align-items:center;gap:8px;margin-bottom:12px;padding:10px 14px;background:rgba(6,182,212,0.08);border-radius:8px;font-size:0.85rem}
+.valid-box.show{display:flex}
+.valid-box input{width:auto;flex:1;margin:0;text-align:center;letter-spacing:4px;font-size:1.1rem}
+.valid-box .send-btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.8rem;white-space:nowrap}
+
+/* Main App */
+.app{display:none}
+.app.active{display:block}
+/* Top Bar */
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
+.topbar .timer{color:var(--warn);font-size:0.8rem}
+.topbar .timer span{font-weight:700}
+
+/* Workflow */
+.wf-container{max-width:1100px;margin:0 auto;padding:28px 24px}
+.wf-steps{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:32px;flex-wrap:wrap}
+.wf-step{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:8px;font-size:0.8rem;color:var(--muted);background:var(--card);border:1px solid var(--border);transition:all .2s}
+.wf-step.active{color:var(--accent);border-color:var(--accent);background:rgba(6,182,212,0.1)}
+.wf-step.done{color:var(--accent2);border-color:var(--accent2)}
+.wf-step .num{width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;flex-shrink:0}
+.wf-step.active .num{background:var(--accent);color:#fff}
+.wf-step.done .num{background:var(--accent2);color:#fff}
+.wf-arrow{color:var(--muted);font-size:0.9rem;margin:0 4px}
+
+/* Step Panels */
+.step-panel{display:none}
+.step-panel.active{display:block}
+.step-panel h2{font-size:1.5rem;margin-bottom:8px}
+.step-panel .subtitle{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
+
+/* Drop Zones */
+.drop-zone{border:2px dashed var(--border);border-radius:16px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .3s;background:var(--card);margin-bottom:20px}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
+.drop-zone .dz-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h3{font-size:1.1rem;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:0.85rem}
+.drop-zone input[type=file]{display:none}
+.drop-zone .file-loaded{display:none;color:var(--accent2);font-weight:600;font-size:0.9rem;margin-top:10px}
+.drop-zone.loaded .file-loaded{display:block}
+.drop-zone.loaded .dz-hint{display:none}
+
+/* Template Cards */
+.tpl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:24px}
+.tpl-card{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:24px;cursor:pointer;transition:all .2s;position:relative}
+.tpl-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tpl-card.selected{border-color:var(--accent);box-shadow:0 0 20px rgba(6,182,212,0.15)}
+.tpl-card.selected::after{content:'✓';position:absolute;top:12px;right:14px;background:var(--accent);color:#fff;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700}
+.tpl-card .tpl-preview{background:#f8fafc;color:#1e293b;border-radius:8px;padding:14px;font-size:0.7rem;line-height:1.6;margin-bottom:12px;font-family:monospace}
+.tpl-card h4{font-size:0.95rem;margin-bottom:4px}
+.tpl-card p{color:var(--muted);font-size:0.8rem}
+
+/* Supplier Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.form-group label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:4px}
+.form-group input,.form-group select{width:100%;padding:10px 14px;background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9rem}
+.form-group input:focus{outline:none;border-color:var(--accent)}
+
+/* Result Preview */
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;margin-bottom:20px}
+.result-card h3{font-size:1.1rem;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.result-card pre{background:#0d1117;padding:16px;border-radius:8px;font-size:0.8rem;overflow-x:auto;color:var(--muted);line-height:1.8;white-space:pre-wrap;font-family:monospace}
+
+/* Buttons row */
+.btn-row{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent}
+.btn-outline:hover{border-color:var(--accent)}
+.btn-sm{padding:10px 20px;font-size:0.85rem}
+.btn-success{background:var(--accent2);color:#fff}
+
+/* Destruct notice */
+.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:16px 20px;margin:20px 0;display:flex;align-items:flex-start;gap:12px;font-size:0.85rem;color:var(--red)}
+.destruct .dicon{font-size:1.3rem;flex-shrink:0}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#333;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;animation:fadeIn .3s}
+.toast.show{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Responsive */
+@media(max-width:768px){
+  .form-grid{grid-template-columns:1fr}
+  .gate-box{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== GATE OVERLAY ====== -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-box">
+    <div class="icon">📋</div>
+    <h2>SOPA 智能報價處理</h2>
+    <p>Smart Order Processing Automation</p>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">請輸入電郵以繼續使用</p>
+
+    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
+    <p class="err" id="gateErr"></p>
+    <button class="btn btn-primary" onclick="enterApp()">✅ 開始使用</button>
+
+    <div class="note">
+      ⚠️ <span>所有上傳資料將在 24 小時內自動銷毀</span>
+    </div>
+  </div>
+</div>
+
+<!-- ====== MAIN APP ====== -->
+<div class="app" id="mainApp">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="logo">⚡ SOPA — Smart Order Processing</div>
+    <div class="timer">⏳ 資料保留: <span id="countdown">23:59:59</span></div>
+  </div>
+
+  <div class="wf-container">
+    <!-- Workflow Steps -->
+    <div class="wf-steps">
+      <div class="wf-step active" id="ws1"><span class="num">1</span>上傳 PO</div>
+      <span class="wf-arrow">→</span>
+      <div class="wf-step" id="ws2"><span class="num">2</span>名片</div>
+      <span class="wf-arrow">→</span>
+      <div class="wf-step" id="ws3"><span class="num">3</span>揀模板</div>
+      <span class="wf-arrow">→</span>
+      <div class="wf-step" id="ws4"><span class="num">4</span>廠商資料</div>
+      <span class="wf-arrow">→</span>
+      <div class="wf-step" id="ws5"><span class="num">5</span>生成文件</div>
+    </div>
+
+    <!-- ============ STEP 1: Upload PO ============ -->
+    <div class="step-panel active" id="panel1">
+      <h2>📄 第一步：上傳客戶 PO</h2>
+      <p class="subtitle">支援 PDF、Excel、圖片、Email — AI 會自動抽出產品、數量、單價、交貨期</p>
+
+      <div class="drop-zone" id="dzPO" onclick="document.getElementById('poInput').click()">
+        <div class="dz-icon">📤</div>
+        <div class="dz-hint">
+          <h3>拖放客戶 PO 到這裡</h3>
+          <p>或點擊選擇檔案 · 支援 PDF / Excel / 圖片 / Email (.eml/.msg)</p>
+        </div>
+        <div class="file-loaded">✅ <span id="poName"></span> — AI 已提取 <b id="poItems">0</b> 個產品項目</div>
+        <input type="file" id="poInput" accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.eml,.msg" onchange="handlePO(this.files)">
+      </div>
+
+      <div class="result-card" id="poPreview" style="display:none">
+        <h3>🤖 AI 提取結果</h3>
+        <div id="poTable"></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="nextStep(2)" id="btnNext1" disabled>下一步：上傳名片 →</button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 2: Name Card ============ -->
+    <div class="step-panel" id="panel2">
+      <h2>🪪 第二步：上傳客戶名片</h2>
+      <p class="subtitle">AI 會自動讀取名片上嘅公司名、聯絡人、Email，自動填入 Sales Confirmation</p>
+
+      <div class="drop-zone" id="dzCard" onclick="document.getElementById('cardInput').click()">
+        <div class="dz-icon">🪪</div>
+        <div class="dz-hint">
+          <h3>拖放客戶名片到這裡</h3>
+          <p>支援 JPG / PNG 圖片 · AI OCR 自動識別</p>
+        </div>
+        <div class="file-loaded">✅ 已識別名片資訊</div>
+        <input type="file" id="cardInput" accept=".jpg,.jpeg,.png" onchange="handleCard(this.files)">
+      </div>
+
+      <div class="result-card" id="cardPreview" style="display:none">
+        <h3>🤖 名片識別結果</h3>
+        <div class="form-grid">
+          <div class="form-group"><label>公司名稱</label><input id="cardCompany" placeholder="自動識別"></div>
+          <div class="form-group"><label>聯絡人</label><input id="cardContact" placeholder="自動識別"></div>
+          <div class="form-group"><label>職位</label><input id="cardTitle" placeholder="自動識別"></div>
+          <div class="form-group"><label>Email</label><input id="cardEmail" placeholder="自動識別"></div>
+          <div class="form-group"><label>電話</label><input id="cardPhone" placeholder="自動識別"></div>
+          <div class="form-group"><label>地址</label><input id="cardAddress" placeholder="自動識別"></div>
+        </div>
+        <p style="font-size:0.75rem;color:var(--muted)">💡 以上資料可手動修改</p>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="prevStep(1)">← 上一步</button>
+        <button class="btn btn-primary" onclick="nextStep(3)">下一步：揀模板 →</button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 3: Choose Template ============ -->
+    <div class="step-panel" id="panel3">
+      <h2>📝 第三步：選擇 Sales Confirmation 模板</h2>
+      <p class="subtitle">三款專業模板，適配唔同業務場景</p>
+
+      <div class="tpl-grid">
+        <div class="tpl-card" onclick="selectTpl('standard')" id="tpl-standard">
+          <div class="tpl-preview">
+<pre>┌─────────────────────────────┐
+│   STAR GLORY TRADING CO.   │
+│   Unit 1208, Tower B...    │
+│─────────────────────────────│
+│   SALES CONFIRMATION        │
+│   Date: ______  Ref: _____  │
+│─────────────────────────────│
+│ To: [客戶公司名]             │
+│ Attn: [聯絡人]               │
+│─────────────────────────────│
+│ Product  | Qty | Price | Total
+│ [產品]   │ []  │ [$]   │ [$]
+│─────────────────────────────│
+│ Total: USD _________       │
+│ Delivery: _________        │
+│ Payment Terms: T/T         │
+│─────────────────────────────│
+│ Authorized Signature        │
+└─────────────────────────────┘</pre>
+          </div>
+          <h4>📋 標準貿易格式</h4>
+          <p>適合一般 B2B 貿易 · FOB/CIF 條款 · T/T 付款</p>
+        </div>
+
+        <div class="tpl-card" onclick="selectTpl('detailed')" id="tpl-detailed">
+          <div class="tpl-preview">
+<pre>┌─────────────────────────────┐
+│   PROFORMA INVOICE          │
+│─────────────────────────────│
+│ SELLER: __________________  │
+│ BUYER:  __________________  │
+│─────────────────────────────│
+│ Item | Desc | Qty | Unit $ | Ext $
+│─────────────────────────────│
+│  1   │ ____│ ___ │ _____  │ _____
+│─────────────────────────────│
+│ Subtotal:   USD _________  │
+│ Shipping:   USD _________  │
+│ Grand Total: USD _________ │
+│─────────────────────────────│
+│ Ship Date: _______________ │
+│ Port: ____________________ │
+│ Payment: 30% deposit,      │
+│          70% before ship   │
+└─────────────────────────────┘</pre>
+          </div>
+          <h4>🧾 Proforma Invoice 格式</h4>
+          <p>適合需要訂金客戶 · 詳細費用明細 · 港口資訊</p>
+        </div>
+
+        <div class="tpl-card" onclick="selectTpl('simple')" id="tpl-simple">
+          <div class="tpl-preview">
+<pre>┌─────────────────────────────┐
+│      ORDER CONFIRMATION      │
+│─────────────────────────────│
+│ Order #: ______________     │
+│ Date: _________________     │
+│─────────────────────────────│
+│ Customer: ______________    │
+│─────────────────────────────│
+│ We confirm receipt of your  │
+│ order and will proceed with │
+│ the following:              │
+│─────────────────────────────│
+│ Item: ___________________   │
+│ Qty:  ___________________   │
+│ Unit Price: _____________   │
+│ Total: __________________   │
+│─────────────────────────────│
+│ Estimated Delivery: ______  │
+│─────────────────────────────│
+│ Thank you for your order!   │
+└─────────────────────────────┘</pre>
+          </div>
+          <h4>✉️ 簡潔確認書</h4>
+          <p>適合現有客戶 · 快速確認 · 電郵格式</p>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="prevStep(2)">← 上一步</button>
+        <button class="btn btn-primary" onclick="nextStep(4)" id="btnNext3" disabled>下一步：填廠商資料 →</button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 4: Supplier Details ============ -->
+    <div class="step-panel" id="panel4">
+      <h2>🏭 第四步：填寫廠商資料</h2>
+      <p class="subtitle">填入你工廠嘅聯絡資料同 FOB 報價 — AI 會自動生成採購合同俾廠商</p>
+
+      <div class="result-card">
+        <h3>📋 廠商資料</h3>
+        <div class="form-grid">
+          <div class="form-group"><label>廠商名稱 *</label><input id="supName" placeholder="e.g. 深圳 Topman 電子"></div>
+          <div class="form-group"><label>聯絡人</label><input id="supContact" placeholder="e.g. 王經理"></div>
+          <div class="form-group"><label>Email *</label><input id="supEmail" placeholder="factory@example.com"></div>
+          <div class="form-group"><label>電話</label><input id="supPhone" placeholder="+86 755 1234 5678"></div>
+          <div class="form-group" style="grid-column:1/-1"><label>地址 *</label><input id="supAddress" placeholder="深圳市寶安區..."></div>
+          <div class="form-group"><label>FOB 單價 (USD) *</label><input id="supFOB" type="number" step="0.01" placeholder="e.g. 18.50"></div>
+          <div class="form-group"><label>MOQ</label><input id="supMOQ" placeholder="e.g. 1000 pcs"></div>
+          <div class="form-group"><label>預計交貨天數</label><input id="supLead" type="number" placeholder="e.g. 30"></div>
+          <div class="form-group"><label>付款條件</label><select id="supPayment"><option>T/T 30% deposit, 70% before shipment</option><option>100% T/T before shipment</option><option>L/C at sight</option><option>30% deposit, 70% against B/L copy</option></select></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="prevStep(3)">← 上一步</button>
+        <button class="btn btn-success" onclick="generateDocs()">🚀 生成文件</button>
+      </div>
+    </div>
+
+    <!-- ============ STEP 5: Results ============ -->
+    <div class="step-panel" id="panel5">
+      <h2>✅ 文件已生成</h2>
+      <p class="subtitle">以下為 AI 自動生成嘅文件，你可以直接下載使用</p>
+
+      <div class="result-card">
+        <h3>📄 1. Sales Confirmation（俾客戶）</h3>
+        <pre id="salesConf">生成中...</pre>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm" onclick="downloadDoc('sales')">📥 下載 Sales Confirmation</button>
+        </div>
+      </div>
+
+      <div class="result-card">
+        <h3>📋 2. Purchase Contract（俾廠商）</h3>
+        <pre id="purchaseContract">生成中...</pre>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm" onclick="downloadDoc('purchase')">📥 下載採購合同</button>
+        </div>
+      </div>
+
+      <div class="result-card">
+        <h3>📊 3. 利潤分析</h3>
+        <pre id="profitAnalysis">計算中...</pre>
+      </div>
+
+      <div class="destruct">
+        <div class="dicon">⚠️</div>
+        <div><b>所有上傳檔案及生成文件將在 24 小時內從伺服器永久刪除。</b><br>你已下載的檔案請自行保存。如需再次使用，請重新上傳。</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="resetAll()">🔄 重新開始</button>
+        <a href="../index.html" class="btn btn-outline btn-sm">🏠 返回主頁</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Gate Logic ──
+function enterApp() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const err = document.getElementById('gateErr');
+  if (!email || !email.includes('@')) { err.textContent = '請輸入有效電郵'; err.style.display='block'; return; }
+  err.style.display = 'none';
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+  localStorage.setItem('sopa_gate_passed', 'true');
+  localStorage.setItem('sopa_email', email);
+  toast('✅ 歡迎使用 SOPA');
+}
+
+// ── Countdown Timer ──
+function startCountdown() {
+  let remaining = 24 * 60 * 60; // 24 hours
+  const el = document.getElementById('countdown');
+  setInterval(() => {
+    remaining--;
+    if (remaining <= 0) { el.textContent = '已過期'; return; }
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    const s = remaining % 60;
+    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }, 1000);
+}
+
+// ── Toast ──
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+
+// ── Workflow Navigation ──
+let currentStep = 1;
+let selectedTemplate = '';
+let poData = null;
+
+function showStep(n) {
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel'+n).classList.add('active');
+  document.querySelectorAll('.wf-step').forEach((s,i)=>{
+    s.classList.remove('active','done');
+    if(i+1 < n) s.classList.add('done');
+    if(i+1 === n) s.classList.add('active');
+  });
+  currentStep = n;
+}
+
+function nextStep(n) { showStep(n); window.scrollTo({top:200,behavior:'smooth'}); }
+function prevStep(n) { showStep(n); window.scrollTo({top:200,behavior:'smooth'}); }
+
+// ── Step 1: PO Upload ──
+function handlePO(files) {
+  if (!files.length) return;
+  const f = files[0];
+  document.getElementById('poName').textContent = f.name;
+  document.getElementById('dzPO').classList.add('loaded');
+  document.getElementById('btnNext1').disabled = false;
+
+  // Simulate AI extraction
+  const mockItems = [
+    {product:'5L Air Fryer AF-500', qty:2000, price:18.50, total:37000},
+    {product:'1.7L Electric Kettle EK-100', qty:1500, price:8.90, total:13350},
+    {product:'2-Slice Toaster PT-200', qty:1000, price:12.80, total:12800},
+  ];
+  poData = mockItems;
+  document.getElementById('poItems').textContent = mockItems.length;
+
+  // Show preview table
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:0.85rem"><thead><tr style="color:var(--muted);text-align:left">';
+  html += '<th style="padding:8px 12px;border-bottom:1px solid var(--border)">Product</th><th style="padding:8px 12px;border-bottom:1px solid var(--border)">Qty</th><th style="padding:8px 12px;border-bottom:1px solid var(--border)">Unit Price</th><th style="padding:8px 12px;border-bottom:1px solid var(--border)">Total</th></tr></thead><tbody>';
+  mockItems.forEach(it=>{
+    html += `<tr><td style="padding:8px 12px;border-bottom:1px solid var(--border)">${it.product}</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">${it.qty}</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">$${it.price.toFixed(2)}</td><td style="padding:8px 12px;border-bottom:1px solid var(--border)">$${it.total.toLocaleString()}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('poTable').innerHTML = html;
+  document.getElementById('poPreview').style.display = 'block';
+}
+
+// ── Step 2: Card ──
+function handleCard(files) {
+  if (!files.length) return;
+  document.getElementById('dzCard').classList.add('loaded');
+  // Simulate OCR
+  document.getElementById('cardCompany').value = 'Global Retail Ltd.';
+  document.getElementById('cardContact').value = 'John Smith';
+  document.getElementById('cardTitle').value = 'Purchasing Director';
+  document.getElementById('cardEmail').value = 'john@globalretail.com';
+  document.getElementById('cardPhone').value = '+1 212 555 0123';
+  document.getElementById('cardAddress').value = '350 Fifth Avenue, New York, NY 10118';
+  document.getElementById('cardPreview').style.display = 'block';
+}
+
+// ── Step 3: Template ──
+function selectTpl(type) {
+  selectedTemplate = type;
+  document.querySelectorAll('.tpl-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('tpl-'+type).classList.add('selected');
+  document.getElementById('btnNext3').disabled = false;
+}
+
+// ── Step 5: Generate ──
+function generateDocs() {
+  // Validate supplier fields
+  if (!document.getElementById('supName').value || !document.getElementById('supEmail').value || !document.getElementById('supFOB').value) {
+    toast('❌ 請填寫廠商名稱、Email 同 FOB 單價');
+    return;
+  }
+
+  const cust = {
+    company: document.getElementById('cardCompany').value || 'Customer Company',
+    contact: document.getElementById('cardContact').value || 'Purchasing Manager',
+    email: document.getElementById('cardEmail').value || 'customer@example.com',
+    address: document.getElementById('cardAddress').value || '',
+  };
+  const sup = {
+    name: document.getElementById('supName').value,
+    contact: document.getElementById('supContact').value || '',
+    email: document.getElementById('supEmail').value,
+    address: document.getElementById('supAddress').value || '',
+    fob: parseFloat(document.getElementById('supFOB').value) || 0,
+    moq: document.getElementById('supMOQ').value || '1000',
+    lead: document.getElementById('supLead').value || '30',
+    payment: document.getElementById('supPayment').value,
+  };
+
+  const today = new Date().toISOString().slice(0,10);
+  const ref = 'SC-' + Date.now().toString(36).toUpperCase();
+
+  // Sales Confirmation
+  let sc = `═══════════════════════════════════════\n`;
+  sc += `  STAR GLORY TRADING COMPANY\n`;
+  sc += `  Unit 1208, Tower B, Trade Centre\n`;
+  sc += `  Kowloon Bay, Hong Kong\n`;
+  sc += `  Tel: +852 3568 1200\n`;
+  sc += `═══════════════════════════════════════\n\n`;
+  sc += `  SALES CONFIRMATION\n\n`;
+  sc += `  Date: ${today}          Ref: ${ref}\n\n`;
+  sc += `  To: ${cust.company}\n`;
+  sc += `  Attn: ${cust.contact}\n`;
+  sc += `  Email: ${cust.email}\n\n`;
+  sc += `───────────────────────────────────────\n`;
+  sc += `  PRODUCT              QTY     UNIT PRICE     TOTAL\n`;
+  sc += `───────────────────────────────────────\n`;
+
+  let grandTotal = 0;
+  if (poData) {
+    poData.forEach(it => {
+      const ext = it.qty * it.price;
+      grandTotal += ext;
+      sc += `  ${it.product.padEnd(20)} ${String(it.qty).padStart(6)}  $${it.price.toFixed(2).padStart(10)}  $${ext.toLocaleString().padStart(10)}\n`;
+    });
+  }
+
+  sc += `───────────────────────────────────────\n`;
+  sc += `  TOTAL: USD ${grandTotal.toLocaleString()}\n\n`;
+  sc += `  Delivery: Within ${sup.lead} days after order confirmation\n`;
+  sc += `  Port of Loading: Shenzhen / Yantian\n`;
+  sc += `  Payment Terms: ${sup.payment}\n`;
+  sc += `  Validity: 15 days from date of issue\n\n`;
+  sc += `  Authorized Signature: _______________\n`;
+  sc += `  Company Chop:\n`;
+
+  document.getElementById('salesConf').textContent = sc;
+
+  // Purchase Contract
+  let pc = `═══════════════════════════════════════\n`;
+  pc += `  PURCHASE CONTRACT / 採購合同\n`;
+  pc += `═══════════════════════════════════════\n\n`;
+  pc += `  Date: ${today}          Contract #: PC-${ref}\n\n`;
+  pc += `  BUYER:\n`;
+  pc += `  Star Glory Trading Company\n`;
+  pc += `  Unit 1208, Tower B, Trade Centre, Kowloon Bay, HK\n\n`;
+  pc += `  SUPPLIER:\n`;
+  pc += `  ${sup.name}\n`;
+  pc += `  ${sup.address}\n`;
+  pc += `  Contact: ${sup.contact} | Email: ${sup.email}\n\n`;
+  pc += `───────────────────────────────────────\n`;
+  pc += `  ORDER DETAILS\n`;
+  pc += `───────────────────────────────────────\n`;
+
+  if (poData) {
+    poData.forEach(it => {
+      pc += `  ${it.product}: ${it.qty} pcs @ USD ${it.price}/pc\n`;
+    });
+  }
+
+  pc += `\n  Total Order Value: USD ${grandTotal.toLocaleString()}\n`;
+  pc += `  FOB Price (Supplier): USD ${sup.fob}/pc\n`;
+  pc += `  MOQ: ${sup.moq} pcs\n`;
+  pc += `  Delivery: ${sup.lead} days after order\n`;
+  pc += `  Payment: ${sup.payment}\n\n`;
+  pc += `  Terms:\n`;
+  pc += `  1. Supplier to provide Proforma Invoice within 3 working days\n`;
+  pc += `  2. Quality inspection before shipment\n`;
+  pc += `  3. Shipping marks as per buyer's instructions\n\n`;
+  pc += `  Buyer: _______________    Supplier: _______________\n`;
+
+  document.getElementById('purchaseContract').textContent = pc;
+
+  // Profit Analysis
+  let pa = `  PROFIT ANALYSIS\n`;
+  pa += `  ─────────────────────────────\n\n`;
+  const sellPrice = poData ? poData[0].price : 0;
+  const margin = sellPrice - sup.fob;
+  const marginPct = sellPrice > 0 ? (margin / sellPrice * 100) : 0;
+  pa += `  Avg Selling Price:    USD ${sellPrice.toFixed(2)}\n`;
+  pa += `  Factory FOB Cost:     USD ${sup.fob.toFixed(2)}\n`;
+  pa += `  Gross Margin/Unit:    USD ${margin.toFixed(2)} (${marginPct.toFixed(1)}%)\n`;
+  pa += `  Est. Total Profit:    USD ${(margin * (poData?.[0]?.qty || 0)).toLocaleString()}\n`;
+  pa += `\n  💡 建議：毛利率 ${marginPct.toFixed(0)}%，`;
+  if (marginPct > 20) pa += `利潤良好，可考慮長期合作。`;
+  else if (marginPct > 10) pa += `利潤一般，建議與廠商議價或提高售價。`;
+  else pa += `利潤偏低，強烈建議尋找替代廠商或調整定價策略。`;
+
+  document.getElementById('profitAnalysis').textContent = pa;
+
+  showStep(5);
+}
+
+// ── Download ──
+function downloadDoc(type) {
+  let content, filename;
+  if (type === 'sales') {
+    content = document.getElementById('salesConf').textContent;
+    filename = 'Sales_Confirmation_' + new Date().toISOString().slice(0,10) + '.txt';
+  } else {
+    content = document.getElementById('purchaseContract').textContent;
+    filename = 'Purchase_Contract_' + new Date().toISOString().slice(0,10) + '.txt';
+  }
+  const blob = new Blob([content], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  toast('📥 已下載 ' + filename);
+}
+
+// ── Reset ──
+function resetAll() {
+  location.reload();
+}
+
+// ── Drag & Drop Setup ──
+['dzPO','dzCard'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+  el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('dragover');
+    if (id === 'dzPO') handlePO(e.dataTransfer.files);
+    else handleCard(e.dataTransfer.files);
+  });
+});
+
+// ── Init ──
+if (localStorage.getItem('sopa_gate_passed')) {
+  document.getElementById('gateOverlay').style.display = 'none';
+  document.getElementById('mainApp').classList.add('active');
+  startCountdown();
+}
+</script>
+</body>
+</html>
