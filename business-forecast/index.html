@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商業分析與預測 | ManuTrade</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0b0f19;
+  --card: #131a2b;
+  --border: #1e2d45;
+  --accent: #06b6d4;
+  --accent2: #10b981;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans HK', sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+a { color: var(--accent); text-decoration: none; }
+
+/* ---------- Email Gate ---------- */
+.gate-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(12px);
+}
+.gate-overlay.gone { display: none; }
+.gate-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 36px;
+  max-width: 440px; width: 90%;
+  text-align: center;
+}
+.gate-card h2 { font-size: 1.5rem; margin-bottom: 6px; }
+.gate-card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+.gate-card input {
+  width: 100%; padding: 12px 16px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 1rem;
+  outline: none; transition: border-color .2s;
+}
+.gate-card input:focus { border-color: var(--accent); }
+.gate-card input.error { border-color: var(--danger); animation: shake 0.4s; }
+.gate-err { color: var(--danger); font-size: 0.8rem; margin-top: 6px; min-height: 20px; }
+.gate-card button {
+  margin-top: 14px; width: 100%; padding: 12px;
+  background: var(--accent); color: #000; border: none;
+  border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer;
+  transition: opacity .2s;
+}
+.gate-card button:hover { opacity: 0.85; }
+.gate-cd { color: var(--muted); font-size: 0.78rem; margin-top: 16px; }
+.gate-cd strong { color: var(--accent); }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-6px); }
+  40%,80% { transform: translateX(6px); }
+}
+
+/* ---------- Toast ---------- */
+.toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 9998;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--card); border: 1px solid var(--border);
+  padding: 12px 20px; border-radius: 8px;
+  font-size: 0.9rem; color: var(--text);
+  animation: slideIn .35s ease;
+  pointer-events: auto; min-width: 260px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.toast.success { border-left: 3px solid var(--accent2); }
+.toast.error { border-left: 3px solid var(--danger); }
+.toast.info { border-left: 3px solid var(--accent); }
+.toast.fade { animation: slideOut .3s ease forwards; }
+@keyframes slideIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+@keyframes slideOut { to { transform: translateX(100%); opacity:0; } }
+
+/* ---------- Layout ---------- */
+header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 32px;
+  border-bottom: 1px solid var(--border);
+}
+header .back {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.9rem; color: var(--muted); transition: color .2s;
+}
+header .back:hover { color: var(--text); }
+header h1 { font-size: 1.35rem; font-weight: 700; }
+.header-badge {
+  margin-left: auto;
+  font-size: 0.75rem; padding: 4px 12px;
+  border-radius: 20px; border: 1px solid var(--accent);
+  color: var(--accent); white-space: nowrap;
+}
+.container { max-width: 1320px; margin: 0 auto; padding: 28px 24px 48px; }
+
+/* ---------- Metrics Row ---------- */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.metric {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.metric .label { font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+.metric .value { font-size: 1.6rem; font-weight: 700; }
+.metric .sub { font-size: 0.8rem; margin-top: 2px; }
+.metric .sub.up { color: var(--accent2); }
+.metric .sub.neutral { color: var(--accent); }
+
+/* ---------- Charts Grid ---------- */
+.charts-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.charts-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+.card h3 {
+  font-size: 1rem; font-weight: 600;
+  margin-bottom: 4px; color: var(--text);
+}
+.card .chart-wrap { position: relative; width: 100%; }
+.card .chart-wrap canvas { width: 100% !important; }
+
+/* ---------- Tables ---------- */
+.procurement { margin-bottom: 28px; }
+.procurement table { width: 100%; border-collapse: collapse; }
+.procurement th, .procurement td {
+  text-align: left; padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+.procurement th { color: var(--muted); font-weight: 500; font-size: 0.78rem; text-transform: uppercase; }
+.procurement td { color: var(--text); }
+.procurement .conf-high { color: var(--accent2); font-weight: 600; }
+.procurement .conf-mid { color: var(--warning); font-weight: 600; }
+.procurement .tag {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: 0.72rem; font-weight: 600;
+}
+.procurement .tag.now { background: rgba(239,68,68,0.15); color: var(--danger); }
+.procurement .tag.soon { background: rgba(245,158,11,0.15); color: var(--warning); }
+.procurement .tag.later { background: rgba(6,182,212,0.15); color: var(--accent); }
+
+/* ---------- Anomaly List ---------- */
+.anomaly-list { list-style: none; margin-top: 12px; }
+.anomaly-list li {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 0; border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.anomaly-list li:last-child { border-bottom: none; }
+.anomaly-icon {
+  flex-shrink: 0; width: 32px; height: 32px;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+}
+.anomaly-icon.high { background: rgba(239,68,68,0.15); color: var(--danger); }
+.anomaly-icon.med { background: rgba(245,158,11,0.15); color: var(--warning); }
+.anomaly-icon.low { background: rgba(6,182,212,0.15); color: var(--accent); }
+.anomaly-info { flex: 1; }
+.anomaly-info strong { display: block; color: var(--text); }
+.anomaly-info span { font-size: 0.78rem; color: var(--muted); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1024px) {
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+  .charts-row, .charts-row-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  header { padding: 16px; }
+  .metrics { grid-template-columns: 1fr; }
+  .container { padding: 16px; }
+  .card { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Email Gate Overlay -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-card">
+    <h2>🔐 請驗證電郵地址</h2>
+    <p>此分析報告設有 24 小時存取權限，請輸入您的電郵以繼續。</p>
+    <input type="email" id="gateEmail" placeholder="your@email.com" autocomplete="email" />
+    <div class="gate-err" id="gateErr"></div>
+    <button id="gateBtn">解鎖報告 →</button>
+    <div class="gate-cd">⏳ 驗證連結有效期：<strong id="gateCountdown">23:59:59</strong></div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Header -->
+<header>
+  <a href="../index.html" class="back">← 返回主頁</a>
+  <h1>📊 商業分析與預測</h1>
+  <span class="header-badge">🟢 數據更新：2026-06-25 14:30 HKT</span>
+</header>
+
+<div class="container">
+
+  <!-- Key Metrics -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="label">預測準確率</div>
+      <div class="value" style="color:var(--accent)">91.2%</div>
+      <div class="sub neutral">+2.3% 對比上季</div>
+    </div>
+    <div class="metric">
+      <div class="label">按年增長</div>
+      <div class="value" style="color:var(--accent2)">+18.5%</div>
+      <div class="sub up">↑ 連續 3 季上升</div>
+    </div>
+    <div class="metric">
+      <div class="label">增長最快類別</div>
+      <div class="value" style="color:var(--accent2)">+32%</div>
+      <div class="sub up">廚房電器</div>
+    </div>
+    <div class="metric">
+      <div class="label">庫存周轉天數</div>
+      <div class="value" style="color:var(--warning)">42 天</div>
+      <div class="sub" style="color:var(--muted)">↓ 5 天 對比去年</div>
+    </div>
+  </div>
+
+  <!-- Row 1: Revenue Forecast + Anomaly Detection -->
+  <div class="charts-row">
+    <div class="card">
+      <h3>📈 收入預測（AI 預測模型）</h3>
+      <div class="chart-wrap"><canvas id="forecastChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>⚠️ 異常檢測</h3>
+      <ul class="anomaly-list">
+        <li>
+          <div class="anomaly-icon high">🔴</div>
+          <div class="anomaly-info">
+            <strong>Q3 氣炸鍋銷量低於預測 35%</strong>
+            <span>競爭對手推出同類產品並大幅降價，建議調整 Q4 採購量</span>
+          </div>
+        </li>
+        <li>
+          <div class="anomaly-icon med">🟡</div>
+          <div class="anomaly-info">
+            <strong>電熱水壺 5 月異常飆升 62%</strong>
+            <span>可能與社交媒體推廣效應相關，已納入季節性調整</span>
+          </div>
+        </li>
+        <li>
+          <div class="anomaly-icon high">🔴</div>
+          <div class="anomaly-info">
+            <strong>抽濕機庫存僅剩 12 天供應</strong>
+            <span>夏季需求高峰提前到來，建議立即補貨</span>
+          </div>
+        </li>
+        <li>
+          <div class="anomaly-icon med">🟡</div>
+          <div class="anomaly-info">
+            <strong>智能燈具退貨率上升至 8.7%</strong>
+            <span>超出行業平均 3.2%，需檢查供應商質量</span>
+          </div>
+        </li>
+        <li>
+          <div class="anomaly-icon low">🔵</div>
+          <div class="anomaly-info">
+            <strong>電磁爐歐洲訂單延遲 2.3 週</strong>
+            <span>物流瓶頸影響，已啟動備用供應鏈方案</span>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Row 2: Seasonality + Category Growth -->
+  <div class="charts-row-2">
+    <div class="card">
+      <h3>📅 季節性分析</h3>
+      <div class="chart-wrap"><canvas id="seasonChart"></canvas></div>
+    </div>
+    <div class="card">
+      <h3>📦 產品類別按年增長</h3>
+      <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Procurement Recommendations -->
+  <div class="card procurement">
+    <h3>🛒 AI 採購建議</h3>
+    <p style="color:var(--muted);font-size:0.82rem;margin-bottom:16px;">基於預測模型及庫存水平，以下為未來 90 天推薦採購清單</p>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>產品</th>
+            <th>SKU</th>
+            <th>建議採購量</th>
+            <th>預計成本 (HKD)</th>
+            <th>建議時機</th>
+            <th>信心度</th>
+            <th>時限</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>智能電飯煲 1.8L</td>
+            <td>RC-1800-SM</td>
+            <td>2,400 件</td>
+            <td>HK$672,000</td>
+            <td>2026-07-05</td>
+            <td class="conf-high">94%</td>
+            <td><span class="tag later">3 週內</span></td>
+          </tr>
+          <tr>
+            <td>抽濕機 20L</td>
+            <td>DH-20L-PRO</td>
+            <td>1,800 件</td>
+            <td>HK$1,260,000</td>
+            <td>2026-06-28</td>
+            <td class="conf-high">97%</td>
+            <td><span class="tag now">立即</span></td>
+          </tr>
+          <tr>
+            <td>無線吸塵機 Stick</td>
+            <td>VC-STK-X2</td>
+            <td>1,500 件</td>
+            <td>HK$975,000</td>
+            <td>2026-07-12</td>
+            <td class="conf-high">91%</td>
+            <td><span class="tag soon">2 週內</span></td>
+          </tr>
+          <tr>
+            <td>空氣淨化器 H13</td>
+            <td>AP-H13-WH</td>
+            <td>1,100 件</td>
+            <td>HK$825,000</td>
+            <td>2026-07-20</td>
+            <td class="conf-mid">86%</td>
+            <td><span class="tag soon">4 週內</span></td>
+          </tr>
+          <tr>
+            <td>嵌入式電磁爐 雙頭</td>
+            <td>IH-DUAL-BK</td>
+            <td>900 件</td>
+            <td>HK$1,035,000</td>
+            <td>2026-08-01</td>
+            <td class="conf-mid">83%</td>
+            <td><span class="tag later">5 週內</span></td>
+          </tr>
+          <tr>
+            <td>智能空氣炸鍋 5.5L</td>
+            <td>AF-55L-WF</td>
+            <td>700 件</td>
+            <td>HK$385,000</td>
+            <td>2026-08-15</td>
+            <td class="conf-mid">78%</td>
+            <td><span class="tag later">7 週內</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ==================== EMAIL GATE ====================
+(function() {
+  const overlay = document.getElementById('gateOverlay');
+  const input = document.getElementById('gateEmail');
+  const errEl = document.getElementById('gateErr');
+  const btn = document.getElementById('gateBtn');
+  const cdEl = document.getElementById('gateCountdown');
+  const STORAGE_KEY = 'manutrade_forecast_access';
+  const EXPIRY_KEY = 'manutrade_forecast_expiry';
+
+  // Check existing access
+  const stored = sessionStorage.getItem(STORAGE_KEY);
+  if (stored === 'granted') {
+    const exp = sessionStorage.getItem(EXPIRY_KEY);
+    if (exp && Date.now() < parseInt(exp)) {
+      overlay.classList.add('gone');
+    } else {
+      sessionStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(EXPIRY_KEY);
+    }
+  }
+
+  // Countdown timer (24h)
+  function updateCountdown() {
+    const exp = sessionStorage.getItem(EXPIRY_KEY);
+    if (!exp) { cdEl.textContent = '23:59:59'; return; }
+    const remaining = Math.max(0, parseInt(exp) - Date.now());
+    const h = Math.floor(remaining / 3600000);
+    const m = Math.floor((remaining % 3600000) / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    cdEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if (remaining <= 0) {
+      sessionStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(EXPIRY_KEY);
+      overlay.classList.remove('gone');
+      cdEl.textContent = '已過期';
+      showToast('驗證已過期，請重新輸入電郵', 'error');
+    }
+  }
+  setInterval(updateCountdown, 1000);
+  updateCountdown();
+
+  function validateEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  btn.addEventListener('click', () => {
+    const email = input.value.trim();
+    if (!email) {
+      errEl.textContent = '請輸入電郵地址';
+      input.classList.add('error');
+      setTimeout(() => input.classList.remove('error'), 400);
+      return;
+    }
+    if (!validateEmail(email)) {
+      errEl.textContent = '請輸入有效的電郵地址';
+      input.classList.add('error');
+      setTimeout(() => input.classList.remove('error'), 400);
+      return;
+    }
+    errEl.textContent = '';
+    // Grant access for 24h
+    const expiry = Date.now() + 24 * 60 * 60 * 1000;
+    sessionStorage.setItem(STORAGE_KEY, 'granted');
+    sessionStorage.setItem(EXPIRY_KEY, expiry.toString());
+    overlay.classList.add('gone');
+    showToast('驗證成功！報告已解鎖（24 小時有效）', 'success');
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') btn.click();
+  });
+})();
+
+// ==================== TOAST SYSTEM ====================
+function showToast(msg, type) {
+  type = type || 'info';
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('fade');
+    setTimeout(() => el.remove(), 350);
+  }, 3500);
+}
+
+// ==================== CHARTS ====================
+const accent = '#06b6d4';
+const accent2 = '#10b981';
+const muted = '#94a3b8';
+const borderColor = '#1e2d45';
+const textColor = '#e2e8f0';
+Chart.defaults.color = muted;
+Chart.defaults.borderColor = borderColor;
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans HK', sans-serif";
+
+// --- 1. Revenue Forecast ---
+(function() {
+  const ctx = document.getElementById('forecastChart').getContext('2d');
+  const months = ['7月','8月','9月','10月','11月','12月','1月','2月','3月','4月','5月','6月'];
+  const fcMonths = ['7月','8月','9月','10月','11月','12月'];
+  const historical = [285, 310, 420, 380, 350, 480, 390, 320, 445, 510, 480, 530];
+  const forecast = [null, null, null, null, null, null, 530, null, null, null, null, null];
+  // Fill forecast values
+  const fcValues = [550, 570, 615, 535, 510, 620];
+  const allLabels = [...months, ...fcMonths];
+  const histData = [...historical, ...Array(6).fill(null)];
+  const fcData = [...Array(12).fill(null), ...fcValues];
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: allLabels,
+      datasets: [
+        {
+          label: '歷史收入 (百萬 HKD)',
+          data: histData,
+          borderColor: accent,
+          backgroundColor: accent + '20',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: accent,
+          borderWidth: 2.5,
+          spanGaps: false,
+        },
+        {
+          label: 'AI 預測收入 (百萬 HKD)',
+          data: fcData,
+          borderColor: accent2,
+          backgroundColor: accent2 + '15',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointBackgroundColor: accent2,
+          borderWidth: 2.5,
+          borderDash: [8, 4],
+          spanGaps: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 24 } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          min: 200,
+          grid: { color: borderColor + '60' },
+          ticks: { callback: v => 'HK$' + v + 'M' }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+})();
+
+// --- 2. Seasonality Analysis ---
+(function() {
+  const ctx = document.getElementById('seasonChart').getContext('2d');
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const seasonalIndex = [0.82, 0.71, 0.95, 1.02, 1.08, 1.15, 1.22, 1.18, 0.98, 1.05, 1.12, 1.30];
+  // Generate bars with color based on above/below 1.0
+  const barColors = seasonalIndex.map(v => v >= 1 ? accent2 : accent);
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [{
+        label: '季節性指數',
+        data: seasonalIndex,
+        backgroundColor: barColors.map(c => c + '85'),
+        borderColor: barColors,
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '指數: ' + ctx.raw.toFixed(2) } }
+      },
+      scales: {
+        y: {
+          grid: { color: borderColor + '60' },
+          ticks: { callback: v => v.toFixed(2) }
+        },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+})();
+
+// --- 3. Product Category Growth ---
+(function() {
+  const ctx = document.getElementById('categoryChart').getContext('2d');
+  const categories = [
+    '廚房電器',
+    '空氣淨化設備',
+    '清潔電器',
+    '智能家居裝置',
+    '製冷設備',
+    '熱水設備',
+    '小家電'
+  ];
+  const growth = [32, 24, 18, 15, 10, 8, 5];
+  const colors = [accent2, accent2, accent, accent, muted, muted, muted];
+
+  new Chart(ctx, {
+    type: 'bar',
+    indexAxis: 'y',
+    data: {
+      labels: categories,
+      datasets: [{
+        label: '按年增長 %',
+        data: growth,
+        backgroundColor: colors.map(c => c + '70'),
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '+ ' + ctx.raw + '% 按年增長' } }
+      },
+      scales: {
+        x: {
+          grid: { color: borderColor + '60' },
+          ticks: { callback: v => '+' + v + '%' }
+        },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+})();
+
+// Show welcome toast after gate
+const stored2 = sessionStorage.getItem('manutrade_forecast_access');
+if (stored2 === 'granted') {
+  setTimeout(() => showToast('📊 報告已載入 — 數據截至 2026-06-25', 'info'), 600);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>存貨清理 AI 分析 | ManuTrade</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0b0f19;
+  --card: #131a2b;
+  --border: #1e2d45;
+  --accent: #06b6d4;
+  --accent2: #10b981;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans HK', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ─── Back Link ─── */
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px; color: var(--accent);
+  text-decoration: none; font-size: 14px; padding: 8px 16px;
+  border-radius: 8px; transition: background .2s;
+}
+.back-link:hover { background: rgba(6,182,212,0.1); }
+.back-link svg { width: 16px; height: 16px; }
+
+/* ─── Header ─── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px; border-bottom: 1px solid var(--border);
+  background: rgba(11,15,25,0.8); backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 40;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-left h1 { font-size: 20px; font-weight: 700; }
+.header-badge {
+  font-size: 11px; padding: 3px 10px; border-radius: 20px;
+  background: rgba(6,182,212,0.12); color: var(--accent); font-weight: 600;
+}
+.header-actions { display: flex; align-items: center; gap: 12px; }
+.btn {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; color: var(--text); cursor: pointer;
+  font-size: 13px; transition: all .2s; font-family: inherit;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn-accent { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-accent:hover { background: #0891b2; }
+
+/* ─── Main Layout ─── */
+main { max-width: 1340px; margin: 0 auto; padding: 24px; }
+
+/* ─── Stats Row ─── */
+.stats-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px 24px;
+}
+.stat-card .label { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.stat-card .value { font-size: 28px; font-weight: 700; }
+.stat-card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.stat-card.accent .value { color: var(--accent); }
+.stat-card.accent2 .value { color: var(--accent2); }
+.stat-card.warning .value { color: var(--warning); }
+.stat-card.danger .value { color: var(--danger); }
+
+/* ─── Section ─── */
+.section { margin-bottom: 28px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-header h2 { font-size: 18px; font-weight: 700; }
+.section-header .subtitle { font-size: 13px; color: var(--muted); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+/* ─── Cards ─── */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; overflow: hidden;
+}
+
+/* ─── Table ─── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+}
+th {
+  text-align: left; padding: 10px 14px; border-bottom: 2px solid var(--border);
+  color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.5px; white-space: nowrap;
+}
+td {
+  padding: 10px 14px; border-bottom: 1px solid rgba(30,45,69,0.5);
+  vertical-align: middle;
+}
+tr:hover td { background: rgba(6,182,212,0.03); }
+.priority { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.priority-high { background: rgba(239,68,68,0.15); color: #ef4444; }
+.priority-medium { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.priority-low { background: rgba(16,185,129,0.15); color: #10b981; }
+
+/* ─── Channel Cards ─── */
+.channel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.channel-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; transition: border-color .2s;
+}
+.channel-card:hover { border-color: var(--accent); }
+.channel-card .ch-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
+.channel-card .ch-name { font-weight: 700; font-size: 15px; }
+.channel-card .ch-rate { font-size: 13px; color: var(--accent2); font-weight: 600; }
+.channel-card .ch-products { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.channel-card .ch-ai { font-size: 11px; color: var(--accent); margin-top: 8px; font-style: italic; }
+
+/* ─── Chart Containers ─── */
+.chart-container { position: relative; height: 300px; }
+.chart-container-sm { position: relative; height: 260px; }
+canvas { width: 100% !important; }
+
+/* ─── Promo Cards ─── */
+.promo-card {
+  background: linear-gradient(135deg, rgba(6,182,212,0.06) 0%, rgba(16,185,129,0.06) 100%);
+  border: 1px solid var(--border); border-radius: var(--radius); padding: 20px;
+}
+.promo-card .prod-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.promo-card .prod-sku { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+.promo-card .promo-text {
+  background: rgba(0,0,0,0.25); border-radius: 8px; padding: 14px 16px;
+  font-size: 13px; line-height: 1.7; color: var(--text);
+  border-left: 3px solid var(--accent); margin-bottom: 10px;
+}
+.promo-card .promo-meta { font-size: 11px; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; }
+.promo-card .ai-badge {
+  font-size: 10px; background: rgba(6,182,212,0.15); color: var(--accent);
+  padding: 2px 8px; border-radius: 10px; font-weight: 600;
+}
+
+/* ─── ROI Table ─── */
+.roi-positive { color: #10b981; font-weight: 600; }
+.roi-negative { color: #ef4444; font-weight: 600; }
+
+/* ─── Toast ─── */
+.toast-container { position: fixed; top: 80px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 18px; font-size: 13px; color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4); animation: slideIn 0.3s ease;
+  display: flex; align-items: center; gap: 10px; min-width: 280px;
+}
+.toast-success { border-left: 3px solid var(--accent2); }
+.toast-info { border-left: 3px solid var(--accent); }
+.toast-error { border-left: 3px solid var(--danger); }
+@keyframes slideIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+.toast.removing { animation: slideOut 0.3s ease forwards; }
+@keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
+
+/* ─── Email Gate Overlay ─── */
+.gate-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+  z-index: 300; display: flex; align-items: center; justify-content: center;
+}
+.gate-dialog {
+  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+  padding: 32px; max-width: 440px; width: 92%; text-align: center;
+  box-shadow: 0 16px 64px rgba(0,0,0,0.5);
+}
+.gate-dialog h2 { font-size: 22px; margin-bottom: 6px; }
+.gate-dialog .gate-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+.gate-dialog .countdown {
+  font-size: 14px; color: var(--warning); margin-bottom: 20px;
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.gate-dialog input[type="email"] {
+  width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font-size: 14px; margin-bottom: 12px;
+  font-family: inherit;
+}
+.gate-dialog input[type="email"]:focus { outline: none; border-color: var(--accent); }
+.gate-dialog .gate-btn {
+  width: 100%; padding: 12px; border-radius: 8px; border: none;
+  background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: background .2s; font-family: inherit;
+}
+.gate-dialog .gate-btn:hover { background: #0891b2; }
+.gate-dialog .gate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.gate-dialog .skip-link {
+  display: block; margin-top: 14px; font-size: 12px; color: var(--muted);
+  cursor: pointer; text-decoration: underline;
+}
+.gate-dialog .skip-link:hover { color: var(--text); }
+.gate-hidden { display: none !important; }
+
+/* ─── Responsive ─── */
+@media (max-width: 1024px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .stats-row { grid-template-columns: 1fr; }
+  main { padding: 16px; }
+  .channel-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ EMAIL GATE OVERLAY ═══════════════ -->
+<div class="gate-overlay" id="emailGate">
+  <div class="gate-dialog">
+    <h2>🔐 限時存取</h2>
+    <p class="gate-sub">請輸入您的電郵地址以查看<br><strong>存貨清理 AI 分析報告</strong></p>
+    <div class="countdown" id="gateCountdown">⏳ 剩餘時間：23:59:47</div>
+    <input type="email" id="gateEmail" placeholder="your@company.com" autocomplete="email">
+    <button class="gate-btn" id="gateSubmit">解鎖報告 →</button>
+    <span class="skip-link" id="gateSkip">跳過，直接查看（演示模式）</span>
+  </div>
+</div>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header>
+  <div class="header-left">
+    <a href="../index.html" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      返回平台
+    </a>
+    <h1>📦 存貨清理 AI</h1>
+    <span class="header-badge">AI 驅動</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="toast('正在刷新數據…', 'info')">🔄 刷新數據</button>
+    <button class="btn btn-accent" onclick="showExportToast()">📥 匯出報告</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ═══════════════ STATS ROW ═══════════════ -->
+<div class="stats-row">
+  <div class="stat-card danger">
+    <div class="label">📊 總存貨價值</div>
+    <div class="value">$2.8M</div>
+    <div class="sub">庫存總額（成本價）</div>
+  </div>
+  <div class="stat-card warning">
+    <div class="label">🐢 滯銷產品</div>
+    <div class="value">37</div>
+    <div class="sub">庫存天數 &gt; 90 日</div>
+  </div>
+  <div class="stat-card accent2">
+    <div class="label">💡 清理機會</div>
+    <div class="value">$420K</div>
+    <div class="sub">潛在可回收價值</div>
+  </div>
+  <div class="stat-card accent">
+    <div class="label">📅 平均庫存天數</div>
+    <div class="value">127</div>
+    <div class="sub">滯銷產品加權平均</div>
+  </div>
+</div>
+
+<!-- ═══════════════ SLOW-MOVING PRODUCTS TABLE ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <h2>🐢 滯銷產品清單</h2>
+      <span class="subtitle">庫存天數超過 90 日之產品，按清理優先級排序</span>
+    </div>
+    <button class="btn" onclick="toast('AI 重新計算優先級中…', 'info')">🤖 AI 重新分析</button>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>產品名稱</th>
+          <th>類別</th>
+          <th>庫存天數</th>
+          <th>存貨價值</th>
+          <th>月周轉率</th>
+          <th>清理優先級</th>
+          <th>建議折扣</th>
+        </tr>
+      </thead>
+      <tbody id="productsTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════ CHANNEL RECOMMENDATIONS ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <h2>🔗 AI 渠道推薦</h2>
+      <span class="subtitle">AI 根據產品特性、目標市場及回收率，推薦最佳清理渠道</span>
+    </div>
+    <button class="btn" onclick="toast('渠道推薦已是最新', 'success')">🔄 重新生成</button>
+  </div>
+  <div class="channel-grid" id="channelGrid"></div>
+</div>
+
+<!-- ═══════════════ CHARTS ROW ═══════════════ -->
+<div class="section grid-2">
+  <!-- Channel Performance Radar -->
+  <div class="card">
+    <h2 style="font-size:16px;margin-bottom:16px;">📡 渠道回收率比較（雷達圖）</h2>
+    <div class="chart-container"><canvas id="radarChart"></canvas></div>
+  </div>
+  <!-- Projected Recovery -->
+  <div class="card">
+    <h2 style="font-size:16px;margin-bottom:16px;">📈 預測回收金額</h2>
+    <div class="chart-container"><canvas id="recoveryChart"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════════ PROMO CAMPAIGN GENERATOR ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <h2>📢 AI 促銷文案生成器</h2>
+      <span class="subtitle">AI 自動生成前 3 名滯銷產品的推廣文案，可直接用於各渠道</span>
+    </div>
+    <button class="btn-accent btn" onclick="toast('文案已複製到剪貼簿', 'success')">📋 全部複製</button>
+  </div>
+  <div class="grid-3" id="promoGrid"></div>
+</div>
+
+<!-- ═══════════════ ROI TRACKER ═══════════════ -->
+<div class="section">
+  <div class="section-header">
+    <div>
+      <h2>💰 ROI 追蹤器</h2>
+      <span class="subtitle">清理活動實際回收 vs 預測回收對比</span>
+    </div>
+  </div>
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>活動編號</th>
+          <th>產品</th>
+          <th>渠道</th>
+          <th>開始日期</th>
+          <th>預測回收</th>
+          <th>實際回收</th>
+          <th>達成率</th>
+          <th>狀態</th>
+        </tr>
+      </thead>
+      <tbody id="roiTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</main>
+
+<!-- ═══════════════ TOAST CONTAINER ═══════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ═══════════════ DATA ═══════════════
+const products = [
+  { sku:'HA-2847', name:'智能空氣炸鍋 Pro', cat:'廚房電器', days:203, value:48500, turnover:0.08, priority:'high', discount:45, channels:['Amazon Clearance','Liquidation.com'] },
+  { sku:'HA-3102', name:'便攜式空調 12000BTU', cat:'空調設備', days:187, value:62300, turnover:0.11, priority:'high', discount:40, channels:['Amazon Clearance','B2B 批發','出口東南亞'] },
+  { sku:'HA-1956', name:'多功能豆漿機 1.8L', cat:'廚房電器', days:178, value:31200, turnover:0.09, priority:'high', discount:50, channels:['Liquidation.com','拼多多海外版'] },
+  { sku:'HA-4210', name:'智能掃地機械人 V3', cat:'智能家居', days:165, value:89200, turnover:0.14, priority:'medium', discount:35, channels:['Amazon Warehouse','B2B 批發'] },
+  { sku:'HA-0872', name:'不銹鋼電熱水壺 2L', cat:'廚房電器', days:159, value:18700, turnover:0.12, priority:'medium', discount:30, channels:['Amazon Clearance','eBay Clearance'] },
+  { sku:'HA-5543', name:'4K 運動相機 Ultra', cat:'電子產品', days:148, value:54300, turnover:0.16, priority:'medium', discount:35, channels:['Amazon Renewed','出口中東'] },
+  { sku:'HA-6631', name:'商用真空封口機', cat:'廚房電器', days:135, value:27500, turnover:0.18, priority:'medium', discount:25, channels:['B2B 批發','阿里巴巴國際站'] },
+  { sku:'HA-7890', name:'智能體脂磅 WiFi', cat:'智能家居', days:122, value:15800, turnover:0.21, priority:'low', discount:20, channels:['Amazon Warehouse','Shopee/Lazada'] },
+  { sku:'HA-3199', name:'迷你陶瓷暖風機', cat:'空調設備', days:110, value:24300, turnover:0.22, priority:'low', discount:20, channels:['eBay Clearance','B2B 批量'] },
+  { sku:'HA-2408', name:'LED 護眼檯燈 Pro', cat:'智能家居', days:98, value:11900, turnover:0.25, priority:'low', discount:15, channels:['Amazon Clearance','出口南美'] },
+];
+
+const channels = [
+  { name:'Amazon Clearance', rate:68, color:'#06b6d4' },
+  { name:'Liquidation.com', rate:42, color:'#8b5cf6' },
+  { name:'B2B 批發', rate:55, color:'#f59e0b' },
+  { name:'eBay Clearance', rate:48, color:'#ec4899' },
+  { name:'Amazon Warehouse', rate:52, color:'#10b981' },
+  { name:'出口市場', rate:45, color:'#6366f1' },
+];
+
+const channelDescriptions = {
+  'Amazon Clearance': '適合品牌家電，流量大，回收率達 60-75%',
+  'Liquidation.com': '適合大量滯銷庫存，快速周轉但回收率偏低',
+  'B2B 批發': '適合中型庫存，一次性出售給批發商，節省物流成本',
+  'eBay Clearance': '適合小批量庫存，靈活定價，適合測試市場反應',
+  'Amazon Warehouse': '適合開箱/陳列品，以「二手-像新」狀態出售',
+  '出口市場': '適合在本地滯銷但在其他地區有需求的產品',
+};
+
+const roiData = [
+  { id:'CL-2401', product:'智能空氣炸鍋 Pro', channel:'Amazon Clearance', date:'2024-03-15', projected:38500, actual:41200, status:'completed' },
+  { id:'CL-2402', product:'便攜式空調 12000BTU', channel:'Liquidation.com', date:'2024-04-02', projected:49800, actual:37600, status:'completed' },
+  { id:'CL-2403', product:'多功能豆漿機 1.8L', channel:'B2B 批發', date:'2024-04-20', projected:21800, actual:22400, status:'completed' },
+  { id:'CL-2404', product:'智能掃地機械人 V3', channel:'Amazon Warehouse', date:'2024-05-08', projected:62500, actual:59800, status:'active' },
+  { id:'CL-2405', product:'4K 運動相機 Ultra', channel:'Amazon Clearance', date:'2024-05-22', projected:38500, actual:18600, status:'active' },
+];
+
+// ═══════════════ TOAST SYSTEM ═══════════════
+let toastId = 0;
+function toast(msg, type) {
+  type = type || 'info';
+  const container = document.getElementById('toastContainer');
+  const id = 'toast-' + (++toastId);
+  const icons = { success: '✅', info: 'ℹ️', error: '❌' };
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = 'toast toast-' + type;
+  el.innerHTML = '<span>' + (icons[type] || '') + '</span><span>' + msg + '</span>';
+  container.appendChild(el);
+  setTimeout(() => {
+    const t = document.getElementById(id);
+    if (t) {
+      t.classList.add('removing');
+      setTimeout(() => { if (t.parentNode) t.remove(); }, 300);
+    }
+  }, 3500);
+}
+
+function showExportToast() {
+  toast('📥 報告已開始匯出，稍後將發送至您的郵箱', 'success');
+}
+
+// ═══════════════ EMAIL GATE ═══════════════
+(function() {
+  const gate = document.getElementById('emailGate');
+  const input = document.getElementById('gateEmail');
+  const btn = document.getElementById('gateSubmit');
+  const skip = document.getElementById('gateSkip');
+  const countdownEl = document.getElementById('gateCountdown');
+
+  let gateExpiry = sessionStorage.getItem('stockClearanceGate');
+  if (!gateExpiry) {
+    gateExpiry = Date.now() + 24 * 60 * 60 * 1000;
+    sessionStorage.setItem('stockClearanceGate', gateExpiry);
+  }
+  gateExpiry = parseInt(gateExpiry);
+
+  if (Date.now() > gateExpiry || sessionStorage.getItem('stockClearanceUnlocked') === 'true') {
+    gate.classList.add('gate-hidden');
+  }
+
+  function updateCountdown() {
+    const remain = gateExpiry - Date.now();
+    if (remain <= 0) {
+      countdownEl.textContent = '⏰ 鏈接已過期 — 請刷新頁面';
+      btn.disabled = true;
+      return;
+    }
+    const h = Math.floor(remain / 3600000);
+    const m = Math.floor((remain % 3600000) / 60000);
+    const s = Math.floor((remain % 60000) / 1000);
+    countdownEl.textContent = '⏳ 剩餘時間：' +
+      String(h).padStart(2,'0') + ':' +
+      String(m).padStart(2,'0') + ':' +
+      String(s).padStart(2,'0');
+  }
+  updateCountdown();
+  const countdownInterval = setInterval(updateCountdown, 1000);
+
+  function unlock() {
+    sessionStorage.setItem('stockClearanceUnlocked', 'true');
+    gate.classList.add('gate-hidden');
+    clearInterval(countdownInterval);
+    toast('✅ 歡迎！報告已解鎖', 'success');
+  }
+
+  btn.addEventListener('click', () => {
+    const email = input.value.trim();
+    if (email && email.includes('@') && email.includes('.')) {
+      toast('📧 驗證郵件已發送至 ' + email, 'success');
+      unlock();
+    } else if (email) {
+      toast('請輸入有效的電郵地址', 'error');
+    } else {
+      unlock();
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') btn.click();
+  });
+
+  skip.addEventListener('click', () => {
+    toast('🎭 以演示模式查看', 'info');
+    unlock();
+  });
+})();
+
+// ═══════════════ POPULATE TABLE ═══════════════
+(function() {
+  const tbody = document.getElementById('productsTableBody');
+  products.forEach(p => {
+    const tr = document.createElement('tr');
+    const priorityClass = 'priority-' + (p.priority === 'high' ? 'high' : p.priority === 'medium' ? 'medium' : 'low');
+    const priorityLabels = { high: '高', medium: '中', low: '低' };
+    tr.innerHTML =
+      '<td style="font-family:monospace;color:var(--accent)">' + p.sku + '</td>' +
+      '<td><strong>' + p.name + '</strong></td>' +
+      '<td style="color:var(--muted)">' + p.cat + '</td>' +
+      '<td><span style="color:' + (p.days > 150 ? 'var(--danger)' : 'var(--warning)') + ';font-weight:600">' + p.days + ' 日</span></td>' +
+      '<td>$' + p.value.toLocaleString() + '</td>' +
+      '<td>' + (p.turnover * 100).toFixed(0) + '%</td>' +
+      '<td><span class="priority ' + priorityClass + '">' + priorityLabels[p.priority] + '</span></td>' +
+      '<td><span style="font-weight:700;color:var(--accent2)">-' + p.discount + '%</span></td>';
+    tbody.appendChild(tr);
+  });
+})();
+
+// ═══════════════ POPULATE CHANNELS ═══════════════
+(function() {
+  const grid = document.getElementById('channelGrid');
+  const allChannels = channels.map(c => c.name);
+  const seen = new Set();
+
+  allChannels.forEach(chName => {
+    const prodsForChannel = products.filter(p => p.channels.includes(chName));
+    if (prodsForChannel.length === 0) return;
+    if (seen.has(chName)) return;
+    seen.add(chName);
+
+    const ch = channels.find(c => c.name === chName);
+    const card = document.createElement('div');
+    card.className = 'channel-card';
+    card.innerHTML =
+      '<div class="ch-header">' +
+        '<span class="ch-name">' + chName + '</span>' +
+        '<span class="ch-rate">回收率 ' + (ch ? ch.rate : 50) + '%</span>' +
+      '</div>' +
+      '<div class="ch-products">' +
+        '<strong>推薦產品：</strong>' + prodsForChannel.map(p => p.name).join('、') +
+      '</div>' +
+      '<div class="ch-ai">🤖 AI 分析：' + (channelDescriptions[chName] || '適合多類型產品清理') + '</div>';
+    grid.appendChild(card);
+  });
+})();
+
+// ═══════════════ RADAR CHART ═══════════════
+(function() {
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: channels.map(c => c.name),
+      datasets: [{
+        label: '回收率 (%)',
+        data: channels.map(c => c.rate),
+        backgroundColor: 'rgba(6, 182, 212, 0.15)',
+        borderColor: '#06b6d4',
+        borderWidth: 2,
+        pointBackgroundColor: '#06b6d4',
+        pointBorderColor: '#0b0f19',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+      }, {
+        label: '行業平均 (%)',
+        data: [55, 38, 48, 42, 46, 40],
+        backgroundColor: 'rgba(245, 158, 11, 0.08)',
+        borderColor: '#f59e0b',
+        borderWidth: 1.5,
+        borderDash: [4, 4],
+        pointBackgroundColor: '#f59e0b',
+        pointBorderColor: '#0b0f19',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#94a3b8', font: { size: 12 }, padding: 16, usePointStyle: true }
+        }
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          max: 100,
+          ticks: { color: '#94a3b8', backdropColor: 'transparent', font: { size: 10 } },
+          pointLabels: { color: '#e2e8f0', font: { size: 11 } },
+          grid: { color: 'rgba(30,45,69,0.5)' },
+          angleLines: { color: 'rgba(30,45,69,0.5)' },
+        }
+      }
+    }
+  });
+})();
+
+// ═══════════════ RECOVERY BAR CHART ═══════════════
+(function() {
+  const ctx = document.getElementById('recoveryChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: channels.map(c => c.name),
+      datasets: [
+        { label: '最佳情況', data: [72, 48, 60, 52, 58, 50], backgroundColor: '#10b981' },
+        { label: '預期', data: [64, 40, 52, 46, 49, 43], backgroundColor: '#06b6d4' },
+        { label: '最差情況', data: [38, 22, 30, 28, 32, 26], backgroundColor: 'rgba(239,68,68,0.6)' },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#94a3b8', font: { size: 12 }, padding: 16, usePointStyle: true }
+        },
+        tooltip: {
+          callbacks: { label: ctx => ctx.dataset.label + ': $' + (ctx.raw * 1000).toLocaleString() }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#94a3b8', font: { size: 10 } }, grid: { display: false } },
+        y: {
+          ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => '$' + (v * 1000).toLocaleString() },
+          grid: { color: 'rgba(30,45,69,0.3)' },
+          title: { display: true, text: '回收金額 (USD)', color: '#94a3b8' }
+        }
+      }
+    }
+  });
+
+  // Summary box below chart
+  const summaryDiv = document.createElement('div');
+  summaryDiv.style.cssText = 'display:flex;gap:16px;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);';
+  summaryDiv.innerHTML =
+    '<div style="flex:1;text-align:center"><div style="font-size:22px;font-weight:700;color:#10b981">$385K</div><div style="font-size:11px;color:var(--muted)">最佳情況</div></div>' +
+    '<div style="flex:1;text-align:center"><div style="font-size:22px;font-weight:700;color:#06b6d4">$295K</div><div style="font-size:11px;color:var(--muted)">預期回收</div></div>' +
+    '<div style="flex:1;text-align:center"><div style="font-size:22px;font-weight:700;color:#ef4444">$178K</div><div style="font-size:11px;color:var(--muted)">最差情況</div></div>';
+  document.getElementById('recoveryChart').parentElement.appendChild(summaryDiv);
+})();
+
+// ═══════════════ PROMO GENERATOR ═══════════════
+(function() {
+  const top3 = products.filter(p => p.priority === 'high').slice(0, 3);
+  const promos = [
+    {
+      product: top3[0],
+      text: '🔥【限時清倉】智能空氣炸鍋 Pro — 原價 $88 現只需 $48.4！\n\n✅ 3D 熱風循環，少油 85%\n✅ 8 種智能烹飪模式\n✅ 5.5L 大容量，全家適用\n\n📦 庫存有限，售完即止！\n🎁 買 2 件再享額外 5% 折扣\n\n🛒 立即選購 →',
+      channels: 'Amazon Clearance / Liquidation.com',
+      lang: 'zh-HK + en-US'
+    },
+    {
+      product: top3[1],
+      text: '❄️【夏季必搶】便攜式空調 12000BTU — 限時 6 折！\n\n🌬️ 3 分鐘極速降溫\n🔇 超靜音模式 ≤42dB\n📱 支援 WiFi 遙控\n\n💡 原價 $520，清倉價 $312\n📦 香港/澳門免運費\n🏷️ 企業批量採購另享優惠\n\n⏰ 優惠有效期至庫存清零！',
+      channels: 'Amazon Clearance / B2B 批發 / 出口東南亞',
+      lang: 'zh-HK + en-US + ภาษาไทย'
+    },
+    {
+      product: top3[2],
+      text: '🥛【健康之選】多功能豆漿機 1.8L — 半價清倉！\n\n🫘 8 種穀物飲品一鍵製作\n⏱️ 15 分鐘快速出漿\n🧼 自動清洗功能\n🔒 雙重安全保護\n\n💰 原價 $128，清倉價 $64\n🚚 滿 $200 免運費\n🎯 適合健康食品零售商批量進貨\n\n⚡ 最後 320 件，錯過不再！',
+      channels: 'Liquidation.com / 拼多多海外版',
+      lang: 'zh-HK + zh-CN'
+    },
+  ];
+
+  const grid = document.getElementById('promoGrid');
+  promos.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'promo-card';
+    card.innerHTML =
+      '<div class="prod-name">' + p.product.name + '</div>' +
+      '<div class="prod-sku">' + p.product.sku + ' | 庫存 ' + p.product.days + ' 日 | 建議折扣 -' + p.product.discount + '%</div>' +
+      '<div class="promo-text">' + p.text.replace(/\n/g, '<br>') + '</div>' +
+      '<div class="promo-meta">' +
+        '<span class="ai-badge">🤖 AI 生成</span>' +
+        '<span>📡 ' + p.channels + '</span>' +
+        '<span>🌐 ' + p.lang + '</span>' +
+      '</div>';
+    grid.appendChild(card);
+  });
+})();
+
+// ═══════════════ ROI TRACKER ═══════════════
+(function() {
+  const tbody = document.getElementById('roiTableBody');
+  roiData.forEach(r => {
+    const rate = (r.actual / r.projected * 100);
+    const rateClass = rate >= 100 ? 'roi-positive' : rate >= 75 ? '' : 'roi-negative';
+    const statusLabels = { completed: '✅ 已完成', active: '🔄 進行中' };
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="font-family:monospace;color:var(--accent)">' + r.id + '</td>' +
+      '<td>' + r.product + '</td>' +
+      '<td style="color:var(--muted)">' + r.channel + '</td>' +
+      '<td>' + r.date + '</td>' +
+      '<td>$' + r.projected.toLocaleString() + '</td>' +
+      '<td>$' + r.actual.toLocaleString() + '</td>' +
+      '<td class="' + rateClass + '">' + rate.toFixed(1) + '%</td>' +
+      '<td>' + (statusLabels[r.status] || r.status) + '</td>';
+    tbody.appendChild(tr);
+  });
+})();
+
+// ═══════════════ INIT ═══════════════
+console.log('📦 存貨清理 AI 分析已就緒');
+console.log('  總產品數：' + products.length);
+console.log('  清理機會：$420K');
+console.log('  可用渠道：' + channels.map(c => c.name).join('、'));
+</script>
+</body>
+</html>
