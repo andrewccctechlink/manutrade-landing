@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPDS 新產品開發系統 | ManuTrade</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+</script>
+<style>
+:root {
+  --bg: #0b0f19;
+  --card: #131a2b;
+  --border: #1e2d45;
+  --accent: #06b6d4;
+  --accent2: #10b981;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --badge-requested: #f59e0b;
+  --badge-transit: #3b82f6;
+  --badge-received: #8b5cf6;
+  --badge-testing: #06b6d4;
+  --badge-approved: #10b981;
+  --red: #ef4444;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── Gate Overlay ── */
+#gate-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.85);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(12px);
+}
+#gate-overlay.hidden { display: none; }
+.gate-box {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 40px; max-width: 420px; width: 90%;
+  text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.gate-box h2 { font-size: 1.5rem; margin-bottom: 8px; }
+.gate-box p { color: var(--muted); font-size: 0.9rem; margin-bottom: 24px; }
+.gate-box input {
+  width: 100%; padding: 12px 16px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 1rem; margin-bottom: 16px;
+  outline: none; transition: border-color 0.2s;
+}
+.gate-box input:focus { border-color: var(--accent); }
+.gate-box button {
+  width: 100%; padding: 12px; border: none; border-radius: 10px;
+  background: var(--accent); color: #fff; font-size: 1rem;
+  font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+}
+.gate-box button:hover { opacity: 0.9; }
+.gate-box .gate-hint { font-size: 0.78rem; color: var(--muted); margin-top: 12px; }
+
+/* ── Countdown Topbar ── */
+#countdown-bar {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  color: #fff; text-align: center; padding: 8px 16px;
+  font-size: 0.85rem; font-weight: 600; display: none;
+}
+#countdown-bar.visible { display: block; }
+
+/* ── Toast ── */
+#toast-container {
+  position: fixed; top: 20px; right: 20px; z-index: 9998;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.toast {
+  background: var(--card); border: 1px solid var(--border);
+  border-left: 4px solid var(--accent); border-radius: 10px;
+  padding: 14px 20px; min-width: 280px; max-width: 400px;
+  color: var(--text); font-size: 0.9rem; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: slideIn 0.3s ease;
+  display: flex; align-items: center; gap: 10px;
+}
+.toast.success { border-left-color: var(--accent2); }
+.toast.error { border-left-color: var(--red); }
+.toast-icon { font-size: 1.2rem; flex-shrink: 0; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+/* ── Layout ── */
+.container { max-width: 1280px; margin: 0 auto; padding: 24px 20px 60px; }
+
+/* ── Header ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  background: var(--card); position: sticky; top: 0; z-index: 100;
+}
+header .logo { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+header .logo span { color: var(--text); }
+.back-link {
+  color: var(--muted); text-decoration: none; font-size: 0.9rem;
+  display: flex; align-items: center; gap: 6px; transition: color 0.2s;
+}
+.back-link:hover { color: var(--text); }
+
+/* ── Sections ── */
+section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 28px; margin-bottom: 24px;
+}
+.section-title {
+  font-size: 1.2rem; font-weight: 700; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.section-title .icon { font-size: 1.4rem; }
+.section-desc { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
+
+/* ── Form ── */
+.form-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.form-group input, .form-group select {
+  padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font-size: 0.9rem;
+  outline: none; transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 6px; }
+.checkbox-group label {
+  display: flex; align-items: center; gap: 6px; font-size: 0.85rem;
+  color: var(--text); cursor: pointer;
+}
+.checkbox-group input[type="checkbox"] { accent-color: var(--accent); }
+.btn {
+  padding: 12px 24px; border: none; border-radius: 10px;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn-outline {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+thead th {
+  text-align: left; padding: 12px 16px; background: var(--bg);
+  color: var(--muted); font-weight: 600; font-size: 0.8rem;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 2px solid var(--border);
+}
+thead th:first-child { border-radius: 8px 0 0 0; }
+thead th:last-child { border-radius: 0 8px 0 0; }
+tbody td {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tbody tr:hover { background: rgba(255,255,255,0.02); }
+tbody tr:last-child td { border-bottom: none; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  font-size: 0.78rem; font-weight: 600; white-space: nowrap;
+}
+.badge-requested { background: rgba(245,158,11,0.15); color: var(--badge-requested); }
+.badge-transit   { background: rgba(59,130,246,0.15); color: var(--badge-transit); }
+.badge-received  { background: rgba(139,92,246,0.15); color: var(--badge-received); }
+.badge-testing   { background: rgba(6,182,212,0.15); color: var(--badge-testing); }
+.badge-approved  { background: rgba(16,185,129,0.15); color: var(--badge-approved); }
+.badge-pass   { background: rgba(16,185,129,0.15); color: var(--accent2); }
+.badge-pending { background: rgba(245,158,11,0.15); color: var(--badge-requested); }
+.badge-na     { background: rgba(148,163,184,0.1); color: var(--muted); }
+
+/* ── Match Score ── */
+.match-score {
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.match-bar {
+  width: 60px; height: 6px; background: var(--border); border-radius: 3px;
+  overflow: hidden;
+}
+.match-bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+
+/* ── Best Match Highlight ── */
+tr.best-match { background: rgba(6,182,212,0.06); }
+tr.best-match td:first-child { border-left: 3px solid var(--accent); padding-left: 13px; }
+
+/* ── Chart Container ── */
+.chart-wrap {
+  position: relative; width: 100%; max-height: 320px;
+}
+.chart-wrap canvas { width: 100% !important; }
+
+/* ── Checklist ── */
+.checklist {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.checklist-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg);
+}
+.checklist-item .status-icon { font-size: 1.3rem; flex-shrink: 0; }
+.checklist-item .info { flex: 1; min-width: 0; }
+.checklist-item .name { font-weight: 600; font-size: 0.9rem; }
+.checklist-item .desc { font-size: 0.75rem; color: var(--muted); }
+.checklist-item.ok { border-color: rgba(16,185,129,0.3); }
+.checklist-item.warn { border-color: rgba(245,158,11,0.3); }
+.checklist-item.pending { border-color: rgba(148,163,184,0.2); }
+
+/* ── Dashboard Stats ── */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.stat-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px; text-align: center;
+}
+.stat-card .stat-value {
+  font-size: 2rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-card .stat-label { font-size: 0.85rem; color: var(--muted); margin-top: 4px; }
+
+/* ── Progress Summary ── */
+.progress-list { display: flex; flex-direction: column; gap: 12px; }
+.progress-item { display: flex; align-items: center; gap: 12px; }
+.progress-item .phase { width: 140px; font-size: 0.85rem; font-weight: 600; flex-shrink: 0; }
+.progress-track {
+  flex: 1; height: 10px; background: var(--border); border-radius: 5px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 5px; transition: width 0.6s ease;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.progress-item .pct { width: 48px; text-align: right; font-size: 0.85rem; font-weight: 700; color: var(--accent); }
+
+/* ── Tooltip ── */
+.tooltip {
+  position: relative; cursor: help;
+  border-bottom: 1px dotted var(--muted);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  section { padding: 18px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .checklist { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  table { font-size: 0.78rem; }
+  thead th, tbody td { padding: 8px 10px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ Email Gate Overlay ════════════════ -->
+<div id="gate-overlay">
+  <div class="gate-box">
+    <h2>📧 輸入郵箱以繼續</h2>
+    <p>請輸入您的電子郵件地址以存取 NPDS 新產品開發系統示範。我們不會發送垃圾郵件。</p>
+    <form id="gate-form">
+      <input type="email" id="gate-email" placeholder="your@email.com" required>
+      <button type="submit">進入系統</button>
+    </form>
+    <p class="gate-hint">此授權將在 24 小時內有效</p>
+  </div>
+</div>
+
+<!-- ════════════════ Countdown Topbar ════════════════ -->
+<div id="countdown-bar">⏳ 示範存取將在 <span id="countdown-timer">--:--:--</span> 後到期</div>
+
+<!-- ════════════════ Toast Container ════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ════════════════ Header ════════════════ -->
+<header>
+  <div class="logo">⚙️ NPDS<span> · 新產品開發系統</span></div>
+  <a href="../index.html" class="back-link">← 返回 ManuTrade 首頁</a>
+</header>
+
+<main class="container">
+
+<!-- ═══ 1. New Product Idea Input ═══ -->
+<section id="idea-input">
+  <div class="section-title"><span class="icon">💡</span> 新產品提案輸入</div>
+  <p class="section-desc">填寫新產品開發的基本資訊，系統將自動匹配最合適的供應商。</p>
+  <form id="product-form">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>產品名稱 *</label>
+        <input type="text" id="prod-name" placeholder="例如：智慧溫控氣炸鍋 XL Pro" required>
+      </div>
+      <div class="form-group">
+        <label>產品類別 *</label>
+        <select id="prod-category" required>
+          <option value="">請選擇類別</option>
+          <option value="kitchen">廚房家電</option>
+          <option value="electronics">居家電子</option>
+          <option value="outdoor">戶外裝備</option>
+          <option value="personal">個人護理</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>目標零售價 (USD)</label>
+        <input type="number" id="prod-price" placeholder="例如：89.99" min="1" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>預計年訂單量</label>
+        <select id="prod-volume">
+          <option value="">請選擇</option>
+          <option value="1k">1,000 件以下</option>
+          <option value="5k">1,000 - 5,000 件</option>
+          <option value="10k">5,000 - 10,000 件</option>
+          <option value="50k">10,000 - 50,000 件</option>
+          <option value="50k+">50,000 件以上</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:16px;">
+      <label>目標市場</label>
+      <div class="checkbox-group">
+        <label><input type="checkbox" value="na" checked> 北美</label>
+        <label><input type="checkbox" value="eu" checked> 歐盟</label>
+        <label><input type="checkbox" value="asia"> 亞太</label>
+        <label><input type="checkbox" value="me"> 中東</label>
+        <label><input type="checkbox" value="sa"> 南美</label>
+        <label><input type="checkbox" value="af"> 非洲</label>
+      </div>
+    </div>
+    <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+      <button type="submit" class="btn btn-primary">🚀 提交產品提案</button>
+      <button type="button" class="btn btn-outline" onclick="resetForm()">↺ 重設表單</button>
+    </div>
+  </form>
+</section>
+
+<!-- ═══ 2. Supplier Matching ═══ -->
+<section id="supplier-matching">
+  <div class="section-title"><span class="icon">🤝</span> AI 供應商匹配</div>
+  <p class="section-desc">基於您的產品規格（智慧溫控氣炸鍋 XL Pro），AI 已自動匹配以下 7 家供應商。</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>供應商名稱</th>
+          <th>所在地</th>
+          <th>匹配分數</th>
+          <th>核心能力</th>
+          <th>樣品交期</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="supplier-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 3. Quote Comparison ═══ -->
+<section id="quote-comparison">
+  <div class="section-title"><span class="icon">💰</span> 報價比較</div>
+  <p class="section-desc">各家供應商針對智慧溫控氣炸鍋 XL Pro 的報價明細，最佳匹配已標示。</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>供應商</th>
+          <th>單價 (USD)</th>
+          <th>最低訂購量 (MOQ)</th>
+          <th>模具費用</th>
+          <th>交貨週期</th>
+          <th>FOB 港口</th>
+          <th>總評</th>
+        </tr>
+      </thead>
+      <tbody id="quote-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 4. Development Timeline ═══ -->
+<section id="dev-timeline">
+  <div class="section-title"><span class="icon">📊</span> 開發時程甘特圖</div>
+  <p class="section-desc">智慧溫控氣炸鍋 XL Pro 的開發階段與目前進度。</p>
+  <div class="chart-wrap"><canvas id="gantt-chart"></canvas></div>
+  <div class="progress-list" style="margin-top: 24px;" id="phase-progress"></div>
+</section>
+
+<!-- ═══ 5. Sample Tracking ═══ -->
+<section id="sample-tracking">
+  <div class="section-title"><span class="icon">📦</span> 樣品追蹤</div>
+  <p class="section-desc">目前已向多家供應商發出的樣品請求狀態。</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>供應商</th>
+          <th>樣品名稱</th>
+          <th>請求日期</th>
+          <th>預計到達</th>
+          <th>狀態</th>
+          <th>追蹤號碼</th>
+        </tr>
+      </thead>
+      <tbody id="sample-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 6. Compliance Checklist ═══ -->
+<section id="compliance">
+  <div class="section-title"><span class="icon">✅</span> 合規認證清單</div>
+  <p class="section-desc">智慧溫控氣炸鍋 XL Pro 於目標市場（北美、歐盟）所需的認證項目。</p>
+  <div class="checklist" id="compliance-checklist"></div>
+</section>
+
+<!-- ═══ 7. Project Dashboard Summary ═══ -->
+<section id="dashboard-summary">
+  <div class="section-title"><span class="icon">📋</span> 專案儀表板摘要</div>
+  <p class="section-desc">NPDS 系統整體運作概覽。</p>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">4</div>
+      <div class="stat-label">進行中專案</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">12</div>
+      <div class="stat-label">已接洽供應商</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">7</div>
+      <div class="stat-label">測試中樣品</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value">14<span style="font-size:1rem;"> 週</span></div>
+      <div class="stat-label">平均上市時間</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ════════════════ Scripts ════════════════ -->
+<script>
+// ── Toast System ──
+function showToast(msg, type = 'info') {
+  const icons = { info: 'ℹ️', success: '✅', error: '❌' };
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type]}</span>${msg}`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// ── Email Gate ──
+const GATE_KEY = 'npds_gate_passed';
+const GATE_EXPIRY_KEY = 'npds_gate_expiry';
+
+function checkGate() {
+  const passed = sessionStorage.getItem(GATE_KEY);
+  const expiry = sessionStorage.getItem(GATE_EXPIRY_KEY);
+  if (passed === 'true' && expiry && Date.now() < parseInt(expiry)) {
+    hideGate();
+    startCountdown(parseInt(expiry));
+    return true;
+  }
+  sessionStorage.removeItem(GATE_KEY);
+  sessionStorage.removeItem(GATE_EXPIRY_KEY);
+  return false;
+}
+
+function hideGate() {
+  document.getElementById('gate-overlay').classList.add('hidden');
+}
+
+function startCountdown(expiryTs) {
+  const bar = document.getElementById('countdown-bar');
+  const timerEl = document.getElementById('countdown-timer');
+  bar.classList.add('visible');
+
+  function tick() {
+    const remaining = Math.max(0, expiryTs - Date.now());
+    if (remaining <= 0) {
+      bar.classList.remove('visible');
+      sessionStorage.removeItem(GATE_KEY);
+      sessionStorage.removeItem(GATE_EXPIRY_KEY);
+      document.getElementById('gate-overlay').classList.remove('hidden');
+      return;
+    }
+    const h = Math.floor(remaining / 3600000);
+    const m = Math.floor((remaining % 3600000) / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    timerEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+document.getElementById('gate-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const email = document.getElementById('gate-email').value.trim();
+  if (!email || !email.includes('@')) {
+    showToast('請輸入有效的電子郵件地址', 'error');
+    return;
+  }
+  const expiry = Date.now() + 24 * 60 * 60 * 1000; // 24h
+  sessionStorage.setItem(GATE_KEY, 'true');
+  sessionStorage.setItem(GATE_EXPIRY_KEY, expiry.toString());
+  hideGate();
+  startCountdown(expiry);
+  showToast(`歡迎，${email}！示範存取已授權 24 小時`, 'success');
+});
+
+// ── Initialize gate on load ──
+checkGate();
+
+// ════════════════ DATA ════════════════
+const suppliers = [
+  { name: '東莞鑫達電器有限公司', location: '中國廣東', score: 96, capabilities: '小家電 ODM/OEM、溫控模組、NC 加工', leadTime: '7-10 天' },
+  { name: '寧波順佳智能科技有限公司', location: '中國浙江', score: 91, capabilities: '智慧家電、IoT 模組、塑膠射出', leadTime: '10-14 天' },
+  { name: 'Hon Hai Precision (富士康)', location: '台灣新北', score: 88, capabilities: '精密製造、PCB 組裝、規模量產', leadTime: '14-21 天' },
+  { name: '深圳華創電子有限公司', location: '中國廣東', score: 84, capabilities: '加熱元件、電子控制板、UL 認證', leadTime: '7-12 天' },
+  { name: '永康市宏泰電器廠', location: '中國浙江', score: 79, capabilities: '廚房小家電、金屬沖壓、組裝', leadTime: '5-8 天' },
+  { name: 'LG Electronics (代工部門)', location: '韓國首爾', score: 76, capabilities: '高階家電 OEM、設計驗證、全球物流', leadTime: '21-30 天' },
+  { name: '胡志明市越進製造股份公司', location: '越南胡志明市', score: 72, capabilities: '家電組裝、線束加工、成本優勢', leadTime: '14-18 天' },
+];
+
+const quotes = [
+  { supplier: '東莞鑫達電器', unitPrice: 28.50, moq: 1000, tooling: 3500, leadTime: '35 天', port: '深圳', score: 96 },
+  { supplier: '寧波順佳智能', unitPrice: 26.80, moq: 1500, tooling: 4200, leadTime: '40 天', port: '寧波', score: 91 },
+  { supplier: '富士康 (Hon Hai)', unitPrice: 31.20, moq: 5000, tooling: 8000, leadTime: '55 天', port: '高雄', score: 88 },
+  { supplier: '深圳華創電子', unitPrice: 24.90, moq: 2000, tooling: 2800, leadTime: '38 天', port: '深圳', score: 84 },
+  { supplier: '永康宏泰電器', unitPrice: 22.50, moq: 3000, tooling: 2000, leadTime: '30 天', port: '寧波', score: 79 },
+  { supplier: 'LG 代工部門', unitPrice: 35.00, moq: 10000, tooling: 12000, leadTime: '60 天', port: '釜山', score: 76 },
+  { supplier: '越進製造', unitPrice: 20.00, moq: 5000, tooling: 1800, leadTime: '45 天', port: '胡志明市', score: 72 },
+];
+
+const samples = [
+  { supplier: '東莞鑫達電器', name: '氣炸鍋外殼樣品 + 溫控模組', reqDate: '2026-06-01', eta: '2026-06-15', status: 'approved', tracking: 'DHL 9384 7612' },
+  { supplier: '寧波順佳智能', name: 'IoT 控制板原型', reqDate: '2026-06-03', eta: '2026-06-18', status: 'testing', tracking: 'SF 1029 3847' },
+  { supplier: '深圳華創電子', name: '加熱元件 + 風扇模組', reqDate: '2026-06-05', eta: '2026-06-21', status: 'received', tracking: 'FedEx 7721 9934' },
+  { supplier: '永康宏泰電器', name: '金屬內膽樣品', reqDate: '2026-06-08', eta: '2026-06-22', status: 'transit', tracking: 'UPS 1Z 559A 03' },
+  { supplier: '富士康 (Hon Hai)', name: 'PCB 控制板樣品', reqDate: '2026-06-10', eta: '2026-07-01', status: 'requested', tracking: '—' },
+  { supplier: 'LG 代工部門', name: '完整組裝樣機', reqDate: '2026-06-12', eta: '2026-07-10', status: 'requested', tracking: '—' },
+  { supplier: '越進製造', name: '線束與內部結構件', reqDate: '2026-06-15', eta: '2026-07-05', status: 'requested', tracking: '—' },
+];
+
+const phases = [
+  { name: '規格審查', progress: 100 },
+  { name: '供應商選擇', progress: 80 },
+  { name: '樣品打樣', progress: 55 },
+  { name: '測試驗證', progress: 25 },
+  { name: '量產準備', progress: 0 },
+];
+
+const complianceItems = [
+  { name: 'CE 認證', desc: '歐盟強制性安全標誌', status: 'ok', icon: '✅' },
+  { name: 'FCC 認證', desc: '美國聯邦通訊委員會', status: 'ok', icon: '✅' },
+  { name: 'RoHS 合規', desc: '有害物質限制指令', status: 'ok', icon: '✅' },
+  { name: 'REACH 法規', desc: '化學品註冊評估授權', status: 'ok', icon: '✅' },
+  { name: 'UL 安全認證', desc: '美國保險商實驗室', status: 'warn', icon: '⚠️' },
+  { name: 'FDA 食品接觸', desc: '食品接觸材料安全', status: 'warn', icon: '⚠️' },
+  { name: 'ETL 認證', desc: '北美安全認證替代方案', status: 'pending', icon: '⬜' },
+  { name: 'UKCA 標誌', desc: '英國市場准入標誌', status: 'pending', icon: '⬜' },
+  { name: 'Energy Star', desc: '能源之星節能認證', status: 'warn', icon: '⚠️' },
+  { name: 'WEEE 指令', desc: '廢電子電機設備指令', status: 'ok', icon: '✅' },
+  { name: 'Prop 65', desc: '加州 65 號提案', status: 'pending', icon: '⬜' },
+  { name: 'CB Scheme', desc: '國際電工委員會體系', status: 'warn', icon: '⚠️' },
+];
+
+// ════════════════ RENDER FUNCTIONS ════════════════
+
+// ── Supplier Table ──
+function renderSuppliers() {
+  const tbody = document.getElementById('supplier-tbody');
+  tbody.innerHTML = suppliers.map((s, i) => `
+    <tr>
+      <td><strong>${s.name}</strong></td>
+      <td>${s.location}</td>
+      <td>
+        <div class="match-score">
+          <div class="match-bar"><div class="match-bar-fill" style="width:${s.score}%;background:${s.score>=90?'var(--accent2)':s.score>=80?'var(--accent)':'var(--badge-requested)'};"></div></div>
+          <span style="font-weight:700;color:${s.score>=90?'var(--accent2)':s.score>=80?'var(--accent)':'var(--badge-requested)'};">${s.score}%</span>
+        </div>
+      </td>
+      <td>${s.capabilities}</td>
+      <td>${s.leadTime}</td>
+      <td><button class="btn btn-outline" style="padding:6px 14px;font-size:0.8rem;" onclick="showToast('已向 ${s.name.split('(')[0].trim()} 發送詢價請求','success')">📩 詢價</button></td>
+    </tr>
+  `).join('');
+}
+
+// ── Quote Table ──
+function renderQuotes() {
+  const tbody = document.getElementById('quote-tbody');
+  tbody.innerHTML = quotes.map((q, i) => {
+    const isBest = i === 0;
+    return `
+    <tr class="${isBest ? 'best-match' : ''}">
+      <td><strong>${q.supplier}</strong>${isBest ? ' <span class="badge badge-approved" style="margin-left:6px;">🏆 最佳匹配</span>' : ''}</td>
+      <td>$${q.unitPrice.toFixed(2)}</td>
+      <td>${q.moq.toLocaleString()}</td>
+      <td>$${q.tooling.toLocaleString()}</td>
+      <td>${q.leadTime}</td>
+      <td>${q.port}</td>
+      <td><span class="badge ${q.score >= 90 ? 'badge-approved' : q.score >= 80 ? 'badge-testing' : 'badge-requested'}">${q.score}分</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Gantt Chart ──
+function renderGantt() {
+  const ctx = document.getElementById('gantt-chart').getContext('2d');
+
+  const phaseData = [
+    { label: '規格審查', start: 0, end: 100, color: '#10b981' },
+    { label: '供應商選擇', start: 10, end: 80, color: '#06b6d4' },
+    { label: '樣品打樣', start: 25, end: 55, color: '#8b5cf6' },
+    { label: '測試驗證', start: 45, end: 25, color: '#f59e0b' },
+    { label: '量產準備', start: 70, end: 0, color: '#ef4444' },
+  ];
+
+  // Build a horizontal stacked bar for each phase
+  const datasets = [];
+  const bgColors = ['#10b981', '#06b6d4', '#8b5cf6', '#f59e0b', '#ef4444'];
+  const labels = phaseData.map(p => p.label);
+
+  // We'll create a floating bar approach: for each phase, we have [start%, remaining-empty%, done%]
+  // Or simpler: use 2 datasets per phase to create a Gantt-style effect
+  // Best approach with Chart.js: use horizontal bar with stacked bars
+
+  // Actually, let's use a horizontal bar chart where each phase has:
+  // - invisible spacer (offset)
+  // - visible progress bar
+
+  phaseData.forEach((p, i) => {
+    // Spacer (transparent)
+    datasets.push({
+      label: '',
+      data: [p.start],
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+      borderWidth: 0,
+      barPercentage: 0.6,
+      categoryPercentage: 0.8,
+      stack: `stack${i}`,
+    });
+    // Done portion
+    datasets.push({
+      label: p.label,
+      data: [p.end],
+      backgroundColor: bgColors[i],
+      borderColor: bgColors[i],
+      borderWidth: 0,
+      borderRadius: p.end > 0 ? 6 : 0,
+      barPercentage: 0.6,
+      categoryPercentage: 0.8,
+      stack: `stack${i}`,
+    });
+    // Remaining (gray)
+    const remaining = 100 - p.start - p.end;
+    if (remaining > 0) {
+      datasets.push({
+        label: '',
+        data: [remaining],
+        backgroundColor: 'rgba(30,45,69,0.4)',
+        borderColor: 'transparent',
+        borderWidth: 0,
+        borderRadius: 6,
+        barPercentage: 0.6,
+        categoryPercentage: 0.8,
+        stack: `stack${i}`,
+      });
+    }
+  });
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: datasets,
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              if (!ctx.raw || ctx.dataset.backgroundColor === 'transparent' || ctx.dataset.backgroundColor === 'rgba(30,45,69,0.4)') return null;
+              return `${ctx.dataset.label}: ${ctx.raw}% 完成`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          max: 100,
+          grid: { color: 'rgba(30,45,69,0.5)' },
+          ticks: { color: '#94a3b8', callback: (v) => v + '%' },
+        },
+        y: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { color: '#e2e8f0', font: { size: 13 } },
+        },
+      },
+    },
+  });
+
+  // Phase progress list
+  const progressList = document.getElementById('phase-progress');
+  progressList.innerHTML = phases.map(p => `
+    <div class="progress-item">
+      <div class="phase">${p.name}</div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${p.progress}%;"></div>
+      </div>
+      <div class="pct">${p.progress}%</div>
+    </div>
+  `).join('');
+}
+
+// ── Sample Tracking ──
+function renderSamples() {
+  const tbody = document.getElementById('sample-tbody');
+  const statusMap = {
+    requested: { label: '已請求', cls: 'badge-requested' },
+    transit: { label: '運送中', cls: 'badge-transit' },
+    received: { label: '已收件', cls: 'badge-received' },
+    testing: { label: '測試中', cls: 'badge-testing' },
+    approved: { label: '已核准', cls: 'badge-approved' },
+  };
+  tbody.innerHTML = samples.map(s => {
+    const st = statusMap[s.status];
+    return `
+    <tr>
+      <td><strong>${s.supplier}</strong></td>
+      <td>${s.name}</td>
+      <td>${s.reqDate}</td>
+      <td>${s.eta}</td>
+      <td><span class="badge ${st.cls}">${st.label}</span></td>
+      <td style="font-family:monospace;color:var(--muted);">${s.tracking}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Compliance Checklist ──
+function renderCompliance() {
+  const container = document.getElementById('compliance-checklist');
+  container.innerHTML = complianceItems.map(c => `
+    <div class="checklist-item ${c.status === 'ok' ? 'ok' : c.status === 'warn' ? 'warn' : 'pending'}">
+      <div class="status-icon">${c.icon}</div>
+      <div class="info">
+        <div class="name">${c.name}</div>
+        <div class="desc">${c.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Product Form Handler ──
+document.getElementById('product-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = document.getElementById('prod-name').value.trim();
+  const category = document.getElementById('prod-category').value;
+  const price = document.getElementById('prod-price').value;
+  const volume = document.getElementById('prod-volume').value;
+  const markets = [...document.querySelectorAll('#product-form input[type="checkbox"]:checked')].map(cb => cb.value);
+
+  if (!name || !category) {
+    showToast('請填寫產品名稱與類別', 'error');
+    return;
+  }
+
+  const marketLabels = { na: '北美', eu: '歐盟', asia: '亞太', me: '中東', sa: '南美', af: '非洲' };
+  const marketStr = markets.map(m => marketLabels[m] || m).join('、');
+  const catLabels = { kitchen: '廚房家電', electronics: '居家電子', outdoor: '戶外裝備', personal: '個人護理' };
+
+  showToast(`✅「${name}」提案已提交！類別：${catLabels[category] || category}｜目標市場：${marketStr || '未選擇'}`, 'success');
+
+  // Scroll to supplier section
+  document.getElementById('supplier-matching').scrollIntoView({ behavior: 'smooth' });
+});
+
+function resetForm() {
+  document.getElementById('product-form').reset();
+  showToast('表單已重設', 'info');
+}
+
+// ════════════════ INIT ════════════════
+renderSuppliers();
+renderQuotes();
+renderGantt();
+renderSamples();
+renderCompliance();
+</script>
+
+</body>
+</html>
