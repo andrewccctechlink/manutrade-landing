@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ManuTrade 多語言轉換器</title>
+<style>
+:root {
+  --bg: #0b0f19;
+  --card: #131a2b;
+  --border: #1e2d45;
+  --accent: #06b6d4;
+  --accent2: #10b981;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --transition: 0.2s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ========== Background Particles ========== */
+#particles {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 30% 20%, rgba(6,182,212,0.04) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 60%, rgba(16,185,129,0.04) 0%, transparent 60%);
+}
+
+/* ========== Countdown Top Bar ========== */
+#countdown-bar {
+  position: sticky; top: 0; z-index: 100;
+  background: linear-gradient(135deg, var(--accent), #0891b2);
+  color: #fff;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  display: none;
+  animation: slideDown 0.4s ease;
+}
+#countdown-bar .countdown-timer { font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+/* ========== Navbar ========== */
+.navbar {
+  position: sticky; top: 0; z-index: 99;
+  background: rgba(19,26,43,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.navbar .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; color: var(--accent); }
+.navbar .logo svg { width: 28px; height: 28px; }
+.navbar .back-link {
+  color: var(--muted); text-decoration: none; font-size: 14px;
+  display: flex; align-items: center; gap: 4px; transition: color var(--transition);
+}
+.navbar .back-link:hover { color: var(--accent); }
+.navbar .back-link svg { width: 16px; height: 16px; }
+
+/* ========== Main Container ========== */
+.container {
+  position: relative; z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/* ========== Email Gate Overlay ========== */
+#email-gate {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(11,15,25,0.92);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+#email-gate.hidden { display: none; }
+#gate-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 32px;
+  max-width: 440px; width: 90%;
+  text-align: center;
+  box-shadow: var(--shadow), 0 0 60px rgba(6,182,212,0.08);
+}
+#gate-card .gate-icon { font-size: 48px; margin-bottom: 16px; }
+#gate-card h2 { font-size: 22px; margin-bottom: 8px; color: var(--text); }
+#gate-card p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+#gate-card .input-group {
+  display: flex; gap: 0;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  overflow: hidden; transition: border-color var(--transition);
+}
+#gate-card .input-group:focus-within { border-color: var(--accent); }
+#gate-card input[type="email"] {
+  flex: 1; padding: 12px 16px;
+  background: var(--bg); border: none; outline: none;
+  color: var(--text); font-size: 15px;
+}
+#gate-card button {
+  padding: 12px 20px; background: var(--accent);
+  border: none; color: #fff; font-weight: 600; font-size: 15px;
+  cursor: pointer; transition: background var(--transition); white-space: nowrap;
+}
+#gate-card button:hover { background: #0891b2; }
+#gate-card .skip-link {
+  display: inline-block; margin-top: 16px;
+  color: var(--muted); font-size: 13px; cursor: pointer;
+  transition: color var(--transition);
+}
+#gate-card .skip-link:hover { color: var(--text); }
+#gate-card .gate-error { color: var(--danger); font-size: 13px; margin-top: 8px; min-height: 20px; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ========== Toast ========== */
+#toast-container {
+  position: fixed; top: 16px; right: 16px; z-index: 300;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 14px;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  animation: toastIn 0.35s ease, toastOut 0.35s ease forwards;
+  animation-delay: 0s, 2.8s;
+  max-width: 380px;
+}
+.toast.success { border-left-color: var(--accent2); }
+.toast.error { border-left-color: var(--danger); }
+.toast.warning { border-left-color: var(--warning); }
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
+
+/* ========== Hero / Header ========== */
+.hero { text-align: center; margin-bottom: 32px; }
+.hero h1 { font-size: 32px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.hero h1 span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.hero .subtitle { color: var(--muted); font-size: 15px; max-width: 600px; margin: 0 auto; }
+
+/* ========== Section Cards ========== */
+.section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 20px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.section:hover { border-color: rgba(6,182,212,0.2); box-shadow: 0 2px 16px rgba(6,182,212,0.04); }
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.section-header .step-badge {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
+}
+.section-header h3 { font-size: 17px; font-weight: 700; color: var(--text); }
+
+/* ========== Upload Area ========== */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--accent);
+  background: rgba(6,182,212,0.03);
+}
+.upload-zone.drag-over { background: rgba(6,182,212,0.06); }
+.upload-zone .upload-icon { font-size: 48px; margin-bottom: 12px; display: block; }
+.upload-zone .upload-text { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.upload-zone .upload-hint { font-size: 13px; color: var(--muted); }
+.upload-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* ========== File Queue ========== */
+.file-queue { margin-top: 16px; }
+.file-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); margin-bottom: 8px;
+  animation: queueIn 0.3s ease;
+}
+@keyframes queueIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+.file-item .file-icon { font-size: 24px; flex-shrink: 0; }
+.file-item .file-info { flex: 1; min-width: 0; }
+.file-item .file-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-item .file-meta { font-size: 12px; color: var(--muted); }
+.file-item .lang-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+  white-space: nowrap;
+}
+.lang-badge.auto   { background: rgba(6,182,212,0.15); color: var(--accent); }
+.lang-badge.en     { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.lang-badge.zh     { background: rgba(245,158,11,0.15); color: #fbbf24; }
+.lang-badge.ja     { background: rgba(239,68,68,0.15); color: #f87171; }
+.lang-badge.ko     { background: rgba(16,185,129,0.15); color: #34d399; }
+.lang-badge.es     { background: rgba(168,85,247,0.15); color: #c084fc; }
+.file-item .remove-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); flex-shrink: 0;
+}
+.file-item .remove-btn:hover { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.08); }
+
+/* ========== Language Selection ========== */
+.lang-selector { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: end; }
+.lang-selector .lang-group { display: flex; flex-direction: column; gap: 6px; }
+.lang-selector .lang-group label { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.lang-selector .lang-group select, .lang-selector .lang-group .auto-detect {
+  padding: 12px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 14px; outline: none; cursor: pointer;
+  transition: border-color var(--transition);
+  font-family: inherit;
+}
+.lang-selector .lang-group select:focus, .lang-selector .lang-group .auto-detect:focus { border-color: var(--accent); }
+.lang-selector .lang-group .auto-detect {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(6,182,212,0.06); border-color: rgba(6,182,212,0.3); cursor: default;
+}
+.lang-selector .lang-group .auto-detect .detect-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.lang-selector .swap-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--accent); cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); margin-bottom: 4px;
+}
+.lang-selector .swap-btn:hover { background: rgba(6,182,212,0.1); border-color: var(--accent); transform: rotate(180deg); }
+
+/* ========== Preview Panels ========== */
+.preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 768px) { .preview-grid { grid-template-columns: 1fr; } }
+.preview-panel {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); overflow: hidden;
+}
+.preview-panel .panel-header {
+  background: rgba(6,182,212,0.06);
+  padding: 10px 16px;
+  font-size: 12px; font-weight: 700;
+  color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.preview-panel .panel-header .lang-label { font-size: 11px; color: var(--muted); text-transform: none; }
+.preview-panel .panel-body {
+  padding: 16px; font-size: 14px; line-height: 1.8;
+  max-height: 380px; overflow-y: auto;
+  white-space: pre-wrap; word-break: break-word;
+}
+.preview-panel .panel-body.translated { color: var(--text); }
+.preview-panel .panel-body.source { color: var(--muted); }
+.term-highlight {
+  background: rgba(6,182,212,0.2); color: var(--accent);
+  padding: 1px 4px; border-radius: 3px;
+  font-weight: 600; font-size: 13px;
+  border-bottom: 1px dashed rgba(6,182,212,0.4);
+  cursor: help;
+}
+
+/* ========== Batch Translate Button ========== */
+.batch-section { text-align: center; }
+.btn-batch {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 16px 40px;
+  background: linear-gradient(135deg, var(--accent), #0891b2);
+  border: none; border-radius: 50px;
+  color: #fff; font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all var(--transition);
+  box-shadow: 0 4px 20px rgba(6,182,212,0.25);
+  position: relative; overflow: hidden;
+}
+.btn-batch:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(6,182,212,0.35); }
+.btn-batch:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-batch .progress-bar-wrap {
+  position: absolute; bottom: 0; left: 0; height: 3px;
+  background: rgba(255,255,255,0.3); transition: width 0.3s ease;
+}
+.btn-batch .spinner {
+  width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.7s linear infinite; display: none;
+}
+.btn-batch.translating .spinner { display: inline-block; }
+.btn-batch.translating .btn-icon { display: none; }
+.btn-batch .btn-icon { font-size: 20px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.translate-stats { margin-top: 12px; font-size: 13px; color: var(--muted); }
+.translate-stats .stat-value { color: var(--accent); font-weight: 700; }
+
+/* ========== Download Section ========== */
+.download-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.download-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 20px 16px;
+  text-align: center; cursor: pointer;
+  transition: all var(--transition);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.download-card:hover { border-color: var(--accent2); background: rgba(16,185,129,0.04); transform: translateY(-2px); }
+.download-card .dl-icon { font-size: 32px; }
+.download-card .dl-name { font-size: 14px; font-weight: 600; color: var(--text); }
+.download-card .dl-meta { font-size: 12px; color: var(--muted); }
+.download-card .dl-lang { font-size: 11px; color: var(--accent2); }
+
+/* ========== Glossary ========== */
+.glossary-list { display: flex; flex-direction: column; gap: 8px; }
+.glossary-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+.glossary-item .g-term { color: var(--accent); font-weight: 600; min-width: 140px; }
+.glossary-item .g-arrow { color: var(--muted); }
+.glossary-item .g-translation { color: var(--text); flex: 1; }
+.glossary-item .g-remove {
+  background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 4px;
+  transition: color var(--transition);
+}
+.glossary-item .g-remove:hover { color: var(--danger); }
+.add-glossary {
+  display: flex; gap: 8px; margin-top: 12px;
+}
+.add-glossary input {
+  flex: 1; padding: 10px 14px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-size: 14px; outline: none; font-family: inherit;
+  transition: border-color var(--transition);
+}
+.add-glossary input:focus { border-color: var(--accent); }
+.add-glossary input::placeholder { color: var(--muted); }
+.add-glossary button {
+  padding: 10px 18px; background: var(--accent);
+  border: none; border-radius: var(--radius-sm);
+  color: #fff; font-weight: 600; font-size: 14px;
+  cursor: pointer; transition: background var(--transition); white-space: nowrap;
+}
+.add-glossary button:hover { background: #0891b2; }
+
+/* ========== Language Support List ========== */
+.lang-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px;
+}
+.lang-chip {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 13px; color: var(--text); transition: all var(--transition);
+}
+.lang-chip:hover { border-color: var(--accent); }
+.lang-chip .lang-flag { font-size: 18px; flex-shrink: 0; }
+
+/* ========== Footer ========== */
+.footer {
+  text-align: center; padding: 32px 20px;
+  color: var(--muted); font-size: 13px;
+  border-top: 1px solid var(--border); margin-top: 40px;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+  .lang-selector { grid-template-columns: 1fr; }
+  .lang-selector .swap-btn { align-self: center; transform: rotate(90deg); }
+  .lang-selector .swap-btn:hover { transform: rotate(270deg); }
+  .hero h1 { font-size: 24px; }
+  .navbar { padding: 10px 16px; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- Background Particles -->
+<div id="particles"></div>
+
+<!-- Countdown Bar -->
+<div id="countdown-bar">
+  ⏱️ 本次免費使用尚餘 <span class="countdown-timer" id="countdown-timer">24:00:00</span>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="logo">
+    <svg viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="currentColor" opacity="0.15"/><path d="M8 20l5-12h2l5 12h-2.5l-1.2-3.2h-4.6L10.5 20H8zm3.4-5.1h4.2l-2.1-5.5-2.1 5.5zM20 8h4c2.2 0 4 1.8 4 4s-1.8 4-4 4h-1.5V20H20V8zm2.5 5.8H24c1 0 1.8-.8 1.8-1.8S25 10.2 24 10.2h-1.5v3.6z" fill="currentColor"/></svg>
+    ManuTrade <span style="color:var(--text);font-weight:400;">| 多語言轉換器</span>
+  </div>
+  <a href="../index.html" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    返回主頁
+  </a>
+</nav>
+
+<!-- Email Gate Overlay -->
+<div id="email-gate">
+  <div id="gate-card">
+    <div class="gate-icon">📧</div>
+    <h2>開始使用多語言轉換器</h2>
+    <p>請輸入您的電子郵件以獲得 <strong>24 小時</strong>免費使用權限，無需註冊。</p>
+    <div class="input-group">
+      <input type="email" id="gate-email" placeholder="your@email.com" autocomplete="email">
+      <button id="gate-submit">開始使用 →</button>
+    </div>
+    <div class="gate-error" id="gate-error"></div>
+    <span class="skip-link" id="gate-skip">稍後再說，直接試用</span>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Main Content -->
+<div class="container" id="main-content">
+
+  <!-- Hero -->
+  <div class="hero">
+    <h1>🌐 <span>多語言文件轉換器</span></h1>
+    <p class="subtitle">上傳貿易文件，即時自動偵測語言並翻譯為目標語言。專業術語自動保留，支援 20+ 種語言。</p>
+  </div>
+
+  <!-- Step 1: Upload -->
+  <div class="section" id="step-upload">
+    <div class="section-header">
+      <div class="step-badge">1</div>
+      <h3>上傳文件</h3>
+    </div>
+    <div class="upload-zone" id="upload-zone">
+      <span class="upload-icon">📁</span>
+      <div class="upload-text">拖放文件至此處，或點擊瀏覽</div>
+      <div class="upload-hint">支援 PDF、Excel (.xlsx/.xls)、Word (.docx)、純文字 (.txt) — 單檔上限 20MB</div>
+      <input type="file" id="file-input" multiple accept=".pdf,.xlsx,.xls,.docx,.txt">
+    </div>
+    <div class="file-queue" id="file-queue"></div>
+  </div>
+
+  <!-- Step 2: Language Selection -->
+  <div class="section" id="step-lang">
+    <div class="section-header">
+      <div class="step-badge">2</div>
+      <h3>選擇語言</h3>
+    </div>
+    <div class="lang-selector">
+      <div class="lang-group">
+        <label>來源語言</label>
+        <div class="auto-detect" tabindex="0">
+          <span class="detect-dot"></span> 🔍 自動偵測語言
+        </div>
+      </div>
+      <button class="swap-btn" id="swap-lang" title="交換語言">⇄</button>
+      <div class="lang-group">
+        <label>目標語言</label>
+        <select id="target-lang">
+          <option value="en">🇬🇧 English（英文）</option>
+          <option value="zh-CN">🇨🇳 简体中文（簡體）</option>
+          <option value="zh-TW" selected>🇹🇼 繁體中文</option>
+          <option value="ja">🇯🇵 日本語（日文）</option>
+          <option value="ko">🇰🇷 한국어（韓文）</option>
+          <option value="es">🇪🇸 Español（西班牙文）</option>
+          <option value="fr">🇫🇷 Français（法文）</option>
+          <option value="de">🇩🇪 Deutsch（德文）</option>
+          <option value="vi">🇻🇳 Tiếng Việt（越南文）</option>
+          <option value="th">🇹🇭 ไทย（泰文）</option>
+          <option value="id">🇮🇩 Bahasa Indonesia（印尼文）</option>
+          <option value="ar">🇸🇦 العربية（阿拉伯文）</option>
+          <option value="pt">🇧🇷 Português（葡萄牙文）</option>
+          <option value="ru">🇷🇺 Русский（俄文）</option>
+          <option value="it">🇮🇹 Italiano（義大利文）</option>
+          <option value="tr">🇹🇷 Türkçe（土耳其文）</option>
+          <option value="nl">🇳🇱 Nederlands（荷蘭文）</option>
+          <option value="pl">🇵🇱 Polski（波蘭文）</option>
+          <option value="hi">🇮🇳 हिन्दी（印地文）</option>
+          <option value="ms">🇲🇾 Bahasa Melayu（馬來文）</option>
+          <option value="tl">🇵🇭 Tagalog（菲律賓文）</option>
+          <option value="my">🇲🇲 မြန်မာ（緬甸文）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Source Preview & Translation Preview -->
+  <div class="section" id="step-preview">
+    <div class="section-header">
+      <div class="step-badge">3</div>
+      <h3>原文預覽與翻譯對照</h3>
+    </div>
+    <div class="preview-grid">
+      <!-- Source -->
+      <div class="preview-panel">
+        <div class="panel-header">
+          原文 <span class="lang-label" id="source-lang-label">自動偵測：英文</span>
+        </div>
+        <div class="panel-body source" id="source-preview">
+Product Specification Sheet
+Model: MT-2400 Industrial Heater
+
+Key Specifications:
+━━━━━━━━━━━━━━━━━━━━━━
+• Product Code: IH-MT2400-PRO
+• HS Code: 8516.60
+• Power Rating: 2400W / 220V AC
+• Certification: CE, RoHS, FCC
+
+Ordering Information:
+━━━━━━━━━━━━━━━━━━━━━━
+• MOQ: 500 units
+• FOB Price: USD 38.50 / unit
+• Lead Time: 25-30 working days
+• Payment Terms: LC at sight (Irrevocable)
+
+Packaging Details:
+━━━━━━━━━━━━━━━━━━━━━━
+• Unit Dimensions: 320 × 180 × 120 mm
+• Net Weight: 2.8 kg
+• Gross Weight: 3.5 kg
+• Packaging: Export-standard carton with foam insert
+• 20ft Container Capacity: ~2,400 units
+
+Warranty & Support:
+━━━━━━━━━━━━━━━━━━━━━━
+• Factory Warranty: 24 months from B/L date
+• After-Sales: Online support via WhatsApp/WeChat
+• Spare Parts: Available upon request (EXW basis)
+
+Please confirm PI for order processing.
+        </div>
+      </div>
+      <!-- Translated -->
+      <div class="preview-panel">
+        <div class="panel-header">
+          翻譯結果 <span class="lang-label" id="target-lang-label">目標語言：繁體中文</span>
+        </div>
+        <div class="panel-body translated" id="translated-preview">
+產品規格說明書
+型號：MT-2400 工業用加熱器
+
+主要規格：
+━━━━━━━━━━━━━━━━━━━━━━
+• 產品代碼：IH-MT2400-PRO
+• <span class="term-highlight" title="已保留專業術語">HS Code: 8516.60</span>
+• 額定功率：2400W / 220V AC
+• 認證：CE、RoHS、FCC
+
+訂購資訊：
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="已保留專業術語">MOQ</span>（最小訂購量）：500 件
+• <span class="term-highlight" title="已保留專業術語">FOB</span> 價格：每件 USD 38.50
+• <span class="term-highlight" title="已保留專業術語">Lead Time</span>（交貨期）：25-30 個工作天
+• 付款條件：即期信用證（不可撤銷 <span class="term-highlight" title="已保留專業術語">LC</span>）
+
+包裝明細：
+━━━━━━━━━━━━━━━━━━━━━━
+• 產品尺寸：320 × 180 × 120 mm
+• 淨重：2.8 kg
+• 毛重：3.5 kg
+• 包裝方式：出口標準紙箱，內附泡棉
+• 20 呎貨櫃容量：約 2,400 件
+
+保固與支援：
+━━━━━━━━━━━━━━━━━━━━━━
+• 原廠保固：自提單日期起 24 個月
+• 售後服務：透過 WhatsApp / 微信提供線上支援
+• 備用零件：可依需求提供（<span class="term-highlight" title="已保留專業術語">EXW</span> 條件）
+
+請確認形式發票以進行訂單處理。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Glossary -->
+  <div class="section" id="step-glossary">
+    <div class="section-header">
+      <div class="step-badge">4</div>
+      <h3>自訂術語對照表</h3>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">定義您的專屬術語翻譯，這些詞彙將在翻譯時優先使用。系統已自動保留常見貿易術語（如 FOB、MOQ、HS Code 等）。</p>
+    <div class="glossary-list" id="glossary-list">
+      <div class="glossary-item">
+        <span class="g-term">PI</span><span class="g-arrow">→</span><span class="g-translation">形式發票</span>
+        <button class="g-remove" title="移除">×</button>
+      </div>
+      <div class="glossary-item">
+        <span class="g-term">B/L</span><span class="g-arrow">→</span><span class="g-translation">提單</span>
+        <button class="g-remove" title="移除">×</button>
+      </div>
+      <div class="glossary-item">
+        <span class="g-term">After-Sales</span><span class="g-arrow">→</span><span class="g-translation">售後服務</span>
+        <button class="g-remove" title="移除">×</button>
+      </div>
+      <div class="glossary-item">
+        <span class="g-term">Factory Warranty</span><span class="g-arrow">→</span><span class="g-translation">原廠保固</span>
+        <button class="g-remove" title="移除">×</button>
+      </div>
+    </div>
+    <form class="add-glossary" id="glossary-form">
+      <input type="text" id="glossary-term" placeholder="原始術語（例：CIF）" required>
+      <input type="text" id="glossary-trans" placeholder="翻譯（例：到岸價格）" required>
+      <button type="submit">＋ 新增</button>
+    </form>
+  </div>
+
+  <!-- Step 5: Batch Translate -->
+  <div class="section batch-section" id="step-translate">
+    <div class="section-header" style="justify-content:center;">
+      <div class="step-badge">5</div>
+      <h3>批次翻譯</h3>
+    </div>
+    <button class="btn-batch" id="btn-translate">
+      <span class="btn-icon">🚀</span>
+      <span class="spinner"></span>
+      <span id="btn-translate-text">批次翻譯全部文件</span>
+      <div class="progress-bar-wrap" id="progress-bar" style="width:0%"></div>
+    </button>
+    <div class="translate-stats" id="translate-stats">
+      已就緒 <span class="stat-value">1</span> 個文件，共計 <span class="stat-value">~2.3KB</span> 文字內容
+    </div>
+  </div>
+
+  <!-- Step 6: Downloads -->
+  <div class="section" id="step-download" style="display:none;">
+    <div class="section-header">
+      <div class="step-badge" style="background: var(--accent2);">✓</div>
+      <h3>下載翻譯文件</h3>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">翻譯完成！檔案已保留原始格式，請選擇欲下載的版本：</p>
+    <div class="download-grid" id="download-grid"></div>
+  </div>
+
+  <!-- Language Support -->
+  <div class="section">
+    <div class="section-header">
+      <div class="step-badge" style="background:var(--accent2);">🌍</div>
+      <h3>支援語言一覽（22 種語言）</h3>
+    </div>
+    <div class="lang-grid">
+      <div class="lang-chip"><span class="lang-flag">🇬🇧</span> English</div>
+      <div class="lang-chip"><span class="lang-flag">🇨🇳</span> 简体中文</div>
+      <div class="lang-chip"><span class="lang-flag">🇹🇼</span> 繁體中文</div>
+      <div class="lang-chip"><span class="lang-flag">🇯🇵</span> 日本語</div>
+      <div class="lang-chip"><span class="lang-flag">🇰🇷</span> 한국어</div>
+      <div class="lang-chip"><span class="lang-flag">🇪🇸</span> Español</div>
+      <div class="lang-chip"><span class="lang-flag">🇫🇷</span> Français</div>
+      <div class="lang-chip"><span class="lang-flag">🇩🇪</span> Deutsch</div>
+      <div class="lang-chip"><span class="lang-flag">🇻🇳</span> Tiếng Việt</div>
+      <div class="lang-chip"><span class="lang-flag">🇹🇭</span> ไทย</div>
+      <div class="lang-chip"><span class="lang-flag">🇮🇩</span> Bahasa Indonesia</div>
+      <div class="lang-chip"><span class="lang-flag">🇸🇦</span> العربية</div>
+      <div class="lang-chip"><span class="lang-flag">🇧🇷</span> Português</div>
+      <div class="lang-chip"><span class="lang-flag">🇷🇺</span> Русский</div>
+      <div class="lang-chip"><span class="lang-flag">🇮🇹</span> Italiano</div>
+      <div class="lang-chip"><span class="lang-flag">🇹🇷</span> Türkçe</div>
+      <div class="lang-chip"><span class="lang-flag">🇳🇱</span> Nederlands</div>
+      <div class="lang-chip"><span class="lang-flag">🇵🇱</span> Polski</div>
+      <div class="lang-chip"><span class="lang-flag">🇮🇳</span> हिन्दी</div>
+      <div class="lang-chip"><span class="lang-flag">🇲🇾</span> Bahasa Melayu</div>
+      <div class="lang-chip"><span class="lang-flag">🇵🇭</span> Tagalog</div>
+      <div class="lang-chip"><span class="lang-flag">🇲🇲</span> မြန်မာ</div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  © 2026 ManuTrade — AI 驅動的多語言貿易文件轉換平台
+</footer>
+
+<script>
+/* ==================== UTILITIES ==================== */
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+
+/* ==================== TOAST SYSTEM ==================== */
+function toast(msg, type = 'info') {
+  const container = $('#toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => {
+    if (el.parentNode) el.remove();
+  }, 3200);
+}
+
+/* ==================== EMAIL GATE ==================== */
+const GATE_KEY = 'manutrade_ml_gate';
+const GATE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+function checkGate() {
+  const saved = sessionStorage.getItem(GATE_KEY);
+  if (saved) {
+    const data = JSON.parse(saved);
+    if (Date.now() - data.timestamp < GATE_DURATION) {
+      return true; // still valid
+    }
+  }
+  return false;
+}
+
+function passGate(email) {
+  sessionStorage.setItem(GATE_KEY, JSON.stringify({
+    email: email || 'guest@trial.user',
+    timestamp: Date.now()
+  }));
+  hideGate();
+  startCountdown();
+}
+
+function hideGate() {
+  const gate = $('#email-gate');
+  gate.classList.add('hidden');
+}
+
+function showGate() {
+  const gate = $('#email-gate');
+  gate.classList.remove('hidden');
+}
+
+function startCountdown() {
+  const bar = $('#countdown-bar');
+  const timer = $('#countdown-timer');
+  bar.style.display = 'block';
+
+  const saved = JSON.parse(sessionStorage.getItem(GATE_KEY));
+  const endTime = saved.timestamp + GATE_DURATION;
+
+  function update() {
+    const remaining = endTime - Date.now();
+    if (remaining <= 0) {
+      timer.textContent = '00:00:00';
+      bar.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+      bar.innerHTML = '⚠️ 試用時間已到期，請重新載入頁面';
+      sessionStorage.removeItem(GATE_KEY);
+      return;
+    }
+    const h = Math.floor(remaining / 3600000);
+    const m = Math.floor((remaining % 3600000) / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    timer.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  }
+
+  update();
+  setInterval(update, 1000);
+}
+
+// Gate events
+$('#gate-submit').addEventListener('click', () => {
+  const email = $('#gate-email').value.trim();
+  const errorEl = $('#gate-error');
+
+  if (!email) {
+    errorEl.textContent = '請輸入電子郵件地址';
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errorEl.textContent = '請輸入有效的電子郵件地址';
+    return;
+  }
+  errorEl.textContent = '';
+  passGate(email);
+  toast('✅ 驗證成功！獲得 24 小時免費使用權限', 'success');
+});
+
+$('#gate-skip').addEventListener('click', () => {
+  passGate('guest');
+  toast('ℹ️ 跳過驗證，以訪客模式使用', 'warning');
+});
+
+// Init gate
+if (!checkGate()) {
+  showGate();
+} else {
+  hideGate();
+  startCountdown();
+}
+
+/* ==================== FILE QUEUE ==================== */
+let fileQueue = [];
+const fileIcons = {
+  'pdf': '📄',
+  'xlsx': '📊',
+  'xls': '📊',
+  'docx': '📝',
+  'txt': '📃',
+  'default': '📎'
+};
+
+function getFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  return fileIcons[ext] || fileIcons.default;
+}
+
+function getFileLangClass(name) {
+  // Simple heuristic for demo
+  const lower = name.toLowerCase();
+  if (lower.includes('cn') || lower.includes('zh') || lower.includes('chinese')) return 'zh';
+  if (lower.includes('jp') || lower.includes('ja') || lower.includes('japan')) return 'ja';
+  if (lower.includes('kr') || lower.includes('ko') || lower.includes('korea')) return 'ko';
+  if (lower.includes('es') || lower.includes('spanish')) return 'es';
+  return 'auto';
+}
+
+function getFileLangLabel(langClass) {
+  const map = { auto: '自動偵測', en: '英文', zh: '中文', ja: '日文', ko: '韓文', es: '西班牙文' };
+  return map[langClass] || '自動偵測';
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+function renderFileQueue() {
+  const container = $('#file-queue');
+  if (fileQueue.length === 0) {
+    container.innerHTML = '';
+    updateStats();
+    return;
+  }
+
+  container.innerHTML = fileQueue.map((f, i) => `
+    <div class="file-item">
+      <span class="file-icon">${getFileIcon(f.name)}</span>
+      <div class="file-info">
+        <div class="file-name" title="${f.name}">${f.name}</div>
+        <div class="file-meta">
+          ${formatSize(f.size)} •
+          <span class="lang-badge ${f.langClass}">🔍 ${getFileLangLabel(f.langClass)}</span>
+        </div>
+      </div>
+      <button class="remove-btn" data-index="${i}" title="移除">×</button>
+    </div>
+  `).join('');
+
+  // Bind remove buttons
+  container.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.index);
+      const removed = fileQueue[idx];
+      fileQueue.splice(idx, 1);
+      renderFileQueue();
+      toast(`已移除「${removed.name}」`, 'info');
+    });
+  });
+
+  updateStats();
+}
+
+function addFiles(files) {
+  let added = 0;
+  for (const file of files) {
+    // Check size
+    if (file.size > 20 * 1024 * 1024) {
+      toast(`「${file.name}」超過 20MB 限制，已略過`, 'error');
+      continue;
+    }
+    // Check duplicate
+    if (fileQueue.some(f => f.name === file.name && f.size === file.size)) {
+      toast(`「${file.name}」已存在於佇列中`, 'warning');
+      continue;
+    }
+    const langClass = getFileLangClass(file.name);
+    fileQueue.push({
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      langClass,
+      file // keep ref for download simulation
+    });
+    added++;
+  }
+  if (added > 0) {
+    renderFileQueue();
+    if (added === 1) {
+      toast(`已新增「${files[0].name}」`, 'success');
+    } else {
+      toast(`已新增 ${added} 個文件`, 'success');
+    }
+  }
+}
+
+function updateStats() {
+  const stats = $('#translate-stats');
+  const totalSize = fileQueue.reduce((sum, f) => sum + f.size, 0);
+  if (fileQueue.length === 0) {
+    stats.innerHTML = '尚未上傳文件，請先拖放或選擇文件';
+    return;
+  }
+  stats.innerHTML = `已就緒 <span class="stat-value">${fileQueue.length}</span> 個文件，共計 <span class="stat-value">${formatSize(totalSize)}</span>`;
+}
+
+/* ==================== UPLOAD ZONE EVENTS ==================== */
+const uploadZone = $('#upload-zone');
+const fileInput = $('#file-input');
+
+// Click to browse
+uploadZone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length > 0) {
+    addFiles(fileInput.files);
+    fileInput.value = '';
+  }
+});
+
+// Drag & drop
+uploadZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadZone.classList.add('drag-over');
+});
+uploadZone.addEventListener('dragleave', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+});
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  if (e.dataTransfer.files.length > 0) {
+    addFiles(e.dataTransfer.files);
+  }
+});
+
+// Prevent drop on body
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => e.preventDefault());
+
+/* ==================== LANGUAGE SELECTION ==================== */
+const targetLang = $('#target-lang');
+const sourceLangLabel = $('#source-lang-label');
+const targetLangLabel = $('#target-lang-label');
+const sourcePreview = $('#source-preview');
+const translatedPreview = $('#translated-preview');
+
+// Mock translations per target language
+const mockTranslations = {
+  'zh-TW': {
+    label: '繁體中文',
+    sourceLabel: '自動偵測：英文',
+    text: `產品規格說明書
+型號：MT-2400 工業用加熱器
+
+主要規格：
+━━━━━━━━━━━━━━━━━━━━━━
+• 產品代碼：IH-MT2400-PRO
+• <span class="term-highlight" title="已保留專業術語">HS Code: 8516.60</span>
+• 額定功率：2400W / 220V AC
+• 認證：CE、RoHS、FCC
+
+訂購資訊：
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="已保留專業術語">MOQ</span>（最小訂購量）：500 件
+• <span class="term-highlight" title="已保留專業術語">FOB</span> 價格：每件 USD 38.50
+• <span class="term-highlight" title="已保留專業術語">Lead Time</span>（交貨期）：25-30 個工作天
+• 付款條件：即期信用證（不可撤銷 <span class="term-highlight" title="已保留專業術語">LC</span>）
+
+包裝明細：
+━━━━━━━━━━━━━━━━━━━━━━
+• 產品尺寸：320 × 180 × 120 mm
+• 淨重：2.8 kg
+• 毛重：3.5 kg
+• 包裝方式：出口標準紙箱，內附泡棉
+• 20 呎貨櫃容量：約 2,400 件
+
+保固與支援：
+━━━━━━━━━━━━━━━━━━━━━━
+• 原廠保固：自提單日期起 24 個月
+• 售後服務：透過 WhatsApp / 微信提供線上支援
+• 備用零件：可依需求提供（<span class="term-highlight" title="已保留專業術語">EXW</span> 條件）
+
+請確認形式發票以進行訂單處理。`
+  },
+  'en': {
+    label: 'English',
+    sourceLabel: 'Auto-detected: English',
+    text: `Product Specification Sheet
+Model: MT-2400 Industrial Heater
+
+Key Specifications:
+━━━━━━━━━━━━━━━━━━━━━━
+• Product Code: IH-MT2400-PRO
+• <span class="term-highlight" title="Preserved industry term">HS Code: 8516.60</span>
+• Power Rating: 2400W / 220V AC
+• Certification: CE, RoHS, FCC
+
+Ordering Information:
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="Preserved industry term">MOQ</span>: 500 units
+• <span class="term-highlight" title="Preserved industry term">FOB</span> Price: USD 38.50 / unit
+• <span class="term-highlight" title="Preserved industry term">Lead Time</span>: 25-30 working days
+• Payment Terms: <span class="term-highlight" title="Preserved industry term">LC</span> at sight (Irrevocable)
+
+Packaging Details:
+━━━━━━━━━━━━━━━━━━━━━━
+• Unit Dimensions: 320 × 180 × 120 mm
+• Net Weight: 2.8 kg
+• Gross Weight: 3.5 kg
+• Packaging: Export-standard carton with foam insert
+• 20ft Container Capacity: ~2,400 units
+
+Warranty & Support:
+━━━━━━━━━━━━━━━━━━━━━━
+• Factory Warranty: 24 months from <span class="term-highlight" title="Preserved industry term">B/L</span> date
+• After-Sales: Online support via WhatsApp/WeChat
+• Spare Parts: Available upon request (<span class="term-highlight" title="Preserved industry term">EXW</span> basis)
+
+Please confirm <span class="term-highlight" title="Preserved industry term">PI</span> for order processing.`
+  },
+  'zh-CN': {
+    label: '简体中文',
+    sourceLabel: 'Auto-detected: 英文',
+    text: `产品规格说明书
+型号：MT-2400 工业用加热器
+
+主要规格：
+━━━━━━━━━━━━━━━━━━━━━━
+• 产品代码：IH-MT2400-PRO
+• <span class="term-highlight" title="已保留专业术语">HS Code: 8516.60</span>
+• 额定功率：2400W / 220V AC
+• 认证：CE、RoHS、FCC
+
+订购信息：
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="已保留专业术语">MOQ</span>（最小订购量）：500 件
+• <span class="term-highlight" title="已保留专业术语">FOB</span> 价格：每件 USD 38.50
+• <span class="term-highlight" title="已保留专业术语">Lead Time</span>（交货期）：25-30 个工作日
+• 付款条件：即期信用证（不可撤销 <span class="term-highlight" title="已保留专业术语">LC</span>）
+
+包装明细：
+━━━━━━━━━━━━━━━━━━━━━━
+• 产品尺寸：320 × 180 × 120 mm
+• 净重：2.8 kg
+• 毛重：3.5 kg
+• 包装方式：出口标准纸箱，内附泡沫
+• 20 英尺货柜容量：约 2,400 件
+
+保修与支持：
+━━━━━━━━━━━━━━━━━━━━━━
+• 原厂保修：自提單日期起 24 个月
+• 售后服务：通过 WhatsApp / 微信提供在线支持
+• 备用零件：可根据需求提供（<span class="term-highlight" title="已保留专业术语">EXW</span> 条件）
+
+请确认形式发票以进行订单处理。`
+  },
+  'ja': {
+    label: '日本語',
+    sourceLabel: '自動検出：英語',
+    text: `製品仕様書
+型式：MT-2400 工業用ヒーター
+
+主要仕様：
+━━━━━━━━━━━━━━━━━━━━━━
+• 製品コード：IH-MT2400-PRO
+• <span class="term-highlight" title="業界用語を保持">HS Code: 8516.60</span>
+• 定格電力：2400W / 220V AC
+• 認証：CE、RoHS、FCC
+
+注文情報：
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="業界用語を保持">MOQ</span>（最小注文数量）：500 個
+• <span class="term-highlight" title="業界用語を保持">FOB</span> 価格：1個あたり USD 38.50
+• <span class="term-highlight" title="業界用語を保持">Lead Time</span>（納期）：25-30 営業日
+• 支払条件：一覧払い信用状（取消不可 <span class="term-highlight" title="業界用語を保持">LC</span>）
+
+梱包詳細：
+━━━━━━━━━━━━━━━━━━━━━━
+• 製品寸法：320 × 180 × 120 mm
+• 正味重量：2.8 kg
+• 総重量：3.5 kg
+• 梱包：輸出標準カートン（フォーム入り）
+• 20ft コンテナ積載数：約 2,400 個
+
+保証・サポート：
+━━━━━━━━━━━━━━━━━━━━━━
+• メーカー保証：B/L日より24ヶ月
+• アフターサービス：WhatsApp / WeChat によるオンラインサポート
+• スペアパーツ：ご要望に応じて提供（<span class="term-highlight" title="業界用語を保持">EXW</span> 条件）
+
+ご注文処理のため、PIをご確認ください。`
+  },
+  'ko': {
+    label: '한국어',
+    sourceLabel: '자동 감지: 영어',
+    text: `제품 사양서
+모델: MT-2400 산업용 히터
+
+주요 사양:
+━━━━━━━━━━━━━━━━━━━━━━
+• 제품 코드: IH-MT2400-PRO
+• <span class="term-highlight" title="업계 용어 보존">HS Code: 8516.60</span>
+• 정격 출력: 2400W / 220V AC
+• 인증: CE, RoHS, FCC
+
+주문 정보:
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="업계 용어 보존">MOQ</span>(최소 주문 수량): 500개
+• <span class="term-highlight" title="업계 용어 보존">FOB</span> 가격: 개당 USD 38.50
+• <span class="term-highlight" title="업계 용어 보존">Lead Time</span>(납기): 25-30 근무일
+• 지불 조건: 일람불 신용장(취소 불능 <span class="term-highlight" title="업계 용어 보존">LC</span>)
+
+포장 세부사항:
+━━━━━━━━━━━━━━━━━━━━━━
+• 제품 크기: 320 × 180 × 120 mm
+• 순중량: 2.8 kg
+• 총중량: 3.5 kg
+• 포장: 수출 표준 카톤(폼 인서트 포함)
+• 20ft 컨테이너 적재량: 약 2,400개
+
+보증 및 지원:
+━━━━━━━━━━━━━━━━━━━━━━
+• 제조사 보증: B/L 일자로부터 24개월
+• 판매 후 지원: WhatsApp/WeChat을 통한 온라인 지원
+• 예비 부품: 요청 시 제공(<span class="term-highlight" title="업계 용어 보존">EXW</span> 기준)
+
+주문 처리를 위해 PI를 확인해 주십시오.`
+  },
+  'es': {
+    label: 'Español',
+    sourceLabel: 'Detectado: Inglés',
+    text: `Hoja de Especificaciones del Producto
+Modelo: MT-2400 Calentador Industrial
+
+Especificaciones Clave:
+━━━━━━━━━━━━━━━━━━━━━━
+• Código del Producto: IH-MT2400-PRO
+• <span class="term-highlight" title="Término industrial preservado">HS Code: 8516.60</span>
+• Potencia Nominal: 2400W / 220V AC
+• Certificación: CE, RoHS, FCC
+
+Información de Pedido:
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="Término industrial preservado">MOQ</span> (Cantidad Mínima): 500 unidades
+• Precio <span class="term-highlight" title="Término industrial preservado">FOB</span>: USD 38.50 / unidad
+• <span class="term-highlight" title="Término industrial preservado">Lead Time</span> (Plazo de Entrega): 25-30 días hábiles
+• Condiciones de Pago: Carta de Crédito a la vista (Irrevocable <span class="term-highlight" title="Término industrial preservado">LC</span>)
+
+Detalles de Embalaje:
+━━━━━━━━━━━━━━━━━━━━━━
+• Dimensiones: 320 × 180 × 120 mm
+• Peso Neto: 2.8 kg
+• Peso Bruto: 3.5 kg
+• Embalaje: Caja de exportación estándar con inserto de espuma
+• Capacidad Contenedor 20 pies: ~2,400 unidades
+
+Garantía y Soporte:
+━━━━━━━━━━━━━━━━━━━━━━
+• Garantía de Fábrica: 24 meses desde fecha de B/L
+• Posventa: Soporte en línea vía WhatsApp/WeChat
+• Repuestos: Disponibles bajo solicitud (base <span class="term-highlight" title="Término industrial preservado">EXW</span>)
+
+Confirme la <span class="term-highlight" title="Término industrial preservado">PI</span> para procesar el pedido.`
+  },
+  'fr': {
+    label: 'Français',
+    sourceLabel: 'Détecté : Anglais',
+    text: `Fiche Technique du Produit
+Modèle : MT-2400 Chauffe-eau Industriel
+
+Spécifications Principales :
+━━━━━━━━━━━━━━━━━━━━━━
+• Code Produit : IH-MT2400-PRO
+• <span class="term-highlight" title="Terme industriel préservé">HS Code: 8516.60</span>
+• Puissance Nominale : 2400W / 220V AC
+• Certification : CE, RoHS, FCC
+
+Informations de Commande :
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="Terme industriel préservé">MOQ</span> (Quantité Minimale) : 500 unités
+• Prix <span class="term-highlight" title="Terme industriel préservé">FOB</span> : USD 38,50 / unité
+• <span class="term-highlight" title="Terme industriel préservé">Lead Time</span> (Délai de Livraison) : 25-30 jours ouvrables
+• Conditions de Paiement : Crédit documentaire à vue (<span class="term-highlight" title="Terme industriel préservé">LC</span> irrévocable)
+
+Détails d'Emballage :
+━━━━━━━━━━━━━━━━━━━━━━
+• Dimensions : 320 × 180 × 120 mm
+• Poids Net : 2,8 kg
+• Poids Brut : 3,5 kg
+• Emballage : Carton standard export avec mousse
+• Capacité Conteneur 20 pieds : ~2 400 unités
+
+Garantie et Support :
+━━━━━━━━━━━━━━━━━━━━━━
+• Garantie Usine : 24 mois à partir de la date du B/L
+• Service Après-Vente : Support en ligne via WhatsApp/WeChat
+• Pièces Détachées : Disponibles sur demande (base <span class="term-highlight" title="Terme industriel préservé">EXW</span>)
+
+Veuillez confirmer la <span class="term-highlight" title="Terme industriel préservé">PI</span> pour le traitement de la commande.`
+  },
+  'de': {
+    label: 'Deutsch',
+    sourceLabel: 'Erkannt: Englisch',
+    text: `Produktspezifikationsblatt
+Modell: MT-2400 Industrieheizgerät
+
+Technische Daten:
+━━━━━━━━━━━━━━━━━━━━━━
+• Produktcode: IH-MT2400-PRO
+• <span class="term-highlight" title="Fachbegriff beibehalten">HS Code: 8516.60</span>
+• Nennleistung: 2400W / 220V AC
+• Zertifizierung: CE, RoHS, FCC
+
+Bestellinformationen:
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="Fachbegriff beibehalten">MOQ</span> (Mindestbestellmenge): 500 Stück
+• <span class="term-highlight" title="Fachbegriff beibehalten">FOB</span>-Preis: USD 38,50 / Stück
+• <span class="term-highlight" title="Fachbegriff beibehalten">Lead Time</span> (Lieferzeit): 25-30 Werktage
+• Zahlungsbedingungen: Sichtakkreditiv (unwiderrufliches <span class="term-highlight" title="Fachbegriff beibehalten">LC</span>)
+
+Verpackungsdetails:
+━━━━━━━━━━━━━━━━━━━━━━
+• Abmessungen: 320 × 180 × 120 mm
+• Nettogewicht: 2,8 kg
+• Bruttogewicht: 3,5 kg
+• Verpackung: Export-Standardkarton mit Schaumstoffeinlage
+• 20-Fuß-Container-Kapazität: ~2.400 Stück
+
+Garantie & Support:
+━━━━━━━━━━━━━━━━━━━━━━
+• Werksgarantie: 24 Monate ab B/L-Datum
+• Kundendienst: Online-Support via WhatsApp/WeChat
+• Ersatzteile: Auf Anfrage erhältlich (<span class="term-highlight" title="Fachbegriff beibehalten">EXW</span>-Basis)
+
+Bitte bestätigen Sie die <span class="term-highlight" title="Fachbegriff beibehalten">PI</span> für die Auftragsbearbeitung.`
+  },
+  'vi': {
+    label: 'Tiếng Việt',
+    sourceLabel: 'Phát hiện: Tiếng Anh',
+    text: `Bảng Thông Số Kỹ Thuật Sản Phẩm
+Model: MT-2400 Máy Sưởi Công Nghiệp
+
+Thông Số Chính:
+━━━━━━━━━━━━━━━━━━━━━━
+• Mã Sản Phẩm: IH-MT2400-PRO
+• <span class="term-highlight" title="Thuật ngữ ngành được giữ nguyên">HS Code: 8516.60</span>
+• Công Suất: 2400W / 220V AC
+• Chứng Nhận: CE, RoHS, FCC
+
+Thông Tin Đặt Hàng:
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="Thuật ngữ ngành được giữ nguyên">MOQ</span> (Số Lượng Tối Thiểu): 500 đơn vị
+• Giá <span class="term-highlight" title="Thuật ngữ ngành được giữ nguyên">FOB</span>: USD 38,50 / sản phẩm
+• <span class="term-highlight" title="Thuật ngữ ngành được giữ nguyên">Lead Time</span> (Thời Gian Giao Hàng): 25-30 ngày làm việc
+• Điều Khoản Thanh Toán: <span class="term-highlight" title="Thuật ngữ ngành được giữ nguyên">LC</span> trả ngay (Không hủy ngang)
+
+Chi Tiết Đóng Gói:
+━━━━━━━━━━━━━━━━━━━━━━
+• Kích Thước: 320 × 180 × 120 mm
+• Trọng Lượng Tịnh: 2,8 kg
+• Trọng Lượng Gross: 3,5 kg
+• Đóng Gói: Thùng carton tiêu chuẩn xuất khẩu có lót mút
+• Sức Chứa Container 20ft: ~2.400 đơn vị
+
+Bảo Hành & Hỗ Trợ:
+━━━━━━━━━━━━━━━━━━━━━━
+• Bảo Hành Nhà Máy: 24 tháng kể từ ngày B/L
+• Hậu Mãi: Hỗ trợ trực tuyến qua WhatsApp/WeChat
+• Phụ Tùng: Có sẵn theo yêu cầu (điều kiện <span class="term-highlight" title="Thuật ngữ ngành được giữ nguyên">EXW</span>)
+
+Vui lòng xác nhận <span class="term-highlight" title="Thuật ngữ ngành được giữ nguyên">PI</span> để xử lý đơn hàng.`
+  },
+  'th': {
+    label: 'ไทย',
+    sourceLabel: 'ตรวจพบ: อังกฤษ',
+    text: `เอกสารข้อมูลจำเพาะผลิตภัณฑ์
+รุ่น: MT-2400 เครื่องทำความร้อนอุตสาหกรรม
+
+ข้อมูลจำเพาะหลัก:
+━━━━━━━━━━━━━━━━━━━━━━
+• รหัสผลิตภัณฑ์: IH-MT2400-PRO
+• <span class="term-highlight" title="รักษาคำศัพท์อุตสาหกรรม">HS Code: 8516.60</span>
+• กำลังไฟ: 2400W / 220V AC
+• การรับรอง: CE, RoHS, FCC
+
+ข้อมูลการสั่งซื้อ:
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="รักษาคำศัพท์อุตสาหกรรม">MOQ</span> (จำนวนสั่งขั้นต่ำ): 500 ชิ้น
+• ราคา <span class="term-highlight" title="รักษาคำศัพท์อุตสาหกรรม">FOB</span>: USD 38.50 / ชิ้น
+• <span class="term-highlight" title="รักษาคำศัพท์อุตสาหกรรม">Lead Time</span> (ระยะเวลาจัดส่ง): 25-30 วันทำการ
+• เงื่อนไขการชำระเงิน: <span class="term-highlight" title="รักษาคำศัพท์อุตสาหกรรม">LC</span> at sight (เพิกถอนไม่ได้)
+
+รายละเอียดบรรจุภัณฑ์:
+━━━━━━━━━━━━━━━━━━━━━━
+• ขนาด: 320 × 180 × 120 มม.
+• น้ำหนักสุทธิ: 2.8 กก.
+• น้ำหนักรวม: 3.5 กก.
+• บรรจุภัณฑ์: กล่องส่งออกมาตรฐานพร้อมโฟมกันกระแทก
+• ความจุตู้คอนเทนเนอร์ 20 ฟุต: ~2,400 ชิ้น
+
+การรับประกันและการสนับสนุน:
+━━━━━━━━━━━━━━━━━━━━━━
+• การรับประกันโรงงาน: 24 เดือนนับจากวันที่ B/L
+• บริการหลังการขาย: การสนับสนุนออนไลน์ผ่าน WhatsApp/WeChat
+• อะไหล่: มีให้ตามคำขอ (เงื่อนไข <span class="term-highlight" title="รักษาคำศัพท์อุตสาหกรรม">EXW</span>)
+
+กรุณายืนยัน <span class="term-highlight" title="รักษาคำศัพท์อุตสาหกรรม">PI</span> เพื่อดำเนินการตามคำสั่งซื้อ`
+  },
+  'id': {
+    label: 'Bahasa Indonesia',
+    sourceLabel: 'Terdeteksi: Inggris',
+    text: `Lembar Spesifikasi Produk
+Model: MT-2400 Pemanas Industri
+
+Spesifikasi Utama:
+━━━━━━━━━━━━━━━━━━━━━━
+• Kode Produk: IH-MT2400-PRO
+• <span class="term-highlight" title="Istilah industri dipertahankan">HS Code: 8516.60</span>
+• Daya: 2400W / 220V AC
+• Sertifikasi: CE, RoHS, FCC
+
+Informasi Pemesanan:
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="Istilah industri dipertahankan">MOQ</span> (Jumlah Minimum): 500 unit
+• Harga <span class="term-highlight" title="Istilah industri dipertahankan">FOB</span>: USD 38,50 / unit
+• <span class="term-highlight" title="Istilah industri dipertahankan">Lead Time</span> (Waktu Pengiriman): 25-30 hari kerja
+• Ketentuan Pembayaran: <span class="term-highlight" title="Istilah industri dipertahankan">LC</span> at sight (Tidak Dapat Dibatalkan)
+
+Detail Kemasan:
+━━━━━━━━━━━━━━━━━━━━━━
+• Dimensi: 320 × 180 × 120 mm
+• Berat Bersih: 2,8 kg
+• Berat Kotor: 3,5 kg
+• Kemasan: Karton standar ekspor dengan sisipan busa
+• Kapasitas Kontainer 20ft: ~2.400 unit
+
+Garansi & Dukungan:
+━━━━━━━━━━━━━━━━━━━━━━
+• Garansi Pabrik: 24 bulan sejak tanggal B/L
+• Layanan Purna Jual: Dukungan online via WhatsApp/WeChat
+• Suku Cadang: Tersedia berdasarkan permintaan (basis <span class="term-highlight" title="Istilah industri dipertahankan">EXW</span>)
+
+Harap konfirmasi <span class="term-highlight" title="Istilah industri dipertahankan">PI</span> untuk pemrosesan pesanan.`
+  },
+  'ar': {
+    label: 'العربية',
+    sourceLabel: 'تم الكشف: الإنجليزية',
+    text: `ورقة مواصفات المنتج
+الموديل: MT-2400 سخان صناعي
+
+المواصفات الرئيسية:
+━━━━━━━━━━━━━━━━━━━━━━
+• رمز المنتج: IH-MT2400-PRO
+• <span class="term-highlight" title="مصطلح صناعي محفوظ">HS Code: 8516.60</span>
+• القدرة المقدرة: 2400W / 220V AC
+• الشهادات: CE، RoHS، FCC
+
+معلومات الطلب:
+━━━━━━━━━━━━━━━━━━━━━━
+• <span class="term-highlight" title="مصطلح صناعي محفوظ">MOQ</span> (الحد الأدنى للطلب): 500 وحدة
+• سعر <span class="term-highlight" title="مصطلح صناعي محفوظ">FOB</span>: USD 38.50 / وحدة
+• <span class="term-highlight" title="مصطلح صناعي محفوظ">Lead Time</span> (مهلة التسليم): 25-30 يوم عمل
+• شروط الدفع: اعتماد مستندي تحت الطلب (<span class="term-highlight" title="مصطلح صناعي محفوظ">LC</span> غير قابل للإلغاء)
+
+تفاصيل التغليف:
+━━━━━━━━━━━━━━━━━━━━━━
+• الأبعاد: 320 × 180 × 120 مم
+• الوزن الصافي: 2.8 كجم
+• الوزن الإجمالي: 3.5 كجم
+• التغليف: كرتون تصدير قياسي مع حشوة رغوية
+• سعة حاوية 20 قدم: حوالي 2,400 وحدة
+
+الضمان والدعم:
+━━━━━━━━━━━━━━━━━━━━━━
+• ضمان المصنع: 24 شهرًا من تاريخ <span class="term-highlight" title="مصطلح صناعي محفوظ">B/L</span>
+• خدمة ما بعد البيع: دعم عبر الإنترنت عبر WhatsApp/WeChat
+• قطع الغيار: متوفرة عند الطلب (شرط <span class="term-highlight" title="مصطلح صناعي محفوظ">EXW</span>)
+
+يرجى تأكيد <span class="term-highlight" title="مصطلح صناعي محفوظ">PI</span> لمعالجة الطلب.`
+  }
+};
+
+// Default source preview (English)
+const sourceTextDefault = `Product Specification Sheet
+Model: MT-2400 Industrial Heater
+
+Key Specifications:
+━━━━━━━━━━━━━━━━━━━━━━
+• Product Code: IH-MT2400-PRO
+• HS Code: 8516.60
+• Power Rating: 2400W / 220V AC
+• Certification: CE, RoHS, FCC
+
+Ordering Information:
+━━━━━━━━━━━━━━━━━━━━━━
+• MOQ: 500 units
+• FOB Price: USD 38.50 / unit
+• Lead Time: 25-30 working days
+• Payment Terms: LC at sight (Irrevocable)
+
+Packaging Details:
+━━━━━━━━━━━━━━━━━━━━━━
+• Unit Dimensions: 320 × 180 × 120 mm
+• Net Weight: 2.8 kg
+• Gross Weight: 3.5 kg
+• Packaging: Export-standard carton with foam insert
+• 20ft Container Capacity: ~2,400 units
+
+Warranty & Support:
+━━━━━━━━━━━━━━━━━━━━━━
+• Factory Warranty: 24 months from B/L date
+• After-Sales: Online support via WhatsApp/WeChat
+• Spare Parts: Available upon request (EXW basis)
+
+Please confirm PI for order processing.`;
+
+function updateTranslationPreview() {
+  const lang = targetLang.value;
+  const mock = mockTranslations[lang];
+  if (mock) {
+    targetLangLabel.textContent = `目標語言：${mock.label}`;
+    sourceLangLabel.textContent = mock.sourceLabel;
+    translatedPreview.innerHTML = mock.text;
+  } else {
+    targetLangLabel.textContent = `目標語言：${targetLang.options[targetLang.selectedIndex].text}`;
+  }
+}
+
+targetLang.addEventListener('change', updateTranslationPreview);
+
+// Swap button (just rotates the selector visually in demo)
+$('#swap-lang').addEventListener('click', () => {
+  toast('🔄 語言方向已交換（示範用途）', 'info');
+});
+
+/* ==================== GLOSSARY MANAGEMENT ==================== */
+function bindGlossaryRemove() {
+  $$('#glossary-list .g-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.glossary-item');
+      const term = item.querySelector('.g-term').textContent;
+      item.style.opacity = '0';
+      item.style.transform = 'translateX(-20px)';
+      item.style.transition = 'all 0.3s ease';
+      setTimeout(() => item.remove(), 300);
+      toast(`已移除術語「${term}」`, 'info');
+    });
+  });
+}
+
+$('#glossary-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const termInput = $('#glossary-term');
+  const transInput = $('#glossary-trans');
+  const term = termInput.value.trim();
+  const trans = transInput.value.trim();
+
+  if (!term || !trans) {
+    toast('請填寫術語及翻譯', 'warning');
+    return;
+  }
+
+  // Check duplicate
+  const existing = [...$$('#glossary-list .g-term')].some(el => el.textContent === term);
+  if (existing) {
+    toast(`術語「${term}」已存在`, 'warning');
+    return;
+  }
+
+  const list = $('#glossary-list');
+  const item = document.createElement('div');
+  item.className = 'glossary-item';
+  item.style.animation = 'queueIn 0.3s ease';
+  item.innerHTML = `
+    <span class="g-term">${term}</span><span class="g-arrow">→</span><span class="g-translation">${trans}</span>
+    <button class="g-remove" title="移除">×</button>
+  `;
+  list.appendChild(item);
+
+  termInput.value = '';
+  transInput.value = '';
+  bindGlossaryRemove();
+  toast(`已新增術語「${term} → ${trans}」`, 'success');
+});
+
+bindGlossaryRemove();
+
+/* ==================== BATCH TRANSLATE ==================== */
+function simulateTranslation() {
+  const btn = $('#btn-translate');
+  const text = $('#btn-translate-text');
+  const bar = $('#progress-bar');
+  const downloadSection = $('#step-download');
+  const downloadGrid = $('#download-grid');
+
+  btn.classList.add('translating');
+  btn.disabled = true;
+  text.textContent = '翻譯中...';
+
+  let progress = 0;
+  const steps = [
+    { pct: 15, msg: '正在提取文件文字內容…' },
+    { pct: 30, msg: '正在偵測語言與格式化…' },
+    { pct: 50, msg: '正在套用術語對照表…' },
+    { pct: 70, msg: 'AI 翻譯模型中…' },
+    { pct: 85, msg: '正在保留專業術語…' },
+    { pct: 95, msg: '正在生成下載檔案…' },
+    { pct: 100, msg: '翻譯完成！' },
+  ];
+
+  let stepIdx = 0;
+  const interval = setInterval(() => {
+    if (stepIdx < steps.length) {
+      const step = steps[stepIdx];
+      progress = step.pct;
+      bar.style.width = progress + '%';
+      text.textContent = step.msg;
+      stepIdx++;
+    }
+
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(() => {
+        btn.classList.remove('translating');
+        btn.disabled = false;
+        text.textContent = '批次翻譯全部文件';
+        bar.style.width = '0%';
+
+        // Show download section
+        downloadSection.style.display = 'block';
+        downloadSection.scrollIntoView({ behavior: 'smooth' });
+
+        // Generate download cards
+        const targetLangCode = targetLang.value;
+        const targetLangName = targetLang.options[targetLang.selectedIndex].text;
+        const filesToDownload = fileQueue.length > 0 ? fileQueue : [
+          { name: 'IH-MT2400-PRO_spec.pdf', size: 102400, type: 'application/pdf', langClass: 'auto' },
+          { name: 'product_catalog.xlsx', size: 45000, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', langClass: 'auto' }
+        ];
+
+        downloadGrid.innerHTML = filesToDownload.map(f => {
+          const baseName = f.name.replace(/\.[^.]+$/, '');
+          const ext = f.name.split('.').pop();
+          const translatedName = `${baseName}_${targetLangCode}.${ext}`;
+          const icon = getFileIcon(f.name);
+          return `
+            <div class="download-card" onclick="downloadSim('${translatedName}', '${f.type}')">
+              <span class="dl-icon">${icon}</span>
+              <span class="dl-name">${baseName}</span>
+              <span class="dl-lang">🌐 ${targetLangName}</span>
+              <span class="dl-meta">.${ext} · ${formatSize(f.size)}</span>
+            </div>
+          `;
+        }).join('');
+      }, 600);
+    }
+  }, 500);
+}
+
+function downloadSim(filename, mimeType) {
+  toast(`⬇️ 正在下載「${filename}」…`, 'success');
+  // Create a demo download with the mock content
+  const content = translatedPreview.textContent || translatedPreview.innerText;
+  const blob = new Blob([content], { type: mimeType || 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+$('#btn-translate').addEventListener('click', () => {
+  if ($('#btn-translate').classList.contains('translating')) return;
+
+  if (fileQueue.length === 0) {
+    // Demo mode: simulate with mock data
+    toast('ℹ️ 未上傳文件，使用示範資料進行翻譯', 'warning');
+  }
+
+  simulateTranslation();
+});
+
+/* ==================== ADD DEMO FILE ON LOAD ==================== */
+// Pre-populate with one demo file for a richer demo experience
+const demoFile = {
+  name: 'IH-MT2400-PRO_specification.pdf',
+  size: 102400,
+  type: 'application/pdf',
+  langClass: 'auto',
+  file: null
+};
+if (fileQueue.length === 0) {
+  fileQueue.push(demoFile);
+  renderFileQueue();
+}
+
+/* ==================== INITIALIZE ==================== */
+updateTranslationPreview();
+
+console.log('🌐 ManuTrade 多語言轉換器已就緒');
+console.log('   — 支援 22 種語言');
+console.log('   — AI 驅動工業術語保留');
+console.log('   — 自訂術語對照表');
+console.log('   — 即時翻譯預覽');
+</script>
+
+</body>
+</html>
