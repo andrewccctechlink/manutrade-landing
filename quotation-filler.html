@@ -103,7 +103,7 @@ footer a{color:var(--accent);text-decoration:none}
 <footer><p>© 2026 <a href="/">ManuTrade AI</a> — AI 報價自動填充 · Powered by Gemini</p></footer>
 
 <script>
-var _gk='QVEuQWI4Uk42SVdMRG5XNm5zeF9yckdZbmx6RHJ3OFYxa3hQckNqM016azNKVXY1Sk91YkE=';
+var _gk='c2stNzMxNWIyY2QyODMzNDU0ODhjMjYwNTFmMWM4MGE2YzQ=';
 function gk(){return atob(_gk);}
 document.addEventListener('DOMContentLoaded',function(){
   var saved=sessionStorage.getItem('mt_user_gk');
@@ -202,10 +202,10 @@ document.getElementById('fillBtn').addEventListener('click',async function(){
       parts=[{text:prompt+'\n\nDocument filename: '+supplierData.name+'\n\nExtracted content:\n'+extracted}];
     }
     
-    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gk()},
-      body:JSON.stringify({contents:[{parts:parts}],generationConfig:{temperature:0.1,maxOutputTokens:2048}})});
+    var resp=await fetch('https://api.deepseek.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+gk()},
+      body:JSON.stringify({model:'deepseek-chat',messages:[{role:'user',content:typeof parts[0]==='string'?parts[0]:parts.map(function(p){return p.text?{type:'text',text:p.text}:{type:'image_url',image_url:{url:'data:'+p.inline_data.mime_type+';base64,'+p.inline_data.data}}})}],max_tokens:2048,temperature:0.1})});
     var j=await resp.json();if(j.error)throw new Error(j.error.message);
-    var text=j.candidates[0].content.parts[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
+    var text=j.choices[0].message.content.replace(/```json/g,'').replace(/```/g,'').trim();
     renderResults({extracted:JSON.parse(text)});
     showStatus('success','✅ 提取完成！請檢查並修改以下欄位，然後下載。');document.getElementById('downloadBtn').disabled=false;
   }catch(e){showStatus('error','❌ 錯誤：'+e.message+'。請試用示範。');}
