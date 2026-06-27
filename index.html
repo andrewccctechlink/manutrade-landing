@@ -11,13 +11,13 @@
 <style>
 :root {
   /* 🎨 顏色主題 — 改呢 3 個色就全站跟住變 */
-  --bg: #0b0f19;
-  --card: #131a2b;
-  --border: #1e2d45;
-  --accent: #06b6d4;
-  --accent2: #10b981;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
+  --bg: #f8fafc;
+  --card: #f1f5f9;
+  --border: #e2e8f0;
+  --accent: #0891b2;
+  --accent2: #059669;
+  --text: #1e293b;
+  --muted: #64748b;
   --free: #10b981;
   --pro: #f59e0b;
   --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
@@ -28,7 +28,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans
 .container{max-width:1200px;margin:0 auto;padding:0 24px}
 
 /* ═══ Navigation ═══ */
-nav{position:fixed;top:0;width:100%;z-index:100;background:rgba(11,15,25,0.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+nav{position:fixed;top:0;width:100%;z-index:100;background:rgba(248,250,252,0.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
 nav .container{display:flex;align-items:center;justify-content:space-between;height:64px}
 nav .logo{font-size:1.25rem;font-weight:800;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 nav .links{display:flex;gap:28px;list-style:none}
@@ -41,7 +41,7 @@ nav .cta-btn:hover{opacity:0.85}
 /* ═══ Hero ═══ */
 .hero{padding:160px 0 100px;text-align:center;position:relative}
 .hero .avatar{width:140px;height:140px;border-radius:50%;border:3px solid var(--accent);object-fit:cover;margin-bottom:28px;box-shadow:0 0 40px rgba(6,182,212,0.3)}
-.hero .badge{display:inline-block;background:rgba(6,182,212,0.15);color:var(--accent);padding:6px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;letter-spacing:0.5px;margin-bottom:20px}
+.hero .badge{display:inline-block;background:rgba(8,145,178,0.1);color:var(--accent);padding:6px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;letter-spacing:0.5px;margin-bottom:20px}
 .hero h1{font-size:2.8rem;font-weight:800;line-height:1.2;margin-bottom:16px;background:linear-gradient(135deg,#e2e8f0 0%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero h2{font-size:1.25rem;color:var(--muted);font-weight:400;margin-bottom:12px}
 .hero p{max-width:640px;margin:0 auto 36px;color:var(--muted);font-size:1.05rem}
@@ -66,7 +66,7 @@ nav .cta-btn:hover{opacity:0.85}
 
 /* ═══ Pain Points ═══ */
 .pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
-.pain-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;transition:all .2s}
+.pain-card{background:var(--card);border:1px solid #e2e8f0;border-radius:14px;padding:28px;transition:all .2s}
 .pain-card:hover{border-color:#ef444420;transform:translateY(-3px)}
 .pain-card .icon{font-size:2rem;margin-bottom:14px}
 .pain-card h3{font-size:1.1rem;margin-bottom:8px}
@@ -74,7 +74,7 @@ nav .cta-btn:hover{opacity:0.85}
 
 /* ═══ SaaS Cards ═══ */
 .saas-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
-.saas-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:32px;position:relative;overflow:hidden;transition:all .2s}
+.saas-card{background:var(--card);border:1px solid #e2e8f0;border-radius:14px;padding:32px;position:relative;overflow:hidden;transition:all .2s}
 .saas-card:hover{border-color:var(--accent);transform:translateY(-4px)}
 .saas-card.featured{border-color:var(--accent);box-shadow:0 0 30px rgba(6,182,212,0.1)}
 .saas-card .tag{position:absolute;top:16px;right:16px;padding:4px 12px;border-radius:12px;font-size:0.7rem;font-weight:700}
@@ -88,7 +88,7 @@ nav .cta-btn:hover{opacity:0.85}
 .saas-card .features li::before{content:'✓ ';color:var(--accent2);font-weight:bold}
 
 /* ═══ How It Works ═══ */
-.flow-section{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:48px;margin-top:20px}
+.flow-section{background:var(--card);border:1px solid #e2e8f0;border-radius:20px;padding:48px;margin-top:20px}
 .flow-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:32px}
 .flow-step{text-align:center;position:relative}
 .flow-step .step-num{width:48px;height:48px;border-radius:50%;background:var(--gradient);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-weight:800;font-size:1.2rem}
@@ -111,14 +111,14 @@ nav .cta-btn:hover{opacity:0.85}
 
 /* ═══ Portal Grid ═══ */
 .portal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
-.portal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;transition:all .2s}
+.portal-card{background:var(--card);border:1px solid #e2e8f0;border-radius:12px;padding:24px;text-align:center;transition:all .2s}
 .portal-card:hover{border-color:var(--accent);transform:translateY(-2px)}
 .portal-card .portal-icon{font-size:2.2rem;margin-bottom:10px}
 .portal-card h4{font-size:0.95rem;margin-bottom:4px}
 .portal-card span{color:var(--muted);font-size:0.75rem}
 
 /* ═══ CTA ═══ */
-.cta-section{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:60px;text-align:center;margin:60px 0}
+.cta-section{background:var(--card);border:1px solid #e2e8f0;border-radius:20px;padding:60px;text-align:center;margin:60px 0}
 .cta-section h2{font-size:1.8rem;margin-bottom:12px}
 .cta-section p{color:var(--muted);margin-bottom:28px;max-width:500px;margin-left:auto;margin-right:auto}
 
@@ -159,11 +159,6 @@ footer a{color:var(--accent);text-decoration:none}
       <li><a href="#portals">Portal</a></li>
       <li><a href="#pricing">定價</a></li>
     </ul>
-      <li><a href="#funding">資助</a></li>
-      <li><a href="#training">培訓</a></li>
-      <li><a href="#portals">Portal</a></li>
-      <li><a href="#pricing">定價</a></li>
-    </ul>
     <a href="#cta" class="cta-btn">預約 Demo</a>
   </div>
 </nav>
@@ -198,7 +193,7 @@ footer a{color:var(--accent);text-decoration:none}
 <!-- ════════════════════════════════════════════════ -->
 <!-- 🧠 AI 評估 BAR — 連結到獨立評估頁面            -->
 <!-- ════════════════════════════════════════════════ -->
-<a href="manutradeai-assessment.html" style="display:block;text-decoration:none;background:linear-gradient(135deg,rgba(6,182,212,0.15),rgba(16,185,129,0.1));border:1px solid rgba(6,182,212,0.25);border-radius:14px;padding:18px 28px;margin-bottom:40px;transition:all .2s">
+<a href="manutradeai-assessment.html" style="display:block;text-decoration:none;background:linear-gradient(135deg,rgba(8,145,178,0.1),rgba(16,185,129,0.1));border:1px solid rgba(6,182,212,0.25);border-radius:14px;padding:18px 28px;margin-bottom:40px;transition:all .2s">
   <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
     <div style="font-size:2rem">🧠</div>
     <div style="flex:1;min-width:200px">
@@ -612,7 +607,7 @@ footer a{color:var(--accent);text-decoration:none}
             <p>管理過 Walmart、Whirlpool、Tefal、Vitamix 等全球知名品牌帳戶，同時熟悉 Amazon/eBay B2C 渠道。</p>
           </div>
         </div>
-        <div style="margin-top:20px;padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:10px">
+        <div style="margin-top:20px;padding:16px 20px;background:var(--card);border:1px solid #e2e8f0;border-radius:10px">
           <p style="font-size:0.85rem;color:var(--muted);line-height:1.7">
             <b style="color:var(--text)">曾服務客戶：</b>Walmart · JC Penney · Kohl's · Whirlpool · Vitamix · GE/Haier · Tefal · Fissler · Tupperware · Zwilling · MTR港鐵 · HK Electric港燈 · 昂坪360 · 有利建築<br>
             <b style="color:var(--text)">產業經驗：</b>小家電 · 電子模組 · 矽膠製品 · 工業4.0 · AI/Deep Learning 商業化<br>
@@ -685,7 +680,7 @@ footer a{color:var(--accent);text-decoration:none}
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:center">
       <div>
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px">
+        <div style="background:var(--card);border:1px solid #e2e8f0;border-radius:14px;padding:28px">
           <h3 style="font-size:1.2rem;margin-bottom:16px">🎓 ManuTrade AI 工作流程自動化課程</h3>
           <div style="margin-bottom:20px">
             <p style="font-size:0.9rem;margin-bottom:12px"><b>適合對象：</b></p>

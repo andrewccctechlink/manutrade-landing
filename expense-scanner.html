@@ -7,12 +7,12 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#080b12;--surface:#111827;--card:#1a2235;--border:#1f2d45;
-  --text:#e2e8f0;--dim:#8899aa;--accent:#6366f1;--accent2:#818cf8;
+  --bg:#f8fafc;--surface:#ffffff;--card:#f1f5f9;--border:#e2e8f0;
+  --text:#1e293b;--dim:#64748b;--accent:#6366f1;--accent2:#818cf8;
   --green:#10b981;--red:#ef4444;--orange:#f59e0b;--radius:12px
 }
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-nav{position:sticky;top:0;z-index:100;background:rgba(8,11,18,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 24px}
+nav{position:sticky;top:0;z-index:100;background:rgba(248,250,252,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 24px}
 nav a{color:var(--dim);text-decoration:none;font-size:12px;margin-left:20px}
 nav .logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .container{max-width:1100px;margin:0 auto;padding:32px 24px}
@@ -32,7 +32,7 @@ h1{font-size:26px;margin-bottom:6px}
 .btn{padding:10px 22px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .2s}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{background:var(--accent2)}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline{background:transparent;border:1px solid #e2e8f0;color:var(--text)}
 .btn-outline:hover{border-color:var(--accent)}
 .btn-export{background:var(--green);color:#fff}
 .btn-export:hover{opacity:.85}
@@ -45,18 +45,18 @@ h1{font-size:26px;margin-bottom:6px}
 .status.error{background:rgba(239,68,68,.1);color:var(--red)}
 .status.success{background:rgba(16,185,129,.1);color:var(--green)}
 .currency-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:12px;color:var(--dim)}
-.currency-bar select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:12px}
+.currency-bar select{padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;background:var(--card);color:var(--text);font-size:12px}
 .table-wrap{overflow-x:auto;margin-bottom:20px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{background:var(--accent);color:#fff;padding:10px 12px;text-align:left;font-weight:600;white-space:nowrap}
 td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
 tr{background:var(--surface)}tr:nth-child(even){background:var(--card)}
-td input,td select{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);font-size:11px}
+td input,td select{width:100%;padding:5px 8px;border:1px solid #e2e8f0;border-radius:4px;background:var(--card);color:var(--text);font-size:11px}
 td input:focus,td select:focus{outline:none;border-color:var(--accent)}
 .amount-col{text-align:right;font-weight:600}
 .empty-state{text-align:center;padding:60px 20px;color:var(--dim)}
 .empty-state .icon{font-size:48px;margin-bottom:12px}
-.summary{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;gap:32px;flex-wrap:wrap;align-items:center}
+.summary{background:var(--card);border:1px solid #e2e8f0;border-radius:var(--radius);padding:16px 20px;display:flex;gap:32px;flex-wrap:wrap;align-items:center}
 .summary .sum-item{text-align:center}
 .summary .sum-val{font-size:22px;font-weight:800;color:var(--accent)}
 .summary .sum-lbl{font-size:10px;color:var(--dim)}
@@ -80,11 +80,7 @@ footer a{color:var(--accent);text-decoration:none}
 
 <div class="preview-row" id="previewRow"></div>
 
-  <div class="btn-row">
-    <div style="flex:1;min-width:200px">
-      <input type="password" id="userKey" placeholder="🔑 貼上你嘅 Gemini API Key（可選）" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:12px">
-      <div style="font-size:10px;color:var(--dim);margin-top:4px">去 <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a> 免費建立 · 只儲存喺你瀏覽器</div>
-    </div>
+  
   </div>
 <div class="btn-row">
 <button class="btn btn-primary" id="scanBtn" disabled>🤖 AI 掃描全部單據</button>
@@ -120,14 +116,7 @@ footer a{color:var(--accent);text-decoration:none}
 
 <script>
 var _gk='QVEuQWI4Uk42SVdMRG5XNm5zeF9yckdZbmx6RHJ3OFYxa3hQckNqM016azNKVXY1Sk91YkE=';
-function gk(){var uk=document.getElementById('userKey').value.trim();if(uk)return uk;return atob(_gk);}
-// Restore saved key + save on input
-document.addEventListener('DOMContentLoaded',function(){
-  var saved=sessionStorage.getItem('mt_user_gk');
-  if(saved)document.getElementById('userKey').value=saved;
-});
-document.getElementById('userKey').addEventListener('input',function(){
-  sessionStorage.setItem('mt_user_gk',this.value.trim());
+function gk(){return atob(_gk);}
 });
 var receipts=[],files=[];
 document.getElementById('dropzone').addEventListener('click',function(e){if(e.target.tagName!=='BUTTON')document.getElementById('fileInput').click();});

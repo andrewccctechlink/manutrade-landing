@@ -7,12 +7,12 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#080b12;--surface:#111827;--card:#1a2235;--border:#1f2d45;
-  --text:#e2e8f0;--dim:#8899aa;--accent:#6366f1;--accent2:#818cf8;
+  --bg:#f8fafc;--surface:#ffffff;--card:#f1f5f9;--border:#e2e8f0;
+  --text:#1e293b;--dim:#64748b;--accent:#6366f1;--accent2:#818cf8;
   --green:#10b981;--red:#ef4444;--orange:#f59e0b;--pink:#ec4899;--radius:12px
 }
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-nav{position:sticky;top:0;z-index:100;background:rgba(8,11,18,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 24px}
+nav{position:sticky;top:0;z-index:100;background:rgba(248,250,252,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 24px}
 nav a{color:var(--dim);text-decoration:none;font-size:12px;margin-left:20px}
 nav .logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .container{max-width:1100px;margin:0 auto;padding:32px 24px}
@@ -32,7 +32,7 @@ h1{font-size:26px;margin-bottom:6px}
 .btn{padding:11px 24px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .2s}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{background:var(--accent2)}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-outline{background:transparent;border:1px solid #e2e8f0;color:var(--text)}
 .btn-outline:hover{border-color:var(--accent)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .status{font-size:12px;padding:8px 14px;border-radius:8px;margin-bottom:16px;display:none}
@@ -42,7 +42,7 @@ h1{font-size:26px;margin-bottom:6px}
 .status.success{background:rgba(16,185,129,.1);color:var(--green)}
 .result-panel{display:none}
 .result-panel.show{display:block}
-.result-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:16px}
+.result-card{background:var(--card);border:1px solid #e2e8f0;border-radius:var(--radius);padding:24px;margin-bottom:16px}
 .result-card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .result-card h3 .badge{font-size:10px;padding:3px 8px;border-radius:4px}
 .result-card h3 .badge.supplier{background:rgba(99,102,241,.15);color:var(--accent)}
@@ -50,7 +50,7 @@ h1{font-size:26px;margin-bottom:6px}
 .field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
 .field-item{display:flex;flex-direction:column;gap:3px}
 .field-item label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
-.field-item input,.field-item textarea{padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:12px}
+.field-item input,.field-item textarea{padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;background:var(--surface);color:var(--text);font-size:12px}
 .field-item input:focus,.field-item textarea:focus{outline:none;border-color:var(--accent)}
 .field-item textarea{resize:vertical;min-height:50px}
 .product-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
@@ -59,8 +59,8 @@ h1{font-size:26px;margin-bottom:6px}
   </div>
 .product-table td{padding:7px 10px;border-bottom:1px solid var(--border)}
 .product-table tr{background:var(--surface)}.product-table tr:nth-child(even){background:var(--card)}
-.product-table td input{width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);font-size:11px}
-.template-preview{border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:12px;font-size:11px}
+.product-table td input{width:100%;padding:4px 6px;border:1px solid #e2e8f0;border-radius:4px;background:var(--card);color:var(--text);font-size:11px}
+.template-preview{border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-top:12px;font-size:11px}
 .template-preview h4{color:var(--accent2);margin-bottom:8px}
 .template-preview .tpl-field{display:inline-block;padding:3px 8px;margin:2px;background:rgba(99,102,241,.1);border-radius:4px;font-size:10px}
 .template-preview .tpl-field .tpl-label{color:var(--dim)}
@@ -69,11 +69,7 @@ h1{font-size:26px;margin-bottom:6px}
 footer{padding:24px;text-align:center;font-size:11px;color:var(--dim);border-top:1px solid var(--border);margin-top:40px}
 footer a{color:var(--accent);text-decoration:none}
 </style>
-  <div class="btn-row">
-    <div style="flex:1;min-width:200px">
-      <input type="password" id="userKey" placeholder="🔑 貼上你嘅 Gemini API Key（可選）" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:12px">
-      <div style="font-size:10px;color:var(--dim);margin-top:4px">去 <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a> 免費建立 · 只儲存喺你瀏覽器</div>
-    </div>
+  
 
 </head>
 <body>
@@ -108,13 +104,9 @@ footer a{color:var(--accent);text-decoration:none}
 
 <script>
 var _gk='QVEuQWI4Uk42SVdMRG5XNm5zeF9yckdZbmx6RHJ3OFYxa3hQckNqM016azNKVXY1Sk91YkE=';
-function gk(){var uk=document.getElementById('userKey').value.trim();if(uk)return uk;return atob(_gk);}
+function gk(){return atob(_gk);}
 document.addEventListener('DOMContentLoaded',function(){
   var saved=sessionStorage.getItem('mt_user_gk');
-  if(saved)document.getElementById('userKey').value=saved;
-});
-document.getElementById('userKey').addEventListener('input',function(){
-  sessionStorage.setItem('mt_user_gk',this.value.trim());
 });
 var supplierData=null,templateData=null;
 
@@ -190,7 +182,7 @@ function renderResults(result){
   if(tpl&&tpl.fields){h+='<div class="result-card"><h3>📋 <span class="badge template">偵測到模板欄位</span></h3><div class="template-preview"><h4>AI 偵測到以下可填充欄位：</h4>';
     tpl.fields.forEach(function(f){h+='<div class="tpl-field"><span class="tpl-label">'+esc(f.label)+'</span> <span class="tpl-val">('+esc(f.type)+')</span></div>';});
     h+='</div><div class="match-note">⚠️ 自動配對功能為測試版。提交予客戶前請核對欄位配對。正式版可儲存模板設定檔，一鍵填充。</div></div>';}
-  if(ex.notes||ex.additional_terms){h+='<div class="result-card"><h3>📝 附加資訊</h3><textarea style="width:100%;min-height:60px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:12px">'+esc(ex.notes||ex.additional_terms||'')+'</textarea></div>';}
+  if(ex.notes||ex.additional_terms){h+='<div class="result-card"><h3>📝 附加資訊</h3><textarea style="width:100%;min-height:60px;background:var(--surface);color:var(--text);border:1px solid #e2e8f0;border-radius:6px;padding:10px;font-size:12px">'+esc(ex.notes||ex.additional_terms||'')+'</textarea></div>';}
   panel.innerHTML=h;
 }
 
