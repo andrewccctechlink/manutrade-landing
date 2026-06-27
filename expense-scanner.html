@@ -80,6 +80,12 @@ footer a{color:var(--accent);text-decoration:none}
 
 <div class="preview-row" id="previewRow"></div>
 
+  <div class="btn-row">
+    <div style="flex:1;min-width:200px">
+      <input type="password" id="userKey" placeholder="🔑 貼上你嘅 Gemini API Key（可選）" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:12px">
+      <div style="font-size:10px;color:var(--dim);margin-top:4px">去 <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--accent)">aistudio.google.com</a> 免費建立 · 只儲存喺你瀏覽器</div>
+    </div>
+  </div>
 <div class="btn-row">
 <button class="btn btn-primary" id="scanBtn" disabled>🤖 AI 掃描全部單據</button>
 <button class="btn btn-outline" id="demoBtn">🧪 載入示範數據</button>
@@ -114,7 +120,15 @@ footer a{color:var(--accent);text-decoration:none}
 
 <script>
 var _gk='QVEuQWI4Uk42SVdMRG5XNm5zeF9yckdZbmx6RHJ3OFYxa3hQckNqM016azNKVXY1Sk91YkE=';
-function gk(){return atob(_gk);}
+function gk(){var uk=document.getElementById('userKey').value.trim();if(uk)return uk;return atob(_gk);}
+// Restore saved key + save on input
+document.addEventListener('DOMContentLoaded',function(){
+  var saved=sessionStorage.getItem('mt_user_gk');
+  if(saved)document.getElementById('userKey').value=saved;
+});
+document.getElementById('userKey').addEventListener('input',function(){
+  sessionStorage.setItem('mt_user_gk',this.value.trim());
+});
 var receipts=[],files=[];
 document.getElementById('dropzone').addEventListener('click',function(e){if(e.target.tagName!=='BUTTON')document.getElementById('fileInput').click();});
 document.getElementById('fileInput').addEventListener('change',function(e){addFiles(e.target.files);});
