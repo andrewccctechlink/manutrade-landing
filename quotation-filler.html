@@ -207,7 +207,7 @@ document.getElementById('fillBtn').addEventListener('click',async function(){
       parts=[{text:prompt+'\n\nDocument filename: '+supplierData.name+'\n\nExtracted content:\n'+extracted}];
     }
     
-    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gk(),
+    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gk()},
       body:JSON.stringify({contents:[{parts:parts}],generationConfig:{temperature:0.1,maxOutputTokens:2048}})});
     var j=await resp.json();if(j.error)throw new Error(j.error.message);
     var text=j.candidates[0].content.parts[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
