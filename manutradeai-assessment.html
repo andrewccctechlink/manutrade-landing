@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-HK">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Readiness Assessment — ManuTrade AI</title>
+<title>AI 成熟度評估 — ManuTrade AI</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --bg:#080b12;--surface:#111827;--card:#1a2235;--border:#1f2d45;
   --text:#e2e8f0;--dim:#8899aa;--accent:#6366f1;--accent2:#818cf8;
   --green:#10b981;--red:#ef4444;--orange:#f59e0b;--pink:#ec4899;
-  --radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4)
+  --radius:12px
 }
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .container{max-width:720px;width:100%}
@@ -77,152 +77,151 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min
   .dim-row{gap:8px;padding:10px}
   .dim-row .dim-bar-wrap{width:40px}
   .quiz-step h2{font-size:17px}
-  .result-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 <div class="container">
 <div class="card" id="quizCard">
-<div class="step-indicator" id="stepLabel">Question 1 of 10</div>
+<div class="step-indicator" id="stepLabel">第 1 題 / 共 10 題</div>
 <div class="progress-wrap"><div class="progress-fill" id="progressBar"></div></div>
 
-<!-- Q1: Document Processing -->
+<!-- Q1: 文件處理 -->
 <div class="quiz-step active" data-step="1">
-<h2>📄 How do you process trade documents?</h2>
-<p class="subtitle">Purchase orders, invoices, shipping docs, customs forms</p>
+<h2>📄 你點樣處理貿易文件？</h2>
+<p class="subtitle">採購單、發票、裝運文件、報關表格</p>
 <div class="options" data-question="docs">
-<div class="option" data-score="1"><span class="opt-icon">📝</span><div><div class="opt-text">100% manual — print, type, copy-paste</div><div class="opt-desc">Each document takes 10-30 minutes</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">📊</span><div><div class="opt-text">Mostly manual — Excel + email templates</div><div class="opt-desc">Copy-paste between systems</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">💻</span><div><div class="opt-text">Partially automated — ERP or software helps</div><div class="opt-desc">Still lots of manual checks</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">⚡</span><div><div class="opt-text">Mostly automated — OCR + auto-populate</div><div class="opt-desc">Minimal human intervention</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">Fully AI-driven — auto-extract, match, flag</div><div class="opt-desc">AI handles end-to-end workflow</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">📝</span><div><div class="opt-text">100% 人手 — 打印、打字、copy-paste</div><div class="opt-desc">每份文件耗時 10-30 分鐘</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">📊</span><div><div class="opt-text">大部分人手 — Excel + email 範本</div><div class="opt-desc">喺系統之間 copy-paste</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">💻</span><div><div class="opt-text">部分自動化 — ERP 或軟件輔助</div><div class="opt-desc">但仍需大量人手核對</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">⚡</span><div><div class="opt-text">大部分自動化 — OCR + 自動填入</div><div class="opt-desc">極少人手介入</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">全面 AI 驅動 — 自動提取、配對、警示</div><div class="opt-desc">AI 處理端到端文件流程</div></div></div>
 </div>
 </div>
 
-<!-- Q2: Business Decisions -->
+<!-- Q2: 商業決策 -->
 <div class="quiz-step" data-step="2">
-<h2>📊 How do you make business decisions?</h2>
-<p class="subtitle">Pricing, inventory, market entry, forecasting</p>
+<h2>📊 你點樣做商業決策？</h2>
+<p class="subtitle">定價、庫存、市場進入、預測</p>
 <div class="options" data-question="decisions">
-<div class="option" data-score="1"><span class="opt-icon">🤷</span><div><div class="opt-text">Gut feel + bank balance check</div><div class="opt-desc">We react when cash runs low</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">📋</span><div><div class="opt-text">Monthly Excel reports — accountant prepares</div><div class="opt-desc">We review, but data is stale</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">📈</span><div><div class="opt-text">Weekly dashboards + some forecasting</div><div class="opt-desc">We track KPIs but manually</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">🔮</span><div><div class="opt-text">BI tools + trend analysis — data-driven</div><div class="opt-desc">Data drives most decisions</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🧠</span><div><div class="opt-text">AI-powered predictive analytics</div><div class="opt-desc">AI suggests optimal actions</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">🤷</span><div><div class="opt-text">靠直覺 + 睇銀行戶口結餘</div><div class="opt-desc">現金流緊張先反應</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">📋</span><div><div class="opt-text">每月 Excel 報表 — 會計準備</div><div class="opt-desc">我哋過目，但數據滯後</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">📈</span><div><div class="opt-text">每週 dashboard + 部分預測</div><div class="opt-desc">追蹤 KPI 但人手操作</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">🔮</span><div><div class="opt-text">BI 工具 + 趨勢分析 — 數據驅動</div><div class="opt-desc">大部分決策有數據支持</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🧠</span><div><div class="opt-text">AI 預測分析 — 即時建議</div><div class="opt-desc">AI 建議最佳行動方案</div></div></div>
 </div>
 </div>
 
-<!-- Q3: Customer Acquisition -->
+<!-- Q3: 客戶開發 -->
 <div class="quiz-step" data-step="3">
-<h2>🌐 How do you find new customers?</h2>
-<p class="subtitle">Lead generation, marketing, sales channels</p>
+<h2>🌐 你點樣搵新客戶？</h2>
+<p class="subtitle">潛在客戶開發、市場推廣、銷售渠道</p>
 <div class="options" data-question="customers">
-<div class="option" data-score="1"><span class="opt-icon">📞</span><div><div class="opt-text">Referrals + trade shows only</div><div class="opt-desc">No online presence to speak of</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">🛒</span><div><div class="opt-text">One B2B platform (Alibaba / Global Sources)</div><div class="opt-desc">Pay annual fee, wait for inquiries</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">🌍</span><div><div class="opt-text">B2B platform + website + LinkedIn</div><div class="opt-desc">Multi-channel but not integrated</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">🚀</span><div><div class="opt-text">Multi-channel + CRM + email marketing</div><div class="opt-desc">Automated follow-ups, lead scoring</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI-driven — auto lead gen, nurture, convert</div><div class="opt-desc">Full funnel automation with AI</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">📞</span><div><div class="opt-text">只靠轉介 + 展會</div><div class="opt-desc">幾乎冇網上曝光</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">🛒</span><div><div class="opt-text">一個 B2B 平台（Alibaba / Global Sources）</div><div class="opt-desc">俾年費，等查詢</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">🌍</span><div><div class="opt-text">B2B 平台 + 基本網站 + LinkedIn</div><div class="opt-desc">多渠道但未整合</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">🚀</span><div><div class="opt-text">多渠道 + CRM + email 行銷</div><div class="opt-desc">自動跟進、潛在客戶評分</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI 驅動 — 自動搵客、培育、轉換</div><div class="opt-desc">全漏斗自動化</div></div></div>
 </div>
 </div>
 
-<!-- Q4: Supply Chain -->
+<!-- Q4: 供應鏈 -->
 <div class="quiz-step" data-step="4">
-<h2>🔗 How do you manage your supply chain?</h2>
-<p class="subtitle">Suppliers, production tracking, quality control</p>
+<h2>🔗 你點樣管理供應鏈？</h2>
+<p class="subtitle">供應商、生產追蹤、品質控制</p>
 <div class="options" data-question="supply">
-<div class="option" data-score="1"><span class="opt-icon">📱</span><div><div class="opt-text">Phone calls + WeChat messages</div><div class="opt-desc">No system — all in people's heads</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">📧</span><div><div class="opt-text">Email + spreadsheet tracking</div><div class="opt-desc">Manual updates, often outdated</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">🏭</span><div><div class="opt-text">Basic ERP with supply module</div><div class="opt-desc">Some automation, still manual QC</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">📊</span><div><div class="opt-text">Integrated ERP + supplier portal</div><div class="opt-desc">Real-time tracking, digital QC</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI-managed — auto-reorder, predictive</div><div class="opt-desc">AI QC + predictive logistics</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">📱</span><div><div class="opt-text">電話 + WeChat 訊息</div><div class="opt-desc">冇系統 — 全部靠人記</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">📧</span><div><div class="opt-text">Email + Excel 追蹤</div><div class="opt-desc">人手更新，經常過時</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">🏭</span><div><div class="opt-text">基本 ERP 含供應鏈模組</div><div class="opt-desc">部分自動化，QC 仍靠人手</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">📊</span><div><div class="opt-text">整合 ERP + 供應商 portal</div><div class="opt-desc">即時追蹤、數碼 QC</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI 管理 — 自動補貨、預測</div><div class="opt-desc">AI QC + 預測物流</div></div></div>
 </div>
 </div>
 
-<!-- Q5: AI Experience -->
+<!-- Q5: AI 經驗 -->
 <div class="quiz-step" data-step="5">
-<h2>🤖 What's your experience with AI tools?</h2>
-<p class="subtitle">Your current AI adoption level</p>
+<h2>🤖 你哋用 AI 嘅經驗有幾多？</h2>
+<p class="subtitle">現時 AI 採用程度</p>
 <div class="options" data-question="ai">
-<div class="option" data-score="1"><span class="opt-icon">❓</span><div><div class="opt-text">What's AI? — never used it</div><div class="opt-desc">Heard of ChatGPT but never tried</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">💬</span><div><div class="opt-text">Used ChatGPT for basic tasks</div><div class="opt-desc">Translation, email drafts, research</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">🛠️</span><div><div class="opt-text">Using AI tools in some workflows</div><div class="opt-desc">OCR, chatbots, basic automation</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">⚙️</span><div><div class="opt-text">AI integrated into business processes</div><div class="opt-desc">Multiple AI tools, custom workflows</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🧠</span><div><div class="opt-text">AI-native — core to our operations</div><div class="opt-desc">AI agents handle end-to-end processes</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">❓</span><div><div class="opt-text">AI 係咩嚟？— 從未用過</div><div class="opt-desc">聽過 ChatGPT 但未試過</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">💬</span><div><div class="opt-text">用 ChatGPT 做基本工作</div><div class="opt-desc">翻譯、起草 email、資料搜集</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">🛠️</span><div><div class="opt-text">喺部分流程用 AI 工具</div><div class="opt-desc">OCR、chatbot、基本自動化</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">⚙️</span><div><div class="opt-text">AI 已整合到業務流程</div><div class="opt-desc">多個 AI 工具、自訂工作流程</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🧠</span><div><div class="opt-text">AI 原生 — 核心營運靠 AI</div><div class="opt-desc">AI 代理處理端到端流程</div></div></div>
 </div>
 </div>
 
-<!-- Q6: Compliance -->
+<!-- Q6: 合規 -->
 <div class="quiz-step" data-step="6">
-<h2>📋 How do you handle trade compliance?</h2>
-<p class="subtitle">Tariffs, customs regulations, product certifications</p>
+<h2>📋 你點樣處理貿易合規？</h2>
+<p class="subtitle">關稅、海關規定、產品認證</p>
 <div class="options" data-question="compliance">
-<div class="option" data-score="1"><span class="opt-icon">😰</span><div><div class="opt-text">We don't — hope for the best</div><div class="opt-desc">No process, react when held at customs</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">🔍</span><div><div class="opt-text">Manual Google searches per shipment</div><div class="opt-desc">Check HS codes + requirements ad-hoc</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">📋</span><div><div class="opt-text">Freight forwarder handles compliance</div><div class="opt-desc">Outsource but no visibility</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">📊</span><div><div class="opt-text">Spreadsheet tracking + regular audits</div><div class="opt-desc">Maintain product cert database</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI auto-checks every shipment</div><div class="opt-desc">Real-time regulation updates + alerts</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">😰</span><div><div class="opt-text">唔理 — 希望冇事</div><div class="opt-desc">冇流程，海關扣貨先反應</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">🔍</span><div><div class="opt-text">每次 shipment 人手 Google</div><div class="opt-desc">臨時搵 HS code + 要求</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">📋</span><div><div class="opt-text">貨運代理處理合規</div><div class="opt-desc">外判但冇透明度</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">📊</span><div><div class="opt-text">Excel 追蹤 + 定期審核</div><div class="opt-desc">維護產品認證資料庫</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI 自動檢查每個 shipment</div><div class="opt-desc">即時法規更新 + 預警</div></div></div>
 </div>
 </div>
 
-<!-- Q7: Inventory Management -->
+<!-- Q7: 庫存管理 -->
 <div class="quiz-step" data-step="7">
-<h2>📦 How do you manage inventory & stock?</h2>
-<p class="subtitle">Warehouse tracking, safety stock, dead stock</p>
+<h2>📦 你點樣管理庫存？</h2>
+<p class="subtitle">倉庫追蹤、安全庫存、死貨</p>
 <div class="options" data-question="inventory">
-<div class="option" data-score="1"><span class="opt-icon">📝</span><div><div class="opt-text">Mental notes + periodic counting</div><div class="opt-desc">No system — surprises are common</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">📊</span><div><div class="opt-text">Excel sheets, updated weekly/monthly</div><div class="opt-desc">Often inaccurate, stockouts happen</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">💻</span><div><div class="opt-text">ERP with basic inventory module</div><div class="opt-desc">Track in/out but no forecasting</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">📈</span><div><div class="opt-text">ERP + demand forecasting + reorder alerts</div><div class="opt-desc">Proactive restocking, aging reports</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI-driven — auto-optimize stock levels</div><div class="opt-desc">Predictive demand + dead stock clearance AI</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">📝</span><div><div class="opt-text">靠記性 + 定期盤點</div><div class="opt-desc">冇系統 — 經常有意料之外</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">📊</span><div><div class="opt-text">Excel 表，每週/每月更新</div><div class="opt-desc">經常唔準確，會缺貨</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">💻</span><div><div class="opt-text">ERP 基本庫存模組</div><div class="opt-desc">記錄出入但冇預測</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">📈</span><div><div class="opt-text">ERP + 需求預測 + 補貨提示</div><div class="opt-desc">主動補貨、庫齡報告</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI 驅動 — 自動優化庫存水平</div><div class="opt-desc">預測需求 + 死貨清倉 AI</div></div></div>
 </div>
 </div>
 
-<!-- Q8: Pricing & Margins -->
+<!-- Q8: 定價與利潤 -->
 <div class="quiz-step" data-step="8">
-<h2>💰 How do you set pricing & calculate margins?</h2>
-<p class="subtitle">Quotation, landed cost, currency, profitability</p>
+<h2>💰 你點樣設定價同計算利潤？</h2>
+<p class="subtitle">報價、落地成本、匯率、盈利能力</p>
 <div class="options" data-question="pricing">
-<div class="option" data-score="1"><span class="opt-icon">🤷</span><div><div class="opt-text">Rough estimate — "sounds about right"</div><div class="opt-desc">Don't really track true margins</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">📝</span><div><div class="opt-text">Excel calculator — cost + markup</div><div class="opt-desc">Manual, easy to miss hidden costs</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">💻</span><div><div class="opt-text">ERP pricing module with templates</div><div class="opt-desc">Standard margins but static</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">📊</span><div><div class="opt-text">Dynamic pricing — FX + landed cost aware</div><div class="opt-desc">Auto-calculate all-in cost per order</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI margin optimizer — real-time pricing</div><div class="opt-desc">Suggests optimal price + flags low-margin deals</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">🤷</span><div><div class="opt-text">粗略估算 — 「聽落啱數」</div><div class="opt-desc">唔太清楚真實利潤</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">📝</span><div><div class="opt-text">Excel 計數機 — 成本 + markup</div><div class="opt-desc">人手計，容易漏隱藏成本</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">💻</span><div><div class="opt-text">ERP 定價模組連範本</div><div class="opt-desc">標準 margin 但固定不變</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">📊</span><div><div class="opt-text">動態定價 — 匯率 + 落地成本 aware</div><div class="opt-desc">自動計算每張單全成本</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI 利潤優化器 — 即時定價</div><div class="opt-desc">建議最佳價格 + 警示低利潤交易</div></div></div>
 </div>
 </div>
 
-<!-- Q9: Communication -->
+<!-- Q9: 溝通 -->
 <div class="quiz-step" data-step="9">
-<h2>🌍 How do you handle cross-border communication?</h2>
-<p class="subtitle">Multi-language, time zones, cultural nuances</p>
+<h2>🌍 你點樣處理跨境溝通？</h2>
+<p class="subtitle">多語言、時區、文化差異</p>
 <div class="options" data-question="comm">
-<div class="option" data-score="1"><span class="opt-icon">📱</span><div><div class="opt-text">WeChat + Google Translate only</div><div class="opt-desc">Misunderstandings are frequent</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">📧</span><div><div class="opt-text">Email + basic translation tools</div><div class="opt-desc">Bilingual staff handles key accounts</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">🌐</span><div><div class="opt-text">Multi-language website + email templates</div><div class="opt-desc">Some localization but not systematic</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">📊</span><div><div class="opt-text">Professional translation + CRM workflows</div><div class="opt-desc">Structured multi-language processes</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI real-time translation + cultural adaptation</div><div class="opt-desc">Auto-translate docs, emails, contracts</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">📱</span><div><div class="opt-text">只用 WeChat + Google Translate</div><div class="opt-desc">經常有誤解</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">📧</span><div><div class="opt-text">Email + 基本翻譯工具</div><div class="opt-desc">雙語員工處理重要客戶</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">🌐</span><div><div class="opt-text">多語言網站 + email 範本</div><div class="opt-desc">部分本地化但唔系統化</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">📊</span><div><div class="opt-text">專業翻譯 + CRM 工作流程</div><div class="opt-desc">結構化多語言流程</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI 即時翻譯 + 文化適應</div><div class="opt-desc">自動翻譯文件、email、合約</div></div></div>
 </div>
 </div>
 
-<!-- Q10: Data & Analytics -->
+<!-- Q10: 數據分析 -->
 <div class="quiz-step" data-step="10">
-<h2>📊 How mature is your data & analytics?</h2>
-<p class="subtitle">Reporting, KPIs, business intelligence</p>
+<h2>📊 你嘅數據分析成熟度有幾高？</h2>
+<p class="subtitle">報表、KPI、商業智能</p>
 <div class="options" data-question="data">
-<div class="option" data-score="1"><span class="opt-icon">❓</span><div><div class="opt-text">We don't track data systematically</div><div class="opt-desc">Everything is in people's heads</div></div></div>
-<div class="option" data-score="2"><span class="opt-icon">📋</span><div><div class="opt-text">Basic Excel reports, done monthly</div><div class="opt-desc">Manual, time-consuming, error-prone</div></div></div>
-<div class="option" data-score="3"><span class="opt-icon">📊</span><div><div class="opt-text">ERP reports + some custom dashboards</div><div class="opt-desc">Standard reports, limited customization</div></div></div>
-<div class="option" data-score="4"><span class="opt-icon">📈</span><div><div class="opt-text">BI platform + automated reporting</div><div class="opt-desc">Real-time dashboards, drill-down</div></div></div>
-<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI analytics — predictive + prescriptive</div><div class="opt-desc">AI surfaces insights, recommends actions</div></div></div>
+<div class="option" data-score="1"><span class="opt-icon">❓</span><div><div class="opt-text">我哋冇系統咁追蹤數據</div><div class="opt-desc">全部靠人記喺腦</div></div></div>
+<div class="option" data-score="2"><span class="opt-icon">📋</span><div><div class="opt-text">基本 Excel 報表，每月一次</div><div class="opt-desc">人手做、耗時、易出錯</div></div></div>
+<div class="option" data-score="3"><span class="opt-icon">📊</span><div><div class="opt-text">ERP 報表 + 部分自訂 dashboard</div><div class="opt-desc">標準報表，有限自訂</div></div></div>
+<div class="option" data-score="4"><span class="opt-icon">📈</span><div><div class="opt-text">BI 平台 + 自動化報表</div><div class="opt-desc">即時 dashboard、drill-down</div></div></div>
+<div class="option" data-score="5"><span class="opt-icon">🤖</span><div><div class="opt-text">AI 分析 — 預測 + 規範性建議</div><div class="opt-desc">AI 主動發現洞察、建議行動</div></div></div>
 </div>
 </div>
 
 <div class="result" id="result"></div>
 <div class="success" id="success">
 <div class="icon">📬</div>
-<h2>Report Sent!</h2>
-<p>Check your inbox. We've emailed your personalized AI Readiness Report with a custom implementation roadmap.<br><br>Want to go deeper? Book a free 30-min consultation:</p>
-<a href="mailto:hello@manutradeai.com" class="btn btn-primary" style="display:inline-block;margin-top:12px;width:auto;text-decoration:none">📅 Book Free Consultation</a>
+<h2>報告已發送！</h2>
+<p>請檢查你嘅電郵。我哋已經發送咗你嘅個人化 AI 成熟度報告，附有度身訂造嘅實施路線圖。<br><br>想深入了解？預約 30 分鐘免費諮詢：</p>
+<a href="mailto:hello@manutradeai.com" class="btn btn-primary" style="display:inline-block;margin-top:12px;width:auto;text-decoration:none">📅 預約免費諮詢</a>
 </div>
 </div>
 </div>
@@ -231,29 +230,21 @@ body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min
 var scores={docs:0,decisions:0,customers:0,supply:0,ai:0,compliance:0,inventory:0,pricing:0,comm:0,data:0};
 var currentStep=1,totalSteps=10,quizLocked=false,resultShown=false;
 
-// ── Session persistence ──
 (function(){
-  try{var s=sessionStorage.getItem('manutradeai_assessment');if(s){var d=JSON.parse(s);if(d.scores)scores=d.scores;currentStep=d.currentStep||1;if(currentStep>1){document.querySelectorAll('.quiz-step').forEach(function(x){x.classList.remove('active');});var e=document.querySelector('.quiz-step[data-step="'+currentStep+'"]');if(e)e.classList.add('active');document.getElementById('stepLabel').textContent='Question '+currentStep+' of '+totalSteps;document.getElementById('progressBar').style.width=((currentStep-1)/totalSteps*100)+'%';}}}catch(e){}
+  try{var s=sessionStorage.getItem('manutradeai_assessment');if(s){var d=JSON.parse(s);if(d.scores)scores=d.scores;currentStep=d.currentStep||1;if(currentStep>1){document.querySelectorAll('.quiz-step').forEach(function(x){x.classList.remove('active');});var e=document.querySelector('.quiz-step[data-step="'+currentStep+'"]');if(e)e.classList.add('active');document.getElementById('stepLabel').textContent='第 '+currentStep+' 題 / 共 '+totalSteps+' 題';document.getElementById('progressBar').style.width=((currentStep-1)/totalSteps*100)+'%';}}}catch(e){}
 })();
-function saveProgress(){
-  try{sessionStorage.setItem('manutradeai_assessment',JSON.stringify({scores:scores,currentStep:currentStep}));}catch(e){}
-}
+function saveProgress(){try{sessionStorage.setItem('manutradeai_assessment',JSON.stringify({scores:scores,currentStep:currentStep}));}catch(e){}}
 
-// ── Option click handler ──
 document.querySelectorAll('.option').forEach(function(opt){
   opt.addEventListener('click',function(){
-    if(quizLocked) return;
-    quizLocked=true;
+    if(quizLocked) return;quizLocked=true;
     var p=this.parentElement;
     p.querySelectorAll('.option').forEach(function(o){o.classList.remove('selected');});
     this.classList.add('selected');
     p.style.pointerEvents='none';p.style.opacity='0.7';
     scores[p.dataset.question]=parseInt(this.dataset.score);
     saveProgress();
-    setTimeout(function(){
-      if(currentStep<totalSteps){nextStep();}
-      else{quizLocked=false;showResult();}
-    },400);
+    setTimeout(function(){if(currentStep<totalSteps){nextStep();}else{showResult();}},400);
   });
 });
 
@@ -264,111 +255,93 @@ function nextStep(){
   if(n){
     n.classList.add('active');
     var opts=n.querySelector('.options');if(opts){opts.style.pointerEvents='';opts.style.opacity='';}
-    document.getElementById('stepLabel').textContent='Question '+currentStep+' of '+totalSteps;
+    document.getElementById('stepLabel').textContent='第 '+currentStep+' 題 / 共 '+totalSteps+' 題';
     document.getElementById('progressBar').style.width=((currentStep-1)/totalSteps*100)+'%';
     saveProgress();quizLocked=false;
   }
 }
 
-// ── SaaS Module Mapping ──
 var saasMap={
-  docs:{name:'AI Document Bridge',icon:'📄',desc:'Auto-extract PO/invoice/shipping data. Chinese+English OCR.',link:'/#feat-document'},
-  decisions:{name:'AI Analytics Dashboard',icon:'📊',desc:'Real-time KPIs, predictive forecasting, anomaly detection.',link:'/#feat-analytics'},
-  customers:{name:'AI Lead Qualifier + Sales Copilot',icon:'🎯',desc:'Auto-find buyers, enrich leads, personalised outreach.',link:'/#feat-leads'},
-  supply:{name:'AI Production Tracker + Supplier Verify',icon:'🏭',desc:'Real-time factory tracking, AI QC, supplier scoring.',link:'/#feat-supplier'},
-  ai:{name:'AI Readiness Workshop',icon:'🤖',desc:'Custom AI roadmap. Map your workflows to AI modules.',link:'/#cta'},
-  compliance:{name:'AI Compliance Guard',icon:'🛡️',desc:'Auto-check every product against destination regs.',link:'/#feat-compliance'},
-  inventory:{name:'AI Inventory Optimizer',icon:'📦',desc:'Demand forecasting, dead stock detection, auto-reorder.',link:'/#feat-inventory'},
-  pricing:{name:'AI Margin Optimizer',icon:'💰',desc:'Real-time landed cost, FX-aware pricing, margin alerts.',link:'/#feat-pricing'},
-  comm:{name:'AI Language Bridge',icon:'🌐',desc:'Auto-translate docs/emails/contracts. Multi-language.',link:'/#feat-comm'},
-  data:{name:'AI Data Hub + Custom Dashboards',icon:'📈',desc:'Unified analytics. Custom BI portals. Predictive insights.',link:'/#feat-analytics'},
-  // Extra SaaS tools (shown for relevant profiles)
-  expense:{name:'🧾 AI Expense Scanner',icon:'🧾',desc:'Snap receipts → AI extracts + exports Excel/PDF.',link:'/expense-scanner.html',always:true},
-  quote:{name:'📄 AI Quotation Filler',icon:'📄',desc:'Auto-fill Costco/Walmart forms from supplier quotes.',link:'/quotation-filler.html',always:true}
+  docs:{name:'AI 文件橋樑',icon:'📄',desc:'自動提取 PO/發票/裝運數據。中英文 OCR。',link:'/#saas'},
+  decisions:{name:'AI 分析 Dashboard',icon:'📊',desc:'即時 KPI、預測分析、異常偵測。',link:'/#saas'},
+  customers:{name:'AI 客戶開發 + 銷售助手',icon:'🎯',desc:'自動搵買家、豐富客戶資料、個人化開發信。',link:'/#saas'},
+  supply:{name:'AI 生產追蹤 + 供應商驗證',icon:'🏭',desc:'即時工廠追蹤、AI QC、供應商評分。',link:'/#saas'},
+  ai:{name:'AI 導入工作坊',icon:'🤖',desc:'度身訂造 AI 路線圖。將你嘅流程對應 AI 模組。',link:'/#saas'},
+  compliance:{name:'AI 合規守護',icon:'🛡️',desc:'自動檢查每個產品嘅目的地法規要求。',link:'/#saas'},
+  inventory:{name:'AI 庫存優化器',icon:'📦',desc:'需求預測、死貨偵測、自動補貨建議。',link:'/#saas'},
+  pricing:{name:'AI 利潤優化器',icon:'💰',desc:'即時落地成本、匯率感知定價、利潤警示。',link:'/#saas'},
+  comm:{name:'AI 語言橋樑',icon:'🌐',desc:'自動翻譯文件/email/合約。多語言支援。',link:'/#saas'},
+  data:{name:'AI 數據中心 + 自訂 Dashboard',icon:'📈',desc:'統一分析、自訂 BI portal、預測洞察。',link:'/#saas'},
+  expense:{name:'🧾 AI 開支單掃描',icon:'🧾',desc:'影低單據 → AI 提取 → 匯出 Excel/PDF。',link:'/expense-scanner.html',always:true},
+  quote:{name:'📄 AI 報價自動填充',icon:'📄',desc:'供應商報價 → 自動填入 Costco/Walmart 等客戶表格。',link:'/quotation-filler.html',always:true}
 };
 
 function showResult(){
   if(resultShown) return;resultShown=true;
-  document.getElementById('stepLabel').textContent='Your Results';
+  document.getElementById('stepLabel').textContent='你嘅結果';
   document.getElementById('progressBar').style.width='100%';
   document.querySelectorAll('.quiz-step').forEach(function(s){s.classList.remove('active');});
-
   var total=0;Object.keys(scores).forEach(function(k){total+=scores[k];});
-
-  // Tier
   var tier,color,emoji,label;
-  if(total<=16){tier='beginner';color='#ef4444';emoji='🌱';label='AI Explorer';}
-  else if(total<=28){tier='developing';color='#f59e0b';emoji='🌿';label='AI Learner';}
-  else if(total<=38){tier='advanced';color='#6366f1';emoji='🌳';label='AI Ready';}
-  else{tier='leader';color='#10b981';emoji='🏆';label='AI Leader';}
+  if(total<=16){tier='beginner';color='#ef4444';emoji='🌱';label='AI 探索者';}
+  else if(total<=28){tier='developing';color='#f59e0b';emoji='🌿';label='AI 學習者';}
+  else if(total<=38){tier='advanced';color='#6366f1';emoji='🌳';label='AI 就緒';}
+  else{tier='leader';color='#10b981';emoji='🏆';label='AI 領導者';}
 
-  // Sort dimensions by score (weakest first)
   var dims=[];
-  Object.keys(scores).forEach(function(k){
-    dims.push({key:k,score:scores[k],pct:scores[k]/5*100});
-  });
+  Object.keys(scores).forEach(function(k){dims.push({key:k,score:scores[k],pct:scores[k]/5*100});});
   dims.sort(function(a,b){return a.score-b.score;});
 
-  // Build HTML
   var h='';
   h+='<div class="score-circle" style="border-color:'+color+'"><div class="score-num" style="color:'+color+'">'+total+'</div><div class="score-outof">/50</div></div>';
   h+='<h2>'+emoji+' '+label+'</h2>';
   h+='<div style="text-align:center;margin-bottom:18px"><span class="tier-label" style="background:'+color+'22;color:'+color+'">'+getTierDesc(tier)+'</span></div>';
+  if(total===16||total===28||total===38){h+='<div style="text-align:center;margin-bottom:16px;font-size:10px;color:#f59e0b">⚡ 你正處於邊界分數！多 1 分就可升級到下一級。</div>';}
 
-  // Cusp note
-  if(total===16||total===28||total===38){
-    h+='<div style="text-align:center;margin-bottom:16px;font-size:10px;color:#f59e0b">⚡ Cusp! 1 more point → next tier.</div>';
-  }
-
-  // Priority actions (top 3 weakest)
-  h+='<div class="priority-box"><h3>⚡ Top 3 Priority Actions</h3><ul>';
+  h+='<div class="priority-box"><h3>⚡ 三大優先改善項目</h3><ul>';
   for(var i=0;i<3;i++){
     var d=dims[i],m=saasMap[d.key];
     var urgency=d.score<=2?'🔴':d.score<=3?'🟡':'🟢';
-    var url=m.link.startsWith('http')?m.link:'https://'+m.link;
+    var url=m.link.startsWith('http')?m.link:m.link;
     h+='<li><strong>'+urgency+' <a href="'+url+'" target="_blank" class="dim-link">'+m.name+' ↗</a></strong> — '+m.desc+'</li>';
   }
   h+='</ul></div>';
 
-  // Full dimension breakdown with SaaS match
-  h+='<h3 style="font-size:14px;margin-bottom:10px">📋 Full Breakdown & Recommended SaaS</h3>';
+  h+='<h3 style="font-size:14px;margin-bottom:10px">📋 完整評分 + 推薦 SaaS</h3>';
   h+='<div class="dim-list">';
   dims.forEach(function(d){
     var m=saasMap[d.key];
     var dColor=d.score<=2?'#ef4444':d.score<=3?'#f59e0b':d.score<=4?'#6366f1':'#10b981';
-    var url2=m.link.startsWith('http')?m.link:'https://'+m.link;
+    var url2=m.link.startsWith('http')?m.link:m.link;
     h+='<div class="dim-row">';
     h+='<div class="dim-icon">'+m.icon+'</div>';
-    h+='<div class="dim-info"><a href="'+url2+'" target="_blank" class="dim-link">'+m.name+' ↗</a><div class="dim-reco">'+m.desc+'</div></div>';
+    h+='<div class="dim-info"><a href="'+url2+'" class="dim-link" target="_blank">'+m.name+' ↗</a><div class="dim-reco">'+m.desc+'</div></div>';
     h+='<div class="dim-bar-wrap"><div class="dim-bar-fill" style="width:'+d.pct+'%;background:'+dColor+'"></div></div>';
     h+='<div class="dim-score" style="color:'+dColor+'">'+d.score+'/5</div>';
     h+='</div>';
   });
   h+='</div>';
 
-  // Extra SaaS tools (always shown)
-  h+='<h3 style="font-size:14px;margin-top:8px;margin-bottom:10px">🆕 Also Try These</h3>';
+  h+='<h3 style="font-size:14px;margin-top:8px;margin-bottom:10px">🆕 亦可以試用</h3>';
   h+='<div class="dim-list">';
   Object.keys(saasMap).forEach(function(k){
-    var m=saasMap[k];
-    if(!m.always) return;
-    var url=m.link.startsWith('http')?m.link:m.link;
+    var m=saasMap[k];if(!m.always) return;
+    var url3=m.link;
     h+='<div class="dim-row">';
     h+='<div class="dim-icon">'+m.icon+'</div>';
-    h+='<div class="dim-info"><a href="'+url+'" class="dim-link">'+m.name+' ↗</a><div class="dim-reco">'+m.desc+'</div></div>';
+    h+='<div class="dim-info"><a href="'+url3+'" class="dim-link">'+m.name+' ↗</a><div class="dim-reco">'+m.desc+'</div></div>';
     h+='<div class="dim-bar-wrap"><div class="dim-bar-fill" style="width:100%;background:#10b981"></div></div>';
-    h+='<div class="dim-score" style="color:#10b981">NEW</div>';
+    h+='<div class="dim-score" style="color:#10b981">新</div>';
     h+='</div>';
   });
   h+='</div>';
 
-  // CTA
-  h+='<div class="lead-box"><h3>📩 Get Your Full AI Readiness Report</h3><p>Enter your email for a detailed PDF report with benchmarks, SaaS recommendations, and a custom implementation roadmap.</p>';
-  h+='<input type="text" id="leadName" placeholder="Your Name">';
-  h+='<input type="email" id="leadEmail" placeholder="Work Email">';
-  h+='<input type="text" id="leadCompany" placeholder="Company Name (optional)">';
-  h+='<button class="btn btn-primary" onclick="submitLead()">📬 Send Me the Full Report</button></div>';
-  h+='<div class="cta-banner"><div class="cta-title">🚀 Ready to start?</div><div class="cta-sub">14-day free trial. No credit card. Full access to all AI modules.</div><a href="/" class="btn btn-primary" style="display:inline-block;width:auto;text-decoration:none">Start Free Trial →</a></div>';
+  h+='<div class="lead-box"><h3>📩 獲取完整 AI 成熟度報告</h3><p>輸入電郵接收詳細 PDF 報告，包含行業基準、SaaS 建議及度身訂造嘅 AI 實施路線圖。</p>';
+  h+='<input type="text" id="leadName" placeholder="你的姓名">';
+  h+='<input type="email" id="leadEmail" placeholder="工作電郵">';
+  h+='<input type="text" id="leadCompany" placeholder="公司名稱（可選）">';
+  h+='<button class="btn btn-primary" onclick="submitLead()">📬 發送完整報告</button></div>';
+  h+='<div class="cta-banner"><div class="cta-title">🚀 準備好開始 AI 旅程？</div><div class="cta-sub">14 日免費試用。無需信用卡。全功能 AI 模組任試。</div><a href="/" class="btn btn-primary" style="display:inline-block;width:auto;text-decoration:none">開始免費試用 →</a></div>';
 
   document.getElementById('result').innerHTML=h;
   document.getElementById('result').classList.add('show');
@@ -376,7 +349,7 @@ function showResult(){
 }
 
 function getTierDesc(t){
-  var d={beginner:'75% of peers have started AI adoption',developing:'At industry average — solid foundation',advanced:'Ahead of 65% of peers — accelerate now',leader:'Top 10% — setting industry standard'};
+  var d={beginner:'75% 嘅同行已經開始 AI 轉型',developing:'處於行業平均水平 — 基礎穩固',advanced:'領先 65% 同行 — 加速嘅時候',leader:'頭 10% — 你正在定義行業標準'};
   return d[t]||'';
 }
 
@@ -385,10 +358,10 @@ function submitLead(){
   var name=nE.value.trim(),email=eE.value.trim(),er=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   [nE,eE].forEach(function(x){x.classList.remove('input-error');});
   var errEl=document.getElementById('leadError');if(errEl)errEl.style.display='none';
-  if(!name&&!email){showLeadError('Please fill in your name and email.');return;}
-  if(!name){nE.classList.add('input-error');showLeadError('Please enter your name.');return;}
-  if(!email){eE.classList.add('input-error');showLeadError('Please enter your email.');return;}
-  if(!er.test(email)){eE.classList.add('input-error');showLeadError('Valid email required.');return;}
+  if(!name&&!email){showLeadError('請填寫姓名及電郵。');return;}
+  if(!name){nE.classList.add('input-error');showLeadError('請輸入姓名。');return;}
+  if(!email){eE.classList.add('input-error');showLeadError('請輸入電郵。');return;}
+  if(!er.test(email)){eE.classList.add('input-error');showLeadError('請輸入有效電郵。');return;}
   document.getElementById('result').classList.remove('show');
   document.getElementById('success').classList.add('show');
   var cE=document.getElementById('leadCompany'),company=cE?cE.value:'';

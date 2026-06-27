@@ -1,43 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-HK">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Expense Scanner — ManuTrade AI</title>
+<title>AI 開支單掃描 — ManuTrade AI</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
   --bg:#080b12;--surface:#111827;--card:#1a2235;--border:#1f2d45;
   --text:#e2e8f0;--dim:#8899aa;--accent:#6366f1;--accent2:#818cf8;
-  --green:#10b981;--red:#ef4444;--orange:#f59e0b;
-  --radius:12px
+  --green:#10b981;--red:#ef4444;--orange:#f59e0b;--radius:12px
 }
 body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 nav{position:sticky;top:0;z-index:100;background:rgba(8,11,18,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 24px}
-nav .logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 nav a{color:var(--dim);text-decoration:none;font-size:12px;margin-left:20px}
+nav .logo{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--pink));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .container{max-width:1100px;margin:0 auto;padding:32px 24px}
 h1{font-size:26px;margin-bottom:6px}
 .subtitle{color:var(--dim);font-size:13px;margin-bottom:28px}
-
-/* Drop zone */
-.dropzone{
-  border:2px dashed var(--border);border-radius:var(--radius);padding:48px;text-align:center;
-  transition:all .3s;cursor:pointer;background:var(--surface);margin-bottom:20px
-}
+.dropzone{border:2px dashed var(--border);border-radius:var(--radius);padding:48px;text-align:center;transition:all .3s;cursor:pointer;background:var(--surface);margin-bottom:20px}
 .dropzone.drag-over{border-color:var(--accent);background:rgba(99,102,241,.05)}
 .dropzone .dz-icon{font-size:42px;margin-bottom:12px}
 .dropzone .dz-text{font-size:14px;font-weight:600;margin-bottom:4px}
 .dropzone .dz-hint{font-size:11px;color:var(--dim)}
 .dropzone input{display:none}
-
-/* Preview thumbs */
 .preview-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
 .preview-thumb{position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:2px solid var(--border)}
 .preview-thumb img{width:100%;height:100%;object-fit:cover}
 .preview-thumb .remove{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:12px;line-height:18px;text-align:center}
-
-/* Scan button */
 .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
 .btn{padding:10px 22px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;border:none;transition:all .2s}
 .btn-primary{background:var(--accent);color:#fff}
@@ -49,32 +39,19 @@ h1{font-size:26px;margin-bottom:6px}
 .btn-pdf{background:var(--orange);color:#fff}
 .btn-pdf:hover{opacity:.85}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-
-/* Status */
 .status{font-size:12px;padding:8px 14px;border-radius:8px;margin-bottom:16px;display:none}
 .status.show{display:block}
 .status.scanning{background:rgba(99,102,241,.1);color:var(--accent2)}
 .status.error{background:rgba(239,68,68,.1);color:var(--red)}
 .status.success{background:rgba(16,185,129,.1);color:var(--green)}
-
-/* Currency selector */
 .currency-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:12px;color:var(--dim)}
-.currency-bar select{
-  padding:6px 10px;border:1px solid var(--border);border-radius:6px;
-  background:var(--card);color:var(--text);font-size:12px
-}
-
-/* Table */
+.currency-bar select{padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:12px}
 .table-wrap{overflow-x:auto;margin-bottom:20px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{background:var(--accent);color:#fff;padding:10px 12px;text-align:left;font-weight:600;white-space:nowrap}
 td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
-tr{background:var(--surface)}
-tr:nth-child(even){background:var(--card)}
-td input,td select{
-  width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:4px;
-  background:var(--card);color:var(--text);font-size:11px
-}
+tr{background:var(--surface)}tr:nth-child(even){background:var(--card)}
+td input,td select{width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);font-size:11px}
 td input:focus,td select:focus{outline:none;border-color:var(--accent)}
 .amount-col{text-align:right;font-weight:600}
 .empty-state{text-align:center;padding:60px 20px;color:var(--dim)}
@@ -89,263 +66,155 @@ footer a{color:var(--accent);text-decoration:none}
 </style>
 </head>
 <body>
-<nav>
-  <span class="logo">ManuTrade AI</span>
-  <a href="/">← Home</a>
-  <a href="/manutradeai-assessment.html">Assessment</a>
-  <a href="/expense-scanner.html" style="color:var(--accent)">Expense</a>
-  <a href="/quotation-filler.html">Quotation</a>
-</nav>
-
+<nav><span class="logo">ManuTrade AI</span><a href="/">← 回主頁</a></nav>
 <div class="container">
-  <h1>🧾 AI Expense Receipt Scanner</h1>
-  <p class="subtitle">Drag receipt images → AI extracts date, merchant, amount, category → export Excel or PDF</p>
+<h1>🧾 AI 開支單掃描</h1>
+<p class="subtitle">拖放單據圖片 → AI 自動提取日期、商戶、金額、類別 → 一鍵匯出 Excel 或 PDF</p>
 
-  <div class="dropzone" id="dropzone">
-    <div class="dz-icon">📸</div>
-    <div class="dz-text">Drop receipt images here</div>
-    <div class="dz-hint">or click to browse · JPEG/PNG/WebP supported</div>
-    <input type="file" id="fileInput" accept="image/*" multiple>
-  </div>
-
-  <div class="preview-row" id="previewRow"></div>
-
-  <div class="btn-row">
-    <button class="btn btn-primary" id="scanBtn" disabled>🤖 Scan All Receipts with AI</button>
-    <button class="btn btn-outline" id="demoBtn">🧪 Load Demo Data</button>
-    <button class="btn btn-outline" id="clearBtn">🗑️ Clear All</button>
-  </div>
-
-  <div class="status" id="status"></div>
-
-  <div class="currency-bar">
-    💱 Convert to:
-    <select id="targetCurrency" onchange="updateConversion()">
-      <option value="HKD" selected>HKD (港幣)</option>
-      <option value="RMB">RMB (人民幣)</option>
-      <option value="USD">USD (美元)</option>
-    </select>
-    <span style="margin-left:12px">📊 <span id="receiptCount">0</span> receipts scanned</span>
-  </div>
-
-  <div class="table-wrap">
-    <table id="receiptTable">
-      <thead>
-        <tr>
-          <th>#</th><th>Preview</th><th>Date</th><th>Merchant</th><th>Category</th><th>Items</th>
-          <th>Amount (Original)</th><th id="convHeader">Amount (HKD)</th><th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="empty-state" id="emptyRow">
-          <td colspan="9"><div class="icon">📬</div>No receipts yet — drop images above and click Scan</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="summary" id="summary" style="display:none"></div>
-
-  <div class="btn-row" style="margin-top:16px">
-    <button class="btn btn-export" id="exportExcel" disabled>📥 Export Excel (.xlsx)</button>
-    <button class="btn btn-pdf" id="exportPdf" disabled>📄 Export PDF</button>
-  </div>
+<div class="dropzone" id="dropzone">
+<div class="dz-icon">📸</div>
+<div class="dz-text">拖放單據圖片到呢度</div>
+<div class="dz-hint">或點擊瀏覽 · 支援 JPEG/PNG/WebP 格式</div>
+<input type="file" id="fileInput" accept="image/*" multiple>
 </div>
 
-<footer>
-  <p>© 2026 <a href="/">ManuTrade AI</a> — AI Expense Scanner · All receipt data processed securely</p>
-</footer>
+<div class="preview-row" id="previewRow"></div>
+
+<div class="btn-row">
+<button class="btn btn-primary" id="scanBtn" disabled>🤖 AI 掃描全部單據</button>
+<button class="btn btn-outline" id="demoBtn">🧪 載入示範數據</button>
+<button class="btn btn-outline" id="clearBtn">🗑️ 清除全部</button>
+</div>
+
+<div class="status" id="status"></div>
+
+<div class="currency-bar">
+💱 轉換至：
+<select id="targetCurrency" onchange="updateConversion()">
+<option value="HKD" selected>HKD（港幣）</option>
+<option value="RMB">RMB（人民幣）</option>
+<option value="USD">USD（美元）</option>
+</select>
+<span style="margin-left:12px">📊 <span id="receiptCount">0</span> 張單據已掃描</span>
+</div>
+
+<div class="table-wrap"><table id="receiptTable">
+<thead><tr><th>#</th><th>預覽</th><th>日期</th><th>商戶</th><th>類別</th><th>項目</th><th>金額（原始）</th><th id="convHeader">金額（HKD）</th><th></th></tr></thead>
+<tbody><tr class="empty-state" id="emptyRow"><td colspan="9"><div class="icon">📬</div>未有單據 — 拖放圖片然後撳掃描</td></tr></tbody>
+</table></div>
+
+<div class="summary" id="summary" style="display:none"></div>
+
+<div class="btn-row" style="margin-top:16px">
+<button class="btn btn-export" id="exportExcel" disabled>📥 匯出 Excel (.xlsx)</button>
+<button class="btn btn-pdf" id="exportPdf" disabled>📄 匯出 PDF</button>
+</div>
+</div>
+<footer><p>© 2026 <a href="/">ManuTrade AI</a> — AI 開支單掃描 · 所有單據數據安全處理</p></footer>
 
 <script>
 var GEMINI_KEY = '***';
-var receipts = [];
-var files = [];
-
-document.getElementById('dropzone').addEventListener('click', function(e){
-  if(e.target.tagName!=='BUTTON') document.getElementById('fileInput').click();
-});
-document.getElementById('fileInput').addEventListener('change', function(e){addFiles(e.target.files);});
-
-var dz = document.getElementById('dropzone');
-dz.addEventListener('dragover', function(e){e.preventDefault();dz.classList.add('drag-over');});
-dz.addEventListener('dragleave', function(){dz.classList.remove('drag-over');});
-dz.addEventListener('drop', function(e){e.preventDefault();dz.classList.remove('drag-over');addFiles(e.dataTransfer.files);});
+var receipts=[],files=[];
+document.getElementById('dropzone').addEventListener('click',function(e){if(e.target.tagName!=='BUTTON')document.getElementById('fileInput').click();});
+document.getElementById('fileInput').addEventListener('change',function(e){addFiles(e.target.files);});
+var dz=document.getElementById('dropzone');
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag-over');});
+dz.addEventListener('dragleave',function(){dz.classList.remove('drag-over');});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag-over');addFiles(e.dataTransfer.files);});
 
 function addFiles(flist){
-  for(var f of flist){
-    if(!f.type.startsWith('image/')) continue;
-    var reader = new FileReader();
-    reader.onload = function(ev){
-      var base64 = ev.target.result;
-      files.push({name: f.name, data: base64, scanned: false});
-      renderPreviews();
-      document.getElementById('scanBtn').disabled = false;
-    };
+  for(var f of flist){if(!f.type.startsWith('image/'))continue;
+    var reader=new FileReader();
+    reader.onload=function(ev){var b64=ev.target.result;files.push({name:f.name,data:b64,scanned:false});renderPreviews();document.getElementById('scanBtn').disabled=false;};
     reader.readAsDataURL(f);
   }
-  document.getElementById('fileInput').value = '';
+  document.getElementById('fileInput').value='';
 }
 
 function renderPreviews(){
-  var h = '';
-  files.forEach(function(f, i){
-    h += '<div class="preview-thumb"><img src="'+f.data+'"><button class="remove" onclick="removeFile('+i+')">×</button></div>';
-  });
-  document.getElementById('previewRow').innerHTML = h;
+  var h='';files.forEach(function(f,i){h+='<div class="preview-thumb"><img src="'+f.data+'"><button class="remove" onclick="removeFile('+i+')">×</button></div>';});
+  document.getElementById('previewRow').innerHTML=h;
 }
 
 function removeFile(i){
-  files.splice(i, 1);
-  receipts = receipts.filter(function(r){return r.fileIndex !== i;});
-  receipts.forEach(function(r){if(r.fileIndex > i) r.fileIndex--;});
-  renderPreviews();
-  renderTable();
-  document.getElementById('scanBtn').disabled = files.length === 0;
+  files.splice(i,1);receipts=receipts.filter(function(r){return r.fileIndex!==i;});
+  receipts.forEach(function(r){if(r.fileIndex>i)r.fileIndex--;});
+  renderPreviews();renderTable();document.getElementById('scanBtn').disabled=files.length===0;
 }
 
-document.getElementById('clearBtn').addEventListener('click', function(){
-  files = []; receipts = [];
-  renderPreviews(); renderTable();
-  document.getElementById('scanBtn').disabled = true;
-  document.getElementById('exportExcel').disabled = true;
-  document.getElementById('exportPdf').disabled = true;
-  document.getElementById('summary').style.display = 'none';
+document.getElementById('clearBtn').addEventListener('click',function(){
+  files=[];receipts=[];renderPreviews();renderTable();
+  document.getElementById('scanBtn').disabled=true;document.getElementById('exportExcel').disabled=true;document.getElementById('exportPdf').disabled=true;
+  document.getElementById('summary').style.display='none';
 });
 
-// ── Helper: Gemini OCR call (browser-side, no backend needed) ──
 async function callGeminiOCR(imageDataUrl){
-  var b64 = imageDataUrl.split(',')[1];
-  var resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=***
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      contents:[{parts:[
-        {text:'Analyze this receipt. Extract: date (YYYY-MM-DD), merchant name, amount (number), currency (HKD/USD/RMB/CNY/EUR/etc), category (best match from: Dining, Transportation, Hotel, Flight, Shipping, Office Supplies, Software/IT, Client Gift, Rent, Utilities, Phone, Insurance, Other), items (brief description). Return ONLY valid JSON, no markdown, no explanation.'},
-        {inline_data:{mime_type:'image/jpeg',data:b64}}
-      ]}],
-      generationConfig:{temperature:0.1,maxOutputTokens:256}
-    })
-  });
-  var j = await resp.json();
-  if(j.error){ throw new Error(j.error.message||'API error'); }
-  var text = j.candidates[0].content.parts[0].text;
-  text = text.replace(/```json/g,'').replace(/```/g,'').trim();
-  return text;
+  var b64=imageDataUrl.split(',')[1];
+  var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=***,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({contents:[{parts:[
+      {text:'Analyze this receipt. Extract: date (YYYY-MM-DD), merchant name, amount (number), currency (HKD/USD/RMB/CNY/EUR/etc), category (best match: Dining, Transportation, Hotel, Flight, Shipping, Office Supplies, Software/IT, Client Gift, Rent, Utilities, Phone, Insurance, Other), items (brief description). Return ONLY valid JSON.'},
+      {inline_data:{mime_type:'image/jpeg',data:b64}}]}],
+      generationConfig:{temperature:0.1,maxOutputTokens:256}})});
+  var j=await resp.json();if(j.error)throw new Error(j.error.message||'API error');
+  return j.candidates[0].content.parts[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
 }
 
-// ── Helper: download blob ──
-function downloadBlob(blob, filename){
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a'); a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-}
+function downloadBlob(blob,filename){var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);}
 
-// ── Export Excel (client-side, using CSV for simplicity) ──
 function exportExcel(){
-  if(receipts.length===0) return;
-  var to = document.getElementById('targetCurrency').value;
-  var csv = '\uFEFF#,Date,Merchant,Category,Items,Amount (Original),Amount ('+to+')\n';
-  receipts.forEach(function(r,i){
-    csv += (i+1)+',"'+r.date+'","'+r.merchant+'","'+(r.category||'')+'","'+(r.items||'')+'","'+(r.currency||'')+' '+(r.amount||0)+'","'+to+' '+(r.convAmount||0).toFixed(2)+'"\n';
-  });
-  downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}), 'expense_report.csv');
+  if(!receipts.length)return;var to=document.getElementById('targetCurrency').value;
+  var csv='\uFEFF#,日期,商戶,類別,項目,金額（原始）,金額（'+to+'）\n';
+  receipts.forEach(function(r,i){csv+=(i+1)+',"'+r.date+'","'+r.merchant+'","'+(r.category||'')+'","'+(r.items||'')+'","'+(r.currency||'')+' '+(r.amount||0)+'","'+to+' '+(r.convAmount||0).toFixed(2)+'"\n';});
+  downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'expense_report.csv');
 }
 
-// ── Export PDF (client-side, using print) ──
 function exportPDF(){
-  var to = document.getElementById('targetCurrency').value;
-  var h = '<html><head><meta charset="UTF-8"><style>body{font-family:Arial;color:#111;padding:20px}h1{color:#6366f1}table{width:100%;border-collapse:collapse}th{background:#6366f1;color:#fff;padding:8px}td{padding:6px;border-bottom:1px solid #ddd}tr:nth-child(even){background:#f5f5f5}.total{font-weight:bold;color:#f59e0b}</style></head><body>';
-  h += '<h1>ManuTrade AI — Expense Report</h1><p>Generated: '+new Date().toISOString().slice(0,10)+' | Currency: '+to+'</p>';
-  h += '<table><thead><tr><th>#</th><th>Date</th><th>Merchant</th><th>Category</th><th>Amount (Orig)</th><th>Amount ('+to+')</th></tr></thead><tbody>';
-  var totalHKD = 0;
-  receipts.forEach(function(r,i){
-    h += '<tr><td>'+(i+1)+'</td><td>'+r.date+'</td><td>'+r.merchant+'</td><td>'+(r.category||'')+'</td><td>'+(r.currency||'')+' '+(r.amount||0)+'</td><td>'+to+' '+(r.convAmount||0).toFixed(2)+'</td></tr>';
-  });
-  h += '</tbody></table></body></html>';
-  var w = window.open('','_blank');
-  w.document.write(h); w.document.close();
-  setTimeout(function(){ w.print(); }, 500);
+  var to=document.getElementById('targetCurrency').value;
+  var h='<html><head><meta charset="UTF-8"><style>body{font-family:Arial;color:#111;padding:20px}h1{color:#6366f1}table{width:100%;border-collapse:collapse}th{background:#6366f1;color:#fff;padding:8px}td{padding:6px;border-bottom:1px solid #ddd}tr:nth-child(even){background:#f5f5f5}</style></head><body>';
+  h+='<h1>ManuTrade AI — 開支報表</h1><p>生成日期：'+new Date().toISOString().slice(0,10)+' | 貨幣：'+to+'</p>';
+  h+='<table><thead><tr><th>#</th><th>日期</th><th>商戶</th><th>類別</th><th>金額（原始）</th><th>金額（'+to+'）</th></tr></thead><tbody>';
+  receipts.forEach(function(r,i){h+='<tr><td>'+(i+1)+'</td><td>'+r.date+'</td><td>'+r.merchant+'</td><td>'+(r.category||'')+'</td><td>'+(r.currency||'')+' '+(r.amount||0)+'</td><td>'+to+' '+(r.convAmount||0).toFixed(2)+'</td></tr>';});
+  h+='</tbody></table></body></html>';
+  var w=window.open('','_blank');w.document.write(h);w.document.close();setTimeout(function(){w.print();},500);
 }
 
-// ── Scan with AI ──
-document.getElementById('scanBtn').addEventListener('click', async function(){
-  var btn = this;
-  btn.disabled = true; btn.textContent = '⏳ Scanning...';
-  showStatus('scanning', '🤖 AI scanning receipts... please wait');
-
-  var unscanned = files.filter(function(f){return !f.scanned;});
-  for(var i = 0; i < unscanned.length; i++){
-    var f = unscanned[i];
-    var fileIdx = files.indexOf(f);
-    showStatus('scanning', '🤖 Scanning receipt '+(receipts.length+1)+' of '+unscanned.length+'...');
-    try{
-      var r = await callGeminiOCR(f.data);
-      var d = JSON.parse(r);
-      d.fileIndex = fileIdx;
-      d.thumbnail = f.data;
-      d.origCurrency = d.currency || 'HKD';
-      d.convAmount = d.amount || 0;
-      receipts.push(d);
-      f.scanned = true;
-    }catch(e){
-      receipts.push({
-        fileIndex: fileIdx, thumbnail: f.data,
-        date: '', merchant: 'Scan failed — try Demo', amount: 0, currency: 'HKD',
-        category: 'Other', items: e.message, origCurrency: 'HKD', convAmount: 0
-      });
-    }
+document.getElementById('scanBtn').addEventListener('click',async function(){
+  var btn=this;btn.disabled=true;btn.textContent='⏳ 掃描中...';showStatus('scanning','🤖 AI 正在掃描單據...');
+  var unscanned=files.filter(function(f){return !f.scanned;});
+  for(var i=0;i<unscanned.length;i++){
+    var f=unscanned[i],fi=files.indexOf(f);
+    showStatus('scanning','🤖 掃描第 '+(receipts.length+1)+'/'+unscanned.length+' 張單據...');
+    try{var t=await callGeminiOCR(f.data);var d=JSON.parse(t);d.fileIndex=fi;d.thumbnail=f.data;d.origCurrency=d.currency||'HKD';d.convAmount=d.amount||0;receipts.push(d);f.scanned=true;}
+    catch(e){receipts.push({fileIndex:fi,thumbnail:f.data,date:'',merchant:'掃描失敗 — 試示範',amount:0,currency:'HKD',category:'其他',items:e.message,origCurrency:'HKD',convAmount:0});}
   }
-
-  renderTable();
-  updateConversion();
-  btn.textContent = '🤖 Scan All Receipts with AI';
-  btn.disabled = files.filter(function(f){return !f.scanned;}).length === 0;
-  if(receipts.length > 0){
-    document.getElementById('exportExcel').disabled = false;
-    document.getElementById('exportPdf').disabled = false;
-  }
+  renderTable();updateConversion();btn.textContent='🤖 AI 掃描全部單據';
+  btn.disabled=files.filter(function(f){return !f.scanned;}).length===0;
+  if(receipts.length>0){document.getElementById('exportExcel').disabled=false;document.getElementById('exportPdf').disabled=false;}
   hideStatus();
 });
 
-// ── Demo Mode ──
-document.getElementById('demoBtn').addEventListener('click', function(){
-  var demoData = [
-    {date:'2025-06-15',merchant:'Crystal Jade Restaurant',amount:856.40,currency:'HKD',category:'🍽️ Dining',items:'Team lunch — 8 pax, dim sum'},
-    {date:'2025-06-14',merchant:'Uber Hong Kong',amount:142.50,currency:'HKD',category:'🚕 Transportation',items:'Airport to Tsim Sha Tsui'},
-    {date:'2025-06-13',merchant:'Marriott Shenzhen',amount:1680.00,currency:'RMB',category:'🏨 Hotel',items:'2 nights, factory visit trip'},
-    {date:'2025-06-12',merchant:'Cathay Pacific',amount:4200.00,currency:'HKD',category:'✈️ Flight',items:'HKG→SHA round trip, economy'},
-    {date:'2025-06-10',merchant:'SF Express',amount:380.00,currency:'RMB',category:'📦 Shipping',items:'Samples to Vancouver buyer'},
-    {date:'2025-06-08',merchant:'Amazon Web Services',amount:89.00,currency:'USD',category:'💻 Software/IT',items:'Monthly hosting fees'},
-    {date:'2025-06-05',merchant:'K11 MUSEA Gift Shop',amount:520.00,currency:'HKD',category:'🎁 Client Gift',items:'Welcome gift for German buyer'}
-  ];
-  receipts = demoData.map(function(d){
-    d.origCurrency = d.currency;
-    d.convAmount = d.amount;
-    d.fileIndex = -1;
-    d.thumbnail = 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="#1a2235" width="80" height="80"/><text fill="#6366f1" x="40" y="45" text-anchor="middle" font-size="24">🧾</text></svg>');
-    return d;
-  });
-  renderTable();
-  updateConversion();
-  document.getElementById('exportExcel').disabled = false;
-  document.getElementById('exportPdf').disabled = false;
-  showStatus('success', '✅ Demo data loaded — 7 sample receipts. Try Export Excel/PDF!');
+document.getElementById('demoBtn').addEventListener('click',function(){
+  var demo=[{date:'2025-06-15',merchant:'翡翠拉麵小籠包',amount:856.40,currency:'HKD',category:'🍽️ 餐飲',items:'團隊午餐 — 8 人，點心'},
+    {date:'2025-06-14',merchant:'Uber 香港',amount:142.50,currency:'HKD',category:'🚕 交通',items:'機場去尖沙咀'},
+    {date:'2025-06-13',merchant:'深圳萬豪酒店',amount:1680.00,currency:'RMB',category:'🏨 酒店',items:'兩晚，考察工廠'},
+    {date:'2025-06-12',merchant:'國泰航空',amount:4200.00,currency:'HKD',category:'✈️ 機票',items:'香港來回上海，經濟艙'},
+    {date:'2025-06-10',merchant:'順豐速運',amount:380.00,currency:'RMB',category:'📦 運費',items:'樣板寄溫哥華買家'},
+    {date:'2025-06-08',merchant:'Amazon Web Services',amount:89.00,currency:'USD',category:'💻 軟件/IT',items:'每月伺服器費用'},
+    {date:'2025-06-05',merchant:'K11 MUSEA 禮品店',amount:520.00,currency:'HKD',category:'🎁 客戶禮物',items:'德國買家歡迎禮物'}];
+  receipts=demo.map(function(d){d.origCurrency=d.currency;d.convAmount=d.amount;d.fileIndex=-1;d.thumbnail='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="#1a2235" width="80" height="80"/><text fill="#6366f1" x="40" y="45" text-anchor="middle" font-size="24">🧾</text></svg>');return d;});
+  renderTable();updateConversion();document.getElementById('exportExcel').disabled=false;document.getElementById('exportPdf').disabled=false;
+  showStatus('success','✅ 示範數據已載入 — 7 張樣本單據。試下匯出 Excel/PDF！');
 });
 
-// ── Render Table ──
 function renderTable(){
-  var tbody = document.querySelector('#receiptTable tbody');
-  document.getElementById('emptyRow').style.display = receipts.length > 0 ? 'none' : '';
-  // Remove old rows
+  var tbody=document.querySelector('#receiptTable tbody');
+  document.getElementById('emptyRow').style.display=receipts.length>0?'none':'';
   document.querySelectorAll('#receiptTable tbody tr:not(#emptyRow)').forEach(function(r){r.remove();});
-
-  receipts.forEach(function(r, i){
-    var tr = document.createElement('tr');
-    var cats = ['🍽️ Dining','🚕 Transportation','🏨 Hotel','✈️ Flight','📦 Shipping','📄 Office Supplies','💻 Software/IT','🎁 Client Gift','🏢 Rent','⚡ Utilities','📱 Phone','🛡️ Insurance','💰 Other'];
-    var catOpts = cats.map(function(c){return '<option value="'+c+'"'+(r.category===c?' selected':'')+'>'+c+'</option>';}).join('');
-
-    tr.innerHTML =
-      '<td>'+(i+1)+'</td>'+
-      '<td><img src="'+r.thumbnail+'" style="width:40px;height:40px;object-fit:cover;border-radius:4px"></td>'+
+  var cats=['🍽️ 餐飲','🚕 交通','🏨 酒店','✈️ 機票','📦 運費','📄 文具','💻 軟件/IT','🎁 客戶禮物','🏢 租金','⚡ 水電','📱 電話','🛡️ 保險','💰 其他'];
+  var catOpts=cats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
+  receipts.forEach(function(r,i){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+(i+1)+'</td><td><img src="'+r.thumbnail+'" style="width:40px;height:40px;object-fit:cover;border-radius:4px"></td>'+
       '<td><input value="'+esc(r.date||'')+'" onchange="updateField('+i+',\'date\',this.value)"></td>'+
       '<td><input value="'+esc(r.merchant||'')+'" onchange="updateField('+i+',\'merchant\',this.value)"></td>'+
       '<td><select onchange="updateField('+i+',\'category\',this.value)">'+catOpts+'</select></td>'+
@@ -355,86 +224,32 @@ function renderTable(){
       '<td><button style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px" onclick="removeReceipt('+i+')">×</button></td>';
     tbody.appendChild(tr);
   });
-
-  document.getElementById('receiptCount').textContent = receipts.length;
-  updateSummary();
+  document.getElementById('receiptCount').textContent=receipts.length;updateSummary();
 }
 
-function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-function updateField(i, field, val){
-  receipts[i][field] = val;
-  if(field === 'amount') updateConversion();
-  updateSummary();
-}
-
-function removeReceipt(i){
-  receipts.splice(i, 1);
-  renderTable();
-  if(receipts.length === 0){
-    document.getElementById('exportExcel').disabled = true;
-    document.getElementById('exportPdf').disabled = true;
-    document.getElementById('summary').style.display = 'none';
-  }
-}
-
-function formatConv(i){
-  var r = receipts[i];
-  var to = document.getElementById('targetCurrency').value;
-  var amt = r.convAmount || 0;
-  return to+' '+amt.toFixed(2);
-}
-
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function updateField(i,f,v){receipts[i][f]=v;if(f==='amount')updateConversion();updateSummary();}
+function removeReceipt(i){receipts.splice(i,1);renderTable();if(!receipts.length){document.getElementById('exportExcel').disabled=true;document.getElementById('exportPdf').disabled=true;document.getElementById('summary').style.display='none';}}
+function formatConv(i){var r=receipts[i],to=document.getElementById('targetCurrency').value;return to+' '+(r.convAmount||0).toFixed(2);}
 function updateConversion(){
-  var to = document.getElementById('targetCurrency').value;
-  document.getElementById('convHeader').textContent = 'Amount ('+to+')';
-  // Quick local calc for display (server will do precise calc on export)
-  var FX = {HKD:1,USD:7.82,RMB:1.08};
-  var fromUSD = FX[to] || 1;
-
-  receipts.forEach(function(r, i){
-    r.convAmount = (r.amount||0) * (1/fromUSD); // approximate
-  });
-
-  // Re-render conv columns
-  var rows = document.querySelectorAll('#receiptTable tbody tr:not(#emptyRow)');
-  rows.forEach(function(row, i){
-    var cells = row.querySelectorAll('td');
-    if(cells.length >= 8) cells[7].textContent = formatConv(i);
-  });
+  var to=document.getElementById('targetCurrency').value;document.getElementById('convHeader').textContent='金額（'+to+'）';
+  receipts.forEach(function(r,i){r.convAmount=(r.amount||0)*(7.82/({HKD:7.82,USD:1,RMB:1.08}[to]||7.82));});
+  var rows=document.querySelectorAll('#receiptTable tbody tr:not(#emptyRow)');
+  rows.forEach(function(r,i){var c=r.querySelectorAll('td');if(c.length>=8)c[7].textContent=formatConv(i);});
   updateSummary();
 }
-
 function updateSummary(){
-  var to = document.getElementById('targetCurrency').value;
-  var total = 0;
-  receipts.forEach(function(r){ total += (r.amount || 0); });
-  var cats = {};
-  receipts.forEach(function(r){
-    var c = (r.category||'Other').replace(/^[^\s]+\s/,'');
-    cats[c] = (cats[c]||0)+(r.amount||0);
-  });
-
-  var sum = document.getElementById('summary');
-  sum.style.display = receipts.length > 0 ? 'flex' : 'none';
-  sum.innerHTML =
-    '<div class="sum-item"><div class="sum-val">'+receipts.length+'</div><div class="sum-lbl">Receipts</div></div>'+
-    '<div class="sum-item"><div class="sum-val">HKD '+(total*7.82).toFixed(2)+'</div><div class="sum-lbl">Total (~HKD)</div></div>'+
-    '<div class="sum-item"><div class="sum-val">'+Object.keys(cats).length+'</div><div class="sum-lbl">Categories</div></div>';
+  var to=document.getElementById('targetCurrency').value,total=0,cats={};
+  receipts.forEach(function(r){total+=(r.amount||0);var c=(r.category||'其他').replace(/^[^\s]+\s/,'');cats[c]=(cats[c]||0)+(r.amount||0);});
+  var sum=document.getElementById('summary');sum.style.display=receipts.length>0?'flex':'none';
+  sum.innerHTML='<div class="sum-item"><div class="sum-val">'+receipts.length+'</div><div class="sum-lbl">張單據</div></div><div class="sum-item"><div class="sum-val">HKD '+(total*7.82).toFixed(2)+'</div><div class="sum-lbl">總計（~港幣）</div></div><div class="sum-item"><div class="sum-val">'+Object.keys(cats).length+'</div><div class="sum-lbl">類別</div></div>';
 }
 
-// ── Export ──
-document.getElementById('exportExcel').addEventListener('click', exportExcel);
-document.getElementById('exportPdf').addEventListener('click', exportPDF);
+document.getElementById('exportExcel').addEventListener('click',exportExcel);
+document.getElementById('exportPdf').addEventListener('click',exportPDF);
 
-function showStatus(type, msg){
-  var s = document.getElementById('status');
-  s.className = 'status show '+type;
-  s.textContent = msg;
-}
-function hideStatus(){
-  document.getElementById('status').classList.remove('show');
-}
+function showStatus(t,m){var s=document.getElementById('status');s.className='status show '+t;s.textContent=m;}
+function hideStatus(){document.getElementById('status').classList.remove('show');}
 </script>
 </body>
 </html>
