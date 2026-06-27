@@ -81,13 +81,13 @@ footer a{color:var(--accent);text-decoration:none}
 <div class="upload-grid">
 <div class="upload-box" id="supplierBox">
 <div class="icon">🧾</div><div class="title">1. 供應商報價</div>
-<div class="hint">拖放 Excel / DOCX / PDF / PPT / 圖片<br>來自你嘅中國供應商</div>
-<input type="file" id="supplierFile" accept=".xlsx,.xls,.docx,.pdf,.ppt,.pptx,.jpg,.jpeg,.png">
+<div class="hint">拖放 PDF 或圖片檔案<br>來自你嘅中國供應商</div>
+<input type="file" id="supplierFile" accept=".pdf,.jpg,.jpeg,.png,.webp">
 </div>
 <div class="upload-box" id="templateBox">
 <div class="icon">📋</div><div class="title">2. 客戶表格模板 <span style="font-size:10px;font-weight:400;color:var(--dim)">（可選）</span></div>
-<div class="hint">拖放 Costco / Walmart / Target 表格<br>Excel / PDF / 圖片格式</div>
-<input type="file" id="templateFile" accept=".xlsx,.xls,.docx,.pdf,.jpg,.jpeg,.png">
+<div class="hint">拖放 Costco / Walmart / Target 表格<br>PDF / 圖片格式（Excel 請先轉 PDF）</div>
+<input type="file" id="templateFile" accept=".pdf,.jpg,.jpeg,.png,.webp">
 </div>
 </div>
 
@@ -137,9 +137,15 @@ document.getElementById('fillBtn').addEventListener('click',async function(){
   var btn=this;btn.disabled=true;btn.textContent='⏳ 處理中...';
   try{
     var b64=supplierData.data.split(',')[1];
-    var mime=supplierData.name.match(/\.(xlsx?)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      :supplierData.name.match(/\.(pdf)$/i)?'application/pdf'
-      :supplierData.name.match(/\.(docx?)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'image/png';
+    var mime='application/pdf';
+    var n=supplierData.name.toLowerCase();
+    if(n.match(/\.(pdf)$/i))mime='application/pdf';
+    else if(n.match(/\.(png|jpg|jpeg|webp|gif)$/i))mime='image/jpeg';
+    else if(n.match(/\.(xlsx?|xlsm|docx?|ppt|pptx)$/i)){
+      showStatus('error','⚠️ Excel/Word/PPT 檔案：請先另存為 PDF，然後重新上傳。Gemini 可以直接讀取 PDF。');
+      btn.disabled=false;btn.textContent='🤖 AI 提取並填充';
+      return;
+    }
     var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gk()},
       body:JSON.stringify({contents:[{parts:[
         {text:'Analyze this supplier quotation. Extract: supplier_name, contact, email, phone, payment_terms, shipping_terms, valid_until, incoterms, products (array: model, description, unit_price, moq, lead_time). Return ONLY valid JSON.'},

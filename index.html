@@ -40,7 +40,17 @@ nav .cta-btn:hover{opacity:0.85}
 
 /* ═══ Hero ═══ */
 .hero{padding:160px 0 100px;text-align:center;position:relative}
-.hero .avatar{width:140px;height:140px;border-radius:50%;border:3px solid var(--accent);object-fit:cover;margin-bottom:28px;box-shadow:0 0 40px rgba(6,182,212,0.3)}
+/* Avatar + Banner row */
+.hero .top-row{display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:20px;flex-wrap:wrap}
+.hero .avatar{width:100px;height:100px;border-radius:50%;border:3px solid var(--accent);object-fit:cover;box-shadow:0 0 30px rgba(6,182,212,0.3)}
+.hero .assess-bar{display:inline-flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(6,182,212,0.12),rgba(16,185,129,0.08));border:1.5px solid rgba(6,182,212,0.3);border-radius:12px;padding:14px 22px;text-decoration:none;animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{border-color:rgba(6,182,212,0.3);box-shadow:0 0 8px rgba(6,182,212,0.1)}50%{border-color:rgba(6,182,212,0.8);box-shadow:0 0 20px rgba(6,182,212,0.3)}}
+.hero .assess-bar:hover{animation:none;border-color:var(--accent);box-shadow:0 0 24px rgba(6,182,212,0.4)}
+.hero .assess-bar .assess-icon{font-size:1.6rem}
+.hero .assess-bar .assess-text{text-align:left}
+.hero .assess-bar .assess-title{font-size:0.95rem;font-weight:700;color:var(--text)}
+.hero .assess-bar .assess-sub{font-size:0.75rem;color:var(--muted)}
+.hero .assess-bar .assess-arrow{background:var(--accent);color:#fff;padding:8px 16px;border-radius:6px;font-weight:700;font-size:0.8rem;white-space:nowrap}
 .hero .badge{display:inline-block;background:rgba(8,145,178,0.1);color:var(--accent);padding:6px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;letter-spacing:0.5px;margin-bottom:20px}
 .hero h1{font-size:2.8rem;font-weight:800;line-height:1.2;margin-bottom:16px;background:linear-gradient(135deg,#e2e8f0 0%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .hero h2{font-size:1.25rem;color:var(--muted);font-weight:400;margin-bottom:12px}
@@ -168,7 +178,18 @@ footer a{color:var(--accent);text-decoration:none}
 <!-- ════════════════════════════════════════════════ -->
 <section class="hero">
   <div class="container">
-    <img src="ac-cartoon-avatar.jpg" alt="AC — AI Architect" class="avatar" onerror="this.style.display='none'">
+    <!-- Top row: Avatar left + Assessment banner right -->
+    <div class="top-row">
+      <img src="ac-cartoon-avatar.jpg" alt="AC — AI Architect" class="avatar" onerror="this.style.display='none'">
+      <a href="manutradeai-assessment.html" class="assess-bar">
+        <span class="assess-icon">🧠</span>
+        <span class="assess-text">
+          <div class="assess-title">你嘅公司 AI 成熟度有幾高？</div>
+          <div class="assess-sub">10 條問題 · 2 分鐘 · 即時獲取 AI 導入建議</div>
+        </span>
+        <span class="assess-arrow">免費評估 →</span>
+      </a>
+    </div>
     <div class="badge">🎯 製造業 & 貿易公司 AI 架構師</div>
     <h1>AI 驅動你的<br>製造與貿易流程</h1>
     <h2>Manufacturing & Trading AI Architect</h2>
@@ -191,18 +212,6 @@ footer a{color:var(--accent);text-decoration:none}
 </div>
 
 <!-- ════════════════════════════════════════════════ -->
-<!-- 🧠 AI 評估 BAR — 連結到獨立評估頁面            -->
-<!-- ════════════════════════════════════════════════ -->
-<a href="manutradeai-assessment.html" style="display:block;text-decoration:none;background:linear-gradient(135deg,rgba(8,145,178,0.1),rgba(16,185,129,0.1));border:1px solid rgba(6,182,212,0.25);border-radius:14px;padding:18px 28px;margin-bottom:40px;transition:all .2s">
-  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-    <div style="font-size:2rem">🧠</div>
-    <div style="flex:1;min-width:200px">
-      <div style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:4px">你嘅公司 AI 成熟度有幾高？免費評估</div>
-      <div style="font-size:0.85rem;color:var(--muted)">10 條問題 · 2 分鐘完成 · 即時獲取 AI 導入建議 + SaaS 產品推薦</div>
-    </div>
-    <div style="background:var(--accent);color:#fff;padding:10px 22px;border-radius:8px;font-weight:700;font-size:0.9rem;white-space:nowrap">📊 開始免費評估 →</div>
-  </div>
-</a>
 
 <!-- ════════════════════════════════════════════════ -->
 <!-- 🤕 PAIN POINTS — 4 個痛點卡，每個係一個 card    -->
