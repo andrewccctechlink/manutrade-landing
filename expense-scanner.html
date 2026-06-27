@@ -71,7 +71,7 @@ footer a{color:var(--accent);text-decoration:none}
 <h1>🧾 AI 開支單掃描</h1>
 <p class="subtitle">拖放單據圖片 → AI 自動提取日期、商戶、金額、類別 → 一鍵匯出 Excel 或 PDF</p>
 
-<div class="dropzone" id="dropzone">
+<div class="dropzone" id="dropzone" ondrop="return false" ondragenter="return false" ondragover="return false">
 <div class="dz-icon">📸</div>
 <div class="dz-text">拖放單據圖片到呢度</div>
 <div class="dz-hint">或點擊瀏覽 · 支援 JPEG、PNG、PDF、Excel、DOCX 多種格式</div>
@@ -143,7 +143,14 @@ function addFiles(flist){
 }
 
 function renderPreviews(){
-  var h='';files.forEach(function(f,i){h+='<div class="preview-thumb"><img src="'+f.data+'"><button class="remove" onclick="removeFile('+i+')">×</button></div>';});
+  var h='';files.forEach(function(f,i){var src=f.data;
+      var ext=f.name.split('.').pop().toLowerCase();
+      if(!f.type.startsWith('image/')&&!['jpg','jpeg','png','webp','gif'].includes(ext)){
+        var icons={pdf:'📄',xlsx:'📊',xls:'📊',xlsm:'📊',docx:'📝',doc:'📝',csv:'📋'};
+        var icon=icons[ext]||'📎';
+        src='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="#e2e8f0" width="80" height="80"/><text fill="#6366f1" x="40" y="45" text-anchor="middle" font-size="30">'+icon+'</text></svg>');
+      }
+      h+='<div class="preview-thumb"><img src="'+src+'"><button class="remove" onclick="removeFile('+i+')">×</button></div>';});
   document.getElementById('previewRow').innerHTML=h;
 }
 
