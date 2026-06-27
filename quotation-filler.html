@@ -81,13 +81,13 @@ footer a{color:var(--accent);text-decoration:none}
 <div class="upload-grid">
 <div class="upload-box" id="supplierBox">
 <div class="icon">🧾</div><div class="title">1. 供應商報價</div>
-<div class="hint">拖放 PDF 或圖片檔案<br>來自你嘅中國供應商</div>
-<input type="file" id="supplierFile" accept=".pdf,.jpg,.jpeg,.png,.webp">
+<div class="hint">拖放任何檔案格式（PDF/Excel/DOCX/圖片）<br>來自你嘅中國供應商</div>
+<input type="file" id="supplierFile" accept=".pdf,.xlsx,.xls,.xlsm,.docx,.doc,.pptx,.ppt,.jpg,.jpeg,.png,.webp">
 </div>
 <div class="upload-box" id="templateBox">
 <div class="icon">📋</div><div class="title">2. 客戶表格模板 <span style="font-size:10px;font-weight:400;color:var(--dim)">（可選）</span></div>
-<div class="hint">拖放 Costco / Walmart / Target 表格<br>PDF / 圖片格式（Excel 請先轉 PDF）</div>
-<input type="file" id="templateFile" accept=".pdf,.jpg,.jpeg,.png,.webp">
+<div class="hint">拖放 Costco / Walmart / Target 表格<br>任何檔案格式</div>
+<input type="file" id="templateFile" accept=".pdf,.xlsx,.xls,.xlsm,.docx,.doc,.pptx,.ppt,.jpg,.jpeg,.png,.webp">
 </div>
 </div>
 
@@ -132,25 +132,78 @@ function handleFile(file,boxId){
 }
 function checkReady(){document.getElementById('fillBtn').disabled=!supplierData;}
 
+// ── Read any file as text (handles Office files) ──
+function readFileAsText(dataUrl){
+  return new Promise(function(resolve){
+    var b64=dataUrl.split(',')[1];
+    var bin=atob(b64);
+    var bytes=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+    // Try to extract text from ZIP-based Office files (xlsx/docx/pptx)
+    var text='';
+    // Simple ZIP local file header scan for XML content
+    var xmlParts=[];
+    var pos=0;
+    while(pos<bytes.length-4){
+      // ZIP local file header signature: PK\x03\x04
+      if(bytes[pos]===0x50&&bytes[pos+1]===0x4b&&bytes[pos+2]===0x03&&bytes[pos+3]===0x04){
+        var fnLen=bytes[pos+26]|(bytes[pos+27]<<8);
+        var exLen=bytes[pos+28]|(bytes[pos+29]<<8);
+        var compLen=bytes[pos+18]|(bytes[pos+19]<<8)|(bytes[pos+20]<<16)|(bytes[pos+21]<<24);
+        var fname='';
+        for(var j=0;j<fnLen;j++)fname+=String.fromCharCode(bytes[pos+30+j]);
+        var dataStart=pos+30+fnLen+exLen;
+        if(fname.match(/\.xml$/i)||fname.match(/sharedStrings|sheet|document|workbook/i)){
+          // Uncompressed XML in Office files (stored method)
+          if(bytes[pos+8]===0&&bytes[pos+9]===0){
+            var chunk='';
+            for(var k=0;k<Math.min(compLen,50000);k++)chunk+=String.fromCharCode(bytes[dataStart+k]);
+            // Extract text between XML tags
+            chunk=chunk.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+            if(chunk.length>10)xmlParts.push(chunk.substring(0,3000));
+          }
+        }
+        pos=dataStart+compLen;
+      }else{pos++;}
+    }
+    text=xmlParts.join(' | ').substring(0,8000);
+    if(!text){
+      // Fallback: read raw bytes as text
+      for(var i=0;i<Math.min(bytes.length,4000);i++){
+        var c=bytes[i];
+        if(c>31&&c<127)text+=String.fromCharCode(c);
+      }
+    }
+    resolve(text||'(binary file: could not extract text)');
+  });
+}
+
+// ── Actual AI fill logic ──
 document.getElementById('fillBtn').addEventListener('click',async function(){
   showStatus('loading','🤖 Gemini AI 正在提取報價數據...');
   var btn=this;btn.disabled=true;btn.textContent='⏳ 處理中...';
   try{
     var b64=supplierData.data.split(',')[1];
-    var mime='application/pdf';
     var n=supplierData.name.toLowerCase();
-    if(n.match(/\.(pdf)$/i))mime='application/pdf';
-    else if(n.match(/\.(png|jpg|jpeg|webp|gif)$/i))mime='image/jpeg';
-    else if(n.match(/\.(xlsx?|xlsm|docx?|ppt|pptx)$/i)){
-      showStatus('error','⚠️ Excel/Word/PPT 檔案：請先另存為 PDF，然後重新上傳。Gemini 可以直接讀取 PDF。');
-      btn.disabled=false;btn.textContent='🤖 AI 提取並填充';
-      return;
+    // Determine if we can use inline_data or need text extraction
+    var isPdf=n.match(/\.pdf$/i);
+    var isImg=n.match(/\.(png|jpg|jpeg|webp|gif)$/i);
+    var parts=[];
+    var mime=isPdf?'application/pdf':isImg?'image/jpeg':null;
+    var prompt='Analyze this supplier quotation document. Extract: supplier_name, contact, email, phone, payment_terms, shipping_terms, valid_until, incoterms, products (array with: model, description, unit_price, moq, lead_time). Return ONLY valid JSON, no markdown.';
+    
+    if(mime){
+      // PDF or Image → send as inline_data
+      parts=[{text:prompt},{inline_data:{mime_type:mime,data:b64}}];
+    }else{
+      // Office file → extract text, send as text-only prompt
+      showStatus('loading','🤖 正在讀取檔案內容...');
+      var extracted=await readFileAsText(supplierData.data);
+      parts=[{text:prompt+'\n\nDocument filename: '+supplierData.name+'\n\nExtracted content:\n'+extracted}];
     }
+    
     var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gk()},
-      body:JSON.stringify({contents:[{parts:[
-        {text:'Analyze this supplier quotation. Extract: supplier_name, contact, email, phone, payment_terms, shipping_terms, valid_until, incoterms, products (array: model, description, unit_price, moq, lead_time). Return ONLY valid JSON.'},
-        {inline_data:{mime_type:mime,data:b64}}]}],
-        generationConfig:{temperature:0.1,maxOutputTokens:2048}})});
+      body:JSON.stringify({contents:[{parts:parts}],generationConfig:{temperature:0.1,maxOutputTokens:2048}})});
     var j=await resp.json();if(j.error)throw new Error(j.error.message);
     var text=j.candidates[0].content.parts[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
     renderResults({extracted:JSON.parse(text)});
