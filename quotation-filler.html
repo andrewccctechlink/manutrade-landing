@@ -108,7 +108,7 @@ footer a{color:var(--accent);text-decoration:none}
 <footer><p>© 2026 <a href="/">ManuTrade AI</a> — AI 報價自動填充 · Powered by Gemini</p></footer>
 
 <script>
-var _gk='QVEuQWI4Uk42SVdMRG5XNm5zeF9yckdZbmx6RHJ3OFYxa3hQckNqM016azNKVXY1Sk91YkE=';
+var _gk='QVEuQWI4Uk42SVN1QVRudlgxRm5tVnoyZVZ6T0Z6aEdyblkzVTZoT0VSOTJaZmRKT0ZGSnc=';
 function gk(){var k=document.getElementById("userKey");if(k&&k.value.trim())return k.value.trim();return atob(_gk);}
 document.addEventListener('DOMContentLoaded',function(){
   var saved=sessionStorage.getItem('mt_user_gk');
@@ -207,7 +207,7 @@ document.getElementById('fillBtn').addEventListener('click',async function(){
       parts=[{text:prompt+'\n\nDocument filename: '+supplierData.name+'\n\nExtracted content:\n'+extracted}];
     }
     
-    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gk()},
+    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':gk(),
       body:JSON.stringify({contents:[{parts:parts}],generationConfig:{temperature:0.1,maxOutputTokens:2048}})});
     var j=await resp.json();if(j.error)throw new Error(j.error.message);
     var text=j.candidates[0].content.parts[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
