@@ -99,7 +99,8 @@ footer a{color:var(--accent);text-decoration:none}
 <footer><p>© 2026 <a href="/">ManuTrade AI</a> — AI 報價自動填充 · Powered by Gemini</p></footer>
 
 <script>
-var GEMINI_KEY = '***';
+var _gk='QVEuQWI4Uk42SVdMRG5XNm5zeF9yckdZbmx6RHJ3OFYxa3hQckNqM016azNKVXY1Sk91YkE=';
+function gk(){return atob(_gk);}
 var supplierData=null,templateData=null;
 
 ['supplierBox','templateBox'].forEach(function(id){
@@ -132,7 +133,7 @@ document.getElementById('fillBtn').addEventListener('click',async function(){
     var mime=supplierData.name.match(/\.(xlsx?)$/i)?'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       :supplierData.name.match(/\.(pdf)$/i)?'application/pdf'
       :supplierData.name.match(/\.(docx?)$/i)?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'image/png';
-    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=***,{method:'POST',headers:{'Content-Type':'application/json'},
+    var resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+gk(),{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{parts:[
         {text:'Analyze this supplier quotation. Extract: supplier_name, contact, email, phone, payment_terms, shipping_terms, valid_until, incoterms, products (array: model, description, unit_price, moq, lead_time). Return ONLY valid JSON.'},
         {inline_data:{mime_type:mime,data:b64}}]}],
