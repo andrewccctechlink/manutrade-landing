@@ -216,8 +216,8 @@ document.getElementById('fillBtn').addEventListener('click',async function(){
       else{tplText=await readFileAsText(templateData.data);}
       
       prompt='ROLE: You are filling a customer quotation form with supplier data.\n\n'+
-        'SUPPLIER QUOTATION DATA ('+supplierData.name+'):\n'+supText.substring(0,8000)+'\n\n'+
-        'CUSTOMER TEMPLATE FORM ('+templateData.name+'): THIS IS THE FORM TO FILL\n'+tplText.substring(0,8000)+'\n\n'+
+        'SUPPLIER QUOTATION DATA ('+supplierData.name+'):\n'+supText.substring(0,5000).replace(/\n/g,' ')+'\n\n'+
+        'CUSTOMER TEMPLATE FORM ('+templateData.name+'): THIS IS THE FORM TO FILL\n'+tplText.substring(0,5000).replace(/\n/g,' ')+'\n\n'+
         'TASK: Read the supplier data. Read EVERY field in the template. Map supplier values to template fields.\n'+
         'Return JSON with: {"supplier_name":"...", "products":[{"model":"...","description":"...","unit_price":...,"moq":"...","lead_time":"..."}], "payment_terms":"...", "shipping_terms":"...", "template_fields_filled":[{"field":"template field label","value":"filled value","source":"which supplier field"}]}\n'+
         'Return ONLY valid JSON. No markdown.';
@@ -232,7 +232,20 @@ document.getElementById('fillBtn').addEventListener('click',async function(){
       body:JSON.stringify({contents:[{parts:parts}],generationConfig:{temperature:0.1,maxOutputTokens:2048}})});
     var j=await resp.json();if(j.error)throw new Error(j.error.message);
     var text=j.candidates[0].content.parts[0].text.replace(/```json/g,'').replace(/```/g,'').trim();
-    renderResults({extracted:JSON.parse(text)});
+    try{
+    var obj=JSON.parse(text);
+    renderResults({extracted:obj});
+  }catch(pe){
+    // Gemini sometimes returns JSON with unescaped strings — try to fix
+    var fixed=text.replace(/\n/g,' ').replace(/\t/g,' ').replace(/"/g,'"');
+    try{var obj=JSON.parse(fixed);renderResults({extracted:obj});}
+    catch(pe2){
+      // Last resort: try to find JSON object in response
+      var m=text.match(/\{[\s\S]*\}/);
+      if(m){try{renderResults({extracted:JSON.parse(m[0])});}catch(e3){throw new Error('JSON parse failed: '+pe.message.substring(0,100));}}
+      else{throw new Error('JSON parse failed: '+pe.message.substring(0,100));}
+    }
+  }
     showStatus('success','✅ 提取完成！'+(templateData?'（模板已填充）':'')+'請檢查欄位後下載。');document.getElementById('downloadBtn').disabled=false;
   }catch(e){showStatus('error','❌ '+e.message);}
   btn.disabled=false;btn.textContent='🤖 AI 提取並填充';
