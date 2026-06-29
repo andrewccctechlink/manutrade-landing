@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RouteOptimizer Pro — 海運路線優化器</title>
+<!--
+  RouteOptimizer Pro — 海運路線優化器 (SaaS Demo)
+  ================================================
+  All data is simulated/demo data based on real industry research.
+
+  REAL DATA POINTS (2025):
+  — Asia→US West Coast: 15-22 days transit
+  — Asia→Europe: 25-35 days transit
+  — Asia→Middle East: 16-22 days transit
+  — 2025 schedule reliability collapsed to ~6.7% (from ~36% in 2024)
+  — Red Sea crisis added 10-14 days to Asia-Europe routes
+  — Panama Canal drought restrictions added 7-15 days
+  — Arctic Northern Sea Route: ~40% shorter Europe-Asia during summer
+  — Container shipping fleet capacity grew 9.7% in 2024, projected 8.7% annual through 2028
+  — 1,478 containers lost at sea in 2025 (up from 576 in 2024)
+  — Real shipping lines: Maersk, COSCO, MSC, ONE, Hapag-Lloyd, CMA CGM
+  — Port congestion: 9-10 day average delays at major global ports
+  — Q4 peak season rates typically 30-40% higher than Q1
+-->
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8fafc;--card:#ffffff;--border:#e2e8f0;
+  --accent:#0ea5e9;--accent2:#10b981;--accent2-dark:#059669;
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --danger:#ef4444;--warn:#f59e0b;--info:#6366f1;
+  --radius:12px;--radius-sm:8px;--radius-xs:4px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.05);
+  --shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.05);
+  --shadow-lg:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.05);
+  --transition:0.2s cubic-bezier(.4,0,.2,1);
+}
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  min-height:100vh;-webkit-font-smoothing:antialiased;
+}
+
+/* ===== GATE OVERLAY ===== */
+.gate-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(15,23,42,.7);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity .35s,visibility .35s;
+}
+.gate-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.gate-card{
+  background:var(--card);border-radius:var(--radius);
+  padding:40px 36px;max-width:440px;width:90%;
+  box-shadow:var(--shadow-lg);text-align:center;
+  animation:slideUp .4s ease;
+}
+.gate-card .gate-icon{font-size:48px;margin-bottom:12px}
+.gate-card h2{font-size:22px;font-weight:700;margin-bottom:6px}
+.gate-card p{color:var(--text2);font-size:14px;margin-bottom:24px}
+.gate-input-group{display:flex;gap:8px}
+.gate-input-group input{
+  flex:1;padding:10px 14px;border:2px solid var(--border);
+  border-radius:var(--radius-sm);font-size:14px;outline:none;
+  transition:border-color var(--transition);
+}
+.gate-input-group input:focus{border-color:var(--accent)}
+.gate-input-group button{
+  padding:10px 20px;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--radius-sm);font-size:14px;
+  font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:background var(--transition),transform var(--transition);
+}
+.gate-input-group button:hover{background:#0284c7;transform:translateY(-1px)}
+.gate-hint{font-size:12px;color:var(--text3);margin-top:10px}
+
+/* ===== TOP BAR ===== */
+.topbar{
+  background:var(--card);border-bottom:1px solid var(--border);
+  padding:12px 24px;display:flex;align-items:center;
+  justify-content:space-between;position:sticky;top:0;z-index:100;
+  box-shadow:var(--shadow-sm);
+}
+.topbar-logo{display:flex;align-items:center;gap:10px}
+.topbar-logo .logo-icon{font-size:28px}
+.topbar-logo h1{font-size:18px;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.countdown{
+  display:flex;align-items:center;gap:6px;
+  background:#fef2f2;border:1px solid #fecaca;border-radius:99px;
+  padding:6px 14px;font-size:13px;font-weight:600;color:var(--danger);
+  animation:pulse-slow 2s ease-in-out infinite;
+}
+.countdown .count-num{font-variant-numeric:tabular-nums;min-width:20px;text-align:center}
+.upload-badge{
+  background:#ecfdf5;border:1px solid #a7f3d0;border-radius:99px;
+  padding:6px 14px;font-size:13px;font-weight:600;color:var(--accent2-dark);
+}
+
+/* ===== MAIN CONTAINER ===== */
+.main-container{max-width:1200px;margin:0 auto;padding:28px 20px 60px}
+.section-title{
+  font-size:16px;font-weight:700;margin-bottom:16px;
+  display:flex;align-items:center;gap:8px;color:var(--text);
+}
+.section-title .st-icon{font-size:20px}
+.section-subtitle{font-size:13px;color:var(--text2);margin-bottom:20px;margin-top:-8px}
+
+/* ===== UPLOAD ZONE ===== */
+.upload-section{margin-bottom:32px}
+.upload-zone{
+  background:var(--card);border:2px dashed var(--border);
+  border-radius:var(--radius);padding:44px 20px;
+  text-align:center;cursor:pointer;transition:all var(--transition);
+  position:relative;overflow:hidden;
+}
+.upload-zone.dragover{
+  border-color:var(--accent);background:#f0f9ff;
+  transform:scale(1.01);box-shadow:0 0 0 4px rgba(14,165,233,.1);
+}
+.upload-zone .uz-icon{font-size:52px;margin-bottom:12px;display:block}
+.upload-zone .uz-label{font-size:16px;font-weight:600;color:var(--text)}
+.upload-zone .uz-hint{font-size:13px;color:var(--text3);margin-top:4px}
+.upload-zone input[type=file]{display:none}
+
+/* ===== FILE TYPE CARDS ===== */
+.file-types{margin-top:20px}
+.file-types-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px
+}
+.file-type-card{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:var(--radius-sm);padding:16px 14px;
+  display:flex;align-items:flex-start;gap:12px;
+  transition:all var(--transition);cursor:default;
+}
+.file-type-card.matched{
+  border-color:var(--accent2);background:#f0fdf4;
+  box-shadow:0 0 0 3px rgba(16,185,129,.1);
+  transform:translateY(-2px);
+}
+.file-type-card.uploaded{
+  border-color:var(--accent2);background:#ecfdf5;
+}
+.file-type-card .ft-icon{font-size:28px;flex-shrink:0;line-height:1}
+.file-type-card .ft-info{flex:1;min-width:0}
+.file-type-card .ft-name{font-size:14px;font-weight:600}
+.file-type-card .ft-ext{font-size:12px;color:var(--text3);margin-top:2px}
+.file-type-card .ft-desc{font-size:11px;color:var(--text2);margin-top:2px}
+.file-type-card .ft-check{
+  font-size:18px;color:var(--accent2);flex-shrink:0;
+  opacity:0;transition:opacity var(--transition);
+}
+.file-type-card.uploaded .ft-check{opacity:1}
+.upload-controls{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:16px;flex-wrap:wrap;gap:10px;
+}
+.file-counter{
+  font-size:13px;font-weight:600;color:var(--text2);
+}
+.file-counter span{color:var(--accent2)}
+.btn-demo{
+  padding:10px 18px;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;border:none;border-radius:99px;font-size:13px;
+  font-weight:600;cursor:pointer;
+  transition:transform var(--transition),box-shadow var(--transition);
+  box-shadow:0 2px 8px rgba(99,102,241,.3);
+}
+.btn-demo:hover{transform:translateY(-2px);box-shadow:0 4px 14px rgba(99,102,241,.4)}
+
+/* ===== ROUTE SELECTOR ===== */
+.route-selector-section{margin-bottom:32px}
+.route-selector{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:24px;
+  box-shadow:var(--shadow-sm);
+}
+.route-row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px}
+.route-field{flex:1;min-width:160px}
+.route-field label{
+  display:block;font-size:12px;font-weight:600;color:var(--text2);
+  margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;
+}
+.route-field select,.route-field input{
+  width:100%;padding:10px 12px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:14px;outline:none;
+  background:var(--card);transition:border-color var(--transition);
+}
+.route-field select:focus,.route-field input:focus{border-color:var(--accent)}
+.btn-analyze{
+  padding:10px 24px;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--radius-sm);font-size:14px;
+  font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:background var(--transition),transform var(--transition);
+}
+.btn-analyze:hover{background:#0284c7;transform:translateY(-1px)}
+.quick-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.quick-chip{
+  padding:6px 14px;background:var(--bg);border:1px solid var(--border);
+  border-radius:99px;font-size:12px;cursor:pointer;
+  transition:all var(--transition);white-space:nowrap;
+}
+.quick-chip:hover{border-color:var(--accent);color:var(--accent);background:#f0f9ff}
+
+/* ===== RESULTS SECTION ===== */
+.results-section{display:none;animation:fadeIn .5s ease}
+.results-section.visible{display:block}
+
+/* ===== ROUTE CARDS ===== */
+.route-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:28px}
+.route-card{
+  background:var(--card);border:2px solid var(--border);
+  border-radius:var(--radius);padding:20px;position:relative;
+  transition:all var(--transition);box-shadow:var(--shadow-sm);
+}
+.route-card.best{border-color:var(--accent2);box-shadow:0 0 0 4px rgba(16,185,129,.08)}
+.route-card .best-badge{
+  position:absolute;top:-12px;right:16px;
+  background:linear-gradient(135deg,var(--accent2),#34d399);
+  color:#fff;padding:4px 14px;border-radius:99px;
+  font-size:12px;font-weight:700;display:none;
+  animation:bounceIn .6s ease;
+}
+.route-card.best .best-badge{display:block}
+.route-card .rc-line{font-size:18px;font-weight:700;margin-bottom:4px}
+.route-card .rc-route{font-size:12px;color:var(--text3);margin-bottom:12px}
+.route-card .rc-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.route-card .rc-metric{text-align:center}
+.route-card .rc-metric .rc-val{font-size:20px;font-weight:700}
+.route-card .rc-metric .rc-label{font-size:11px;color:var(--text2)}
+.route-card .rc-cta{
+  margin-top:14px;display:block;width:100%;padding:9px;
+  background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:13px;font-weight:600;cursor:pointer;text-align:center;
+  transition:all var(--transition);
+}
+.route-card .rc-cta:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.route-card.best .rc-cta{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+.route-card.best .rc-cta:hover{background:var(--accent2-dark)}
+
+/* ===== COMPARISON TABLE ===== */
+.comparison-section{margin-bottom:28px}
+.comparison-section h3{font-size:16px;font-weight:700;margin-bottom:14px}
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);background:var(--card)}
+.table-wrap table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+.table-wrap thead{background:#f1f5f9}
+.table-wrap th{
+  padding:12px 10px;text-align:left;font-weight:600;font-size:11px;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--text2);white-space:nowrap;
+}
+.table-wrap td{padding:12px 10px;border-top:1px solid var(--border)}
+.table-wrap tbody tr{transition:background var(--transition)}
+.table-wrap tbody tr:hover{background:#f8fafc}
+.table-wrap tbody tr.best-row{background:#f0fdf4}
+.table-wrap .badge-cell{
+  display:inline-block;padding:2px 8px;border-radius:99px;
+  font-size:11px;font-weight:600
+}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-amber{background:#fef3c7;color:#92400e}
+.badge-red{background:#fee2e2;color:#991b1b}
+
+/* ===== DONUT CHART ===== */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+@media(max-width:768px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+}
+.chart-card h4{font-size:14px;font-weight:700;margin-bottom:16px}
+.donut-wrap{display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+.donut-chart{
+  width:160px;height:160px;border-radius:50%;position:relative;
+  flex-shrink:0;
+}
+.donut-center{
+  position:absolute;inset:24px;border-radius:50%;
+  background:var(--card);display:flex;align-items:center;
+  justify-content:center;flex-direction:column;
+}
+.donut-center .dc-total{font-size:22px;font-weight:700}
+.donut-center .dc-label{font-size:11px;color:var(--text2)}
+.donut-legend{flex:1;min-width:160px}
+.donut-legend-item{
+  display:flex;align-items:center;gap:8px;font-size:12px;
+  margin-bottom:6px;justify-content:space-between;
+}
+.donut-legend-item .dl-color{
+  width:12px;height:12px;border-radius:3px;flex-shrink:0;
+}
+.donut-legend-item .dl-name{flex:1;color:var(--text2)}
+.donut-legend-item .dl-val{font-weight:600}
+
+/* ===== BAR CHART ===== */
+.bar-chart{margin-top:4px}
+.bar-section{margin-bottom:16px}
+.bar-section .bar-label{
+  font-size:11px;font-weight:600;color:var(--text2);
+  margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;
+}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-row .bar-name{width:80px;font-size:12px;font-weight:600;flex-shrink:0;text-align:right}
+.bar-row .bar-track{flex:1;height:22px;background:var(--bg);border-radius:99px;overflow:hidden;position:relative}
+.bar-row .bar-fill{
+  height:100%;border-radius:99px;transition:width .8s ease;
+  display:flex;align-items:center;justify-content:flex-end;
+  padding-right:8px;font-size:11px;font-weight:600;color:#fff;
+}
+
+/* ===== HIDDEN FEES ===== */
+.fees-section{margin-bottom:28px}
+.fees-accordion{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.fees-header{
+  padding:14px 20px;display:flex;align-items:center;
+  justify-content:space-between;cursor:pointer;transition:background var(--transition);
+  user-select:none;
+}
+.fees-header:hover{background:#f8fafc}
+.fees-header h4{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.fees-header .fh-arrow{transition:transform .3s ease;font-size:14px}
+.fees-header.open .fh-arrow{transform:rotate(180deg)}
+.fees-body{max-height:0;overflow:hidden;transition:max-height .35s ease}
+.fees-body.open{max-height:500px}
+.fees-list{padding:0 20px 16px}
+.fee-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;border-bottom:1px solid var(--bg);font-size:13px;
+}
+.fee-item:last-child{border-bottom:none}
+.fee-item .fi-name{color:var(--text2)}
+.fee-item .fi-amount{font-weight:600;color:var(--danger)}
+.fee-item .fi-note{font-size:11px;color:var(--text3);margin-left:8px}
+
+/* ===== PRO TIPS ===== */
+.tips-section{margin-bottom:28px}
+.tips-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.tip-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:16px;
+  border-left:3px solid var(--accent);
+}
+.tip-card .tip-icon{font-size:22px;margin-bottom:6px}
+.tip-card .tip-title{font-size:13px;font-weight:700;margin-bottom:4px}
+.tip-card .tip-body{font-size:12px;color:var(--text2);line-height:1.5}
+
+/* ===== MODAL ===== */
+.modal-overlay{
+  position:fixed;inset:0;z-index:9990;
+  background:rgba(15,23,42,.5);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;
+}
+.modal-overlay.visible{opacity:1;visibility:visible}
+.modal{
+  background:var(--card);border-radius:var(--radius);
+  max-width:560px;width:90%;max-height:85vh;overflow-y:auto;
+  box-shadow:var(--shadow-lg);padding:28px;
+  animation:slideUp .3s ease;
+}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.modal .modal-close{
+  float:right;background:none;border:none;font-size:22px;
+  cursor:pointer;color:var(--text3);padding:0 4px;line-height:1;
+}
+.modal .modal-close:hover{color:var(--text)}
+.modal .cost-breakdown{margin-top:16px}
+.modal .cb-row{
+  display:flex;justify-content:space-between;padding:10px 0;
+  border-bottom:1px solid var(--bg);font-size:13px;
+}
+.modal .cb-row.total{font-weight:700;font-size:15px;border-top:2px solid var(--border);margin-top:6px;padding-top:14px}
+.modal .cb-note{font-size:11px;color:var(--text3);margin-top:12px}
+
+/* ===== TOAST ===== */
+.toast-container{
+  position:fixed;top:20px;right:20px;z-index:99999;
+  display:flex;flex-direction:column;gap:8px;
+}
+.toast{
+  padding:12px 18px;border-radius:var(--radius-sm);
+  font-size:13px;font-weight:600;box-shadow:var(--shadow-md);
+  animation:slideInRight .3s ease;
+  display:flex;align-items:center;gap:8px;
+}
+.toast.success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.toast.info{background:#f0f9ff;color:#075985;border:1px solid #bae6fd}
+.toast.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.toast.removing{animation:slideOutRight .25s ease forwards}
+
+/* ===== LOADING SPINNER ===== */
+.loading-overlay{
+  display:none;position:fixed;inset:0;z-index:9980;
+  background:rgba(248,250,252,.7);align-items:center;justify-content:center;
+}
+.loading-overlay.visible{display:flex}
+.spinner{
+  width:40px;height:40px;border:3px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+
+/* ===== LOADING ANALYSIS BAR ===== */
+.analysis-loading{
+  display:none;padding:24px;text-align:center;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:24px;
+}
+.analysis-loading.visible{display:block}
+.analysis-progress{
+  width:100%;height:6px;background:var(--bg);border-radius:99px;
+  overflow:hidden;margin:16px 0;
+}
+.analysis-progress .ap-fill{
+  height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  animation:progressAnim 1.8s ease forwards;
+}
+.analysis-loading p{font-size:13px;color:var(--text2)}
+
+/* ===== ANIMATIONS ===== */
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slideOutRight{from{transform:translateX(0);opacity:1}to{transform:translateX(100%);opacity:0}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounceIn{0%{transform:scale(0)}50%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse-slow{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes progressAnim{from{width:0}to{width:100%}}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  .main-container{padding:16px 12px 40px}
+  .file-types-grid{grid-template-columns:1fr 1fr}
+  .route-row{flex-direction:column}
+  .route-field{min-width:100%}
+  .route-cards{grid-template-columns:1fr}
+  .topbar{padding:10px 14px}
+  .topbar-logo h1{font-size:15px}
+  .countdown{font-size:12px;padding:4px 10px}
+  .gate-card{padding:28px 20px}
+  .donut-wrap{flex-direction:column;align-items:center}
+}
+
+.analysis-hint{
+  font-size:12px;color:var(--text3);text-align:center;margin-top:8px;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== EMAIL GATE OVERLAY ===== -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-card">
+    <div class="gate-icon">🔐</div>
+    <h2>免費體驗路線優化器</h2>
+    <p>輸入您的電子郵件以獲得<br>24 小時免費分析使用權限</p>
+    <div class="gate-input-group">
+      <input type="email" id="gateEmail" placeholder="your@email.com" autocomplete="email">
+      <button id="gateSubmit">開始使用</button>
+    </div>
+    <p class="gate-hint">🔒 不需信用卡 · 分析結果僅保存 24 小時</p>
+  </div>
+</div>
+
+<!-- ===== TOP BAR ===== -->
+<div class="topbar" id="topbar">
+  <div class="topbar-logo">
+    <span class="logo-icon">⚓</span>
+    <h1>RouteOptimizer Pro</h1>
+  </div>
+  <div class="topbar-right">
+    <div class="upload-badge" id="uploadBadge">已上傳 <strong>0/6</strong> 類檔案</div>
+    <div class="countdown" id="countdown">
+      ⏳ <span class="count-num" id="countNum">24:00:00</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN CONTAINER ===== -->
+<div class="main-container">
+
+  <!-- UPLOAD SECTION -->
+  <div class="upload-section">
+    <div class="section-title"><span class="st-icon">📤</span> 上傳貨運文件</div>
+    <p class="section-subtitle">上傳您的貨物文件，讓我們為您分析最佳航線選擇</p>
+
+    <div class="upload-zone" id="uploadZone">
+      <span class="uz-icon">📁</span>
+      <div class="uz-label">拖放檔案到此處 · 或點擊上傳</div>
+      <div class="uz-hint">支援 Excel、CSV、PDF、圖片格式</div>
+      <input type="file" id="fileInput" multiple accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp,.gif">
+    </div>
+
+    <!-- FILE TYPE CARDS (3x2 grid) -->
+    <div class="file-types">
+      <div class="file-types-grid">
+        <div class="file-type-card" data-type="cargo" data-ext=".xlsx,.xls,.csv">
+          <span class="ft-icon">📦</span>
+          <div class="ft-info">
+            <div class="ft-name">貨物清單</div>
+            <div class="ft-ext">Excel / CSV</div>
+            <div class="ft-desc">品名、數量、材積、重量</div>
+          </div>
+          <span class="ft-check">✓</span>
+        </div>
+        <div class="file-type-card" data-type="bldoc" data-ext=".pdf">
+          <span class="ft-icon">🚢</span>
+          <div class="ft-info">
+            <div class="ft-name">提單資料</div>
+            <div class="ft-ext">PDF</div>
+            <div class="ft-desc">現有提單、裝箱單參考</div>
+          </div>
+          <span class="ft-check">✓</span>
+        </div>
+        <div class="file-type-card" data-type="schedule" data-ext=".csv,.xlsx,.xls">
+          <span class="ft-icon">📅</span>
+          <div class="ft-info">
+            <div class="ft-name">船期表</div>
+            <div class="ft-ext">CSV / Excel</div>
+            <div class="ft-desc">各航線船期、截關日期</div>
+          </div>
+          <span class="ft-check">✓</span>
+        </div>
+        <div class="file-type-card" data-type="budget" data-ext=".xlsx,.xls">
+          <span class="ft-icon">💰</span>
+          <div class="ft-info">
+            <div class="ft-name">成本預算</div>
+            <div class="ft-ext">Excel</div>
+            <div class="ft-desc">目標運費、利潤率要求</div>
+          </div>
+          <span class="ft-check">✓</span>
+        </div>
+        <div class="file-type-card" data-type="trade" data-ext=".pdf">
+          <span class="ft-icon">📜</span>
+          <div class="ft-info">
+            <div class="ft-name">貿易條款</div>
+            <div class="ft-ext">PDF</div>
+            <div class="ft-desc">Incoterms、信用證條款</div>
+          </div>
+          <span class="ft-check">✓</span>
+        </div>
+        <div class="file-type-card" data-type="photo" data-ext=".jpg,.jpeg,.png,.webp,.gif">
+          <span class="ft-icon">📸</span>
+          <div class="ft-info">
+            <div class="ft-name">產品照片</div>
+            <div class="ft-ext">JPG / PNG / WebP</div>
+            <div class="ft-desc">用於估算材積、裝櫃方式</div>
+          </div>
+          <span class="ft-check">✓</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="upload-controls">
+      <div class="file-counter" id="fileCounter">已上傳 <span>0</span>/6 類檔案</div>
+      <button class="btn-demo" id="btnDemo">🧪 載入範例航線示範</button>
+    </div>
+  </div>
+
+  <!-- ROUTE SELECTOR -->
+  <div class="route-selector-section">
+    <div class="section-title"><span class="st-icon">🗺️</span> 手動選擇航線</div>
+    <p class="section-subtitle">沒有文件？直接選擇起運港及目的港進行分析</p>
+
+    <div class="route-selector">
+      <div class="route-row">
+        <div class="route-field">
+          <label>起運港</label>
+          <select id="originPort">
+            <option value="">請選擇起運港</option>
+            <option value="shenzhen">深圳鹽田 (Shenzhen Yantian)</option>
+            <option value="shanghai">上海 (Shanghai)</option>
+            <option value="ningbo">寧波舟山 (Ningbo-Zhoushan)</option>
+            <option value="hongkong">香港 (Hong Kong)</option>
+            <option value="xiamen">廈門 (Xiamen)</option>
+          </select>
+        </div>
+        <div class="route-field">
+          <label>目的港</label>
+          <select id="destPort">
+            <option value="">請選擇目的港</option>
+            <option value="losangeles">洛杉磯 (Los Angeles)</option>
+            <option value="newyork">紐約 (New York)</option>
+            <option value="rotterdam">鹿特丹 (Rotterdam)</option>
+            <option value="hamburg">漢堡 (Hamburg)</option>
+            <option value="london">倫敦 (London)</option>
+            <option value="dubai">杜拜 (Dubai)</option>
+            <option value="tokyo">東京 (Tokyo)</option>
+            <option value="sydney">雪梨 (Sydney)</option>
+          </select>
+        </div>
+        <div class="route-field">
+          <label>貨櫃類型</label>
+          <select id="containerType">
+            <option value="">請選擇貨櫃類型</option>
+            <option value="20ft">20ft 標準櫃 (20GP)</option>
+            <option value="40ft">40ft 標準櫃 (40GP)</option>
+            <option value="40HQ">40ft 高櫃 (40HQ)</option>
+            <option value="LCL">拼櫃 (LCL)</option>
+          </select>
+        </div>
+        <button class="btn-analyze" id="btnAnalyze">🔍 開始分析</button>
+      </div>
+      <div class="quick-chips">
+        <span style="font-size:12px;color:var(--text3);margin-right:8px;line-height:2">快速範例：</span>
+        <span class="quick-chip" data-origin="shenzhen" data-dest="losangeles" data-container="40HQ">深圳 → 洛杉磯 (40HQ · 氣炸鍋)</span>
+        <span class="quick-chip" data-origin="ningbo" data-dest="rotterdam" data-container="20ft">寧波 → 鹿特丹 (20ft · 電熱水壺)</span>
+        <span class="quick-chip" data-origin="hongkong" data-dest="dubai" data-container="LCL">香港 → 杜拜 (LCL · 咖啡機)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="analysis-loading" id="analysisLoading">
+    <div style="font-size:28px">🔍</div>
+    <p>正在分析最佳航線選項…</p>
+    <div class="analysis-progress"><div class="ap-fill"></div></div>
+    <p style="font-size:11px;color:var(--text3)">比對中：船期、運費、可靠性、碳排放、港口狀況…</p>
+  </div>
+
+  <!-- RESULTS SECTION -->
+  <div class="results-section" id="resultsSection">
+    <!-- Route Summary Cards -->
+    <div class="section-title"><span class="st-icon">🏆</span> 路線方案總覽</div>
+    <div class="route-cards" id="routeCards"></div>
+
+    <!-- Comparison Table -->
+    <div class="comparison-section">
+      <h3>📊 詳細報價比較表</h3>
+      <div class="table-wrap">
+        <table id="comparisonTable">
+          <thead>
+            <tr>
+              <th>船公司</th>
+              <th>航行天數</th>
+              <th>基本運費</th>
+              <th>燃油附加費</th>
+              <th>碼頭處理費</th>
+              <th>文件費</th>
+              <th>總費用</th>
+              <th>可靠性</th>
+              <th>碳排放</th>
+              <th>最適合</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      <!-- Donut Chart -->
+      <div class="chart-card" id="donutCard">
+        <h4>🍩 費用佔比分析（最佳路線）</h4>
+        <div class="donut-wrap">
+          <div class="donut-chart" id="donutChart">
+            <div class="donut-center">
+              <span class="dc-total" id="dcTotal">$0</span>
+              <span class="dc-label">總費用</span>
+            </div>
+          </div>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+
+      <!-- Bar Chart -->
+      <div class="chart-card">
+        <h4>📈 航線表現對比</h4>
+        <div class="bar-chart" id="barChart"></div>
+      </div>
+    </div>
+
+    <!-- Hidden Fees -->
+    <div class="fees-section">
+      <div class="fees-accordion">
+        <div class="fees-header" id="feesHeader" onclick="toggleFees()">
+          <h4>⚠️ 隱藏費用揭露 <span style="font-size:11px;color:var(--warn);font-weight:400">共 <strong id="feeCount">5</strong> 項潛在費用</span></h4>
+          <span class="fh-arrow">▼</span>
+        </div>
+        <div class="fees-body" id="feesBody">
+          <div class="fees-list">
+            <div class="fee-item"><span class="fi-name">旺季附加費 (PSS)</span><span class="fi-amount" id="feePSS">$0</span><span class="fi-note">Q4 費率較 Q1 高 30-40%</span></div>
+            <div class="fee-item"><span class="fi-name">港口擁堵附加費</span><span class="fi-amount" id="feeCongestion">$0</span><span class="fi-note">全球主要港口平均延誤 9-10 天</span></div>
+            <div class="fee-item"><span class="fi-name">安全附加費 (ISPS)</span><span class="fi-amount" id="feeISPS">$0</span><span class="fi-note">國際船舶與港口設施保安費</span></div>
+            <div class="fee-item"><span class="fi-name">底盤使用費 (Chassis Fee)</span><span class="fi-amount" id="feeChassis">$0</span><span class="fi-note">美國內陸拖運底盤租賃</span></div>
+            <div class="fee-item"><span class="fi-name">海關查驗費</span><span class="fi-amount" id="feeCustoms">$0</span><span class="fi-note">隨機查驗發生率約 3-5%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pro Tips -->
+    <div class="tips-section">
+      <div class="section-title"><span class="st-icon">💡</span> 專業建議</div>
+      <div class="tips-grid" id="tipsGrid"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- COST DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="costModal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h3 id="modalTitle">費用明細</h3>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px" id="modalRoute"></p>
+    <div class="cost-breakdown" id="modalBreakdown"></div>
+    <p class="cb-note">* 以上費用為模擬示範數據，實際報價可能因市場波動而有所不同。</p>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===== DATA: REAL-INSPIRED ROUTE DATABASE =====
+// All costs and transit times based on real industry research (2025)
+// Transit times: Asia→USWC 15-22d, Asia→Europe 25-35d, Asia→ME 16-22d
+// Reliability impacted by Red Sea crisis (+10-14d Asia-Europe), Panama Canal restrictions (+7-15d)
+
+const ROUTE_DATA = {
+  'shenzhen-losangeles-40HQ': {
+    origin: '深圳鹽田', dest: '洛杉磯', container: '40HQ',
+    cargo: '2000 台氣炸鍋 (Air Fryers)',
+    routes: [
+      { line:'Maersk', transit:15, baseFreight:3200, bunkerSurcharge:850, thc:380, docFee:120, reliability:92, co2:4.2, bestFor:'最佳準點率、冷鏈經驗豐富', color:'#2563eb' },
+      { line:'COSCO', transit:13, baseFreight:3000, bunkerSurcharge:780, thc:350, docFee:100, reliability:88, co2:3.9, bestFor:'最快航程、最具成本效益', color:'#dc2626' },
+      { line:'ONE', transit:17, baseFreight:2800, bunkerSurcharge:720, thc:340, docFee:80, reliability:84, co2:4.5, bestFor:'最優惠總價、穩定艙位', color:'#7c3aed' }
+    ],
+    hiddenFees: {pss:350, congestion:180, isps:55, chassis:120, customs:200}
+  },
+  'ningbo-rotterdam-20ft': {
+    origin: '寧波舟山', dest: '鹿特丹', container: '20ft',
+    cargo: '1500 台電熱水壺 (Electric Kettles)',
+    note:'受紅海危機影響，亞洲-歐洲航線增加 10-14 天航程',
+    routes: [
+      { line:'MSC', transit:28, baseFreight:2500, bunkerSurcharge:720, thc:320, docFee:120, reliability:82, co2:5.1, bestFor:'歐洲網絡最廣、艙位充裕', color:'#f59e0b' },
+      { line:'Hapag-Lloyd', transit:26, baseFreight:2350, bunkerSurcharge:680, thc:300, docFee:105, reliability:85, co2:4.8, bestFor:'最佳準點率、德國品質', color:'#f97316' },
+      { line:'COSCO', transit:30, baseFreight:2200, bunkerSurcharge:700, thc:310, docFee:80, reliability:80, co2:5.4, bestFor:'最低總費用、穩定運力', color:'#dc2626' },
+      { line:'CMA CGM', transit:27, baseFreight:2450, bunkerSurcharge:690, thc:315, docFee:110, reliability:83, co2:4.9, bestFor:'法國門戶、地中海轉運靈活', color:'#2563eb' }
+    ],
+    hiddenFees: {pss:280, congestion:220, isps:55, chassis:0, customs:180}
+  },
+  'hongkong-dubai-LCL': {
+    origin: '香港', dest: '杜拜', container: 'LCL',
+    cargo: '200 台咖啡機 ~4.5CBM (Coffee Makers)',
+    routes: [
+      { line:'Maersk', transit:18, baseFreight:1050, bunkerSurcharge:320, thc:160, docFee:100, reliability:90, co2:2.8, bestFor:'中東航線領導者、最可靠', color:'#2563eb' },
+      { line:'ONE', transit:20, baseFreight:950, bunkerSurcharge:290, thc:145, docFee:70, reliability:86, co2:3.0, bestFor:'最具成本效益拼櫃方案', color:'#7c3aed' },
+      { line:'Hapag-Lloyd', transit:22, baseFreight:880, bunkerSurcharge:280, thc:140, docFee:75, reliability:82, co2:3.2, bestFor:'最低總費用、德國品質', color:'#f97316' }
+    ],
+    hiddenFees: {pss:120, congestion:100, isps:35, chassis:0, customs:150}
+  }
+};
+
+function getRouteKey(origin,dest,container){
+  const o = {shenzhen:'shenzhen',shanghai:'shanghai',ningbo:'ningbo',hongkong:'hongkong',xiamen:'xiamen'};
+  const d = {losangeles:'losangeles',newyork:'newyork',rotterdam:'rotterdam',hamburg:'hamburg',london:'london',dubai:'dubai',tokyo:'tokyo',sydney:'sydney'};
+  return `${o[origin]||origin}-${d[dest]||dest}-${container}`;
+}
+
+// ===== STATE =====
+let uploadedTypes = new Set();
+let countdownSeconds = 24*60*60; // 24 hours
+let feesOpen = false;
+let currentRouteData = null;
+
+// ===== GATE =====
+document.getElementById('gateSubmit').addEventListener('click',()=>{
+  const email = document.getElementById('gateEmail').value.trim();
+  if(!email.includes('@')){
+    showToast('請輸入有效的電子郵件地址','error');
+    return;
+  }
+  document.getElementById('gateOverlay').classList.add('hidden');
+  showToast('歡迎使用 RouteOptimizer Pro！您擁有 24 小時免費體驗權限','success');
+  startCountdown();
+});
+document.getElementById('gateEmail').addEventListener('keydown',(e)=>{
+  if(e.key==='Enter') document.getElementById('gateSubmit').click();
+});
+
+// ===== COUNTDOWN =====
+function startCountdown(){
+  const timer = setInterval(()=>{
+    if(countdownSeconds<=0){clearInterval(timer);return}
+    countdownSeconds--;
+    updateCountdown();
+    if(countdownSeconds<=0){
+      showToast('試用時間已到期，請重新登入以繼續使用','error');
+      document.getElementById('gateOverlay').classList.remove('hidden');
+    }
+  },1000);
+  updateCountdown();
+}
+
+function updateCountdown(){
+  const h=Math.floor(countdownSeconds/3600);
+  const m=Math.floor((countdownSeconds%3600)/60);
+  const s=countdownSeconds%60;
+  document.getElementById('countNum').textContent=
+    `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ===== UPLOAD ZONE =====
+const uploadZone=document.getElementById('uploadZone');
+const fileInput=document.getElementById('fileInput');
+
+uploadZone.addEventListener('click',()=>fileInput.click());
+uploadZone.addEventListener('dragover',(e)=>{e.preventDefault();uploadZone.classList.add('dragover')});
+uploadZone.addEventListener('dragleave',()=>uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop',(e)=>{
+  e.preventDefault();uploadZone.classList.remove('dragover');
+  handleFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change',()=>{
+  handleFiles(Array.from(fileInput.files));fileInput.value='';
+});
+
+function handleFiles(files){
+  files.forEach(f=>{
+    const ext='.'+f.name.split('.').pop().toLowerCase();
+    document.querySelectorAll('.file-type-card').forEach(card=>{
+      const exts=card.dataset.ext.split(',');
+      if(exts.includes(ext)){
+        const type=card.dataset.type;
+        if(!uploadedTypes.has(type)){
+          uploadedTypes.add(type);
+          card.classList.add('uploaded');
+          showToast(`已上傳：${card.querySelector('.ft-name').textContent}`,'success');
+        }
+      }
+    });
+  });
+  updateFileCounter();
+}
+
+function updateFileCounter(){
+  const count=uploadedTypes.size;
+  document.getElementById('fileCounter').innerHTML=`已上傳 <span>${count}</span>/6 類檔案`;
+  document.getElementById('uploadBadge').innerHTML=`已上傳 <strong>${count}/6</strong> 類檔案`;
+}
+
+// ===== MATCH FILE TYPE ON DRAG =====
+let dragTypeHint=null;
+document.querySelectorAll('.file-type-card').forEach(card=>{
+  card.addEventListener('dragover',(e)=>{e.preventDefault()});
+  card.addEventListener('dragenter',()=>{card.classList.add('matched')});
+  card.addEventListener('dragleave',()=>{card.classList.remove('matched')});
+  card.addEventListener('drop',(e)=>{
+    e.preventDefault();card.classList.remove('matched');
+    handleFiles(Array.from(e.dataTransfer.files));
+  });
+});
+
+// ===== QUICK CHIPS =====
+document.querySelectorAll('.quick-chip').forEach(chip=>{
+  chip.addEventListener('click',()=>{
+    document.getElementById('originPort').value=chip.dataset.origin;
+    document.getElementById('destPort').value=chip.dataset.dest;
+    document.getElementById('containerType').value=chip.dataset.container;
+  });
+});
+
+// ===== ANALYZE BUTTON =====
+document.getElementById('btnAnalyze').addEventListener('click',runAnalysis);
+document.getElementById('btnDemo').addEventListener('click',()=>{
+  document.getElementById('originPort').value='shenzhen';
+  document.getElementById('destPort').value='losangeles';
+  document.getElementById('containerType').value='40HQ';
+  showToast('已載入示範航線：深圳 → 洛杉磯 (40HQ)','info');
+  setTimeout(runAnalysis,400);
+});
+
+function runAnalysis(){
+  const origin=document.getElementById('originPort').value;
+  const dest=document.getElementById('destPort').value;
+  const container=document.getElementById('containerType').value;
+  if(!origin||!dest||!container){
+    showToast('請選擇起運港、目的港及貨櫃類型','error');return;
+  }
+  const key=getRouteKey(origin,dest,container);
+  if(!ROUTE_DATA[key]){
+    // Generic route: generate simulated data
+    currentRouteData = generateGenericRoute(origin,dest,container);
+  } else {
+    currentRouteData = ROUTE_DATA[key];
+  }
+  // Show loading
+  const loading=document.getElementById('analysisLoading');
+  loading.classList.add('visible');
+  document.getElementById('resultsSection').classList.remove('visible');
+  // Scroll to loading
+  loading.scrollIntoView({behavior:'smooth',block:'center'});
+  // Simulate analysis time
+  setTimeout(()=>{
+    loading.classList.remove('visible');
+    renderResults(currentRouteData);
+    document.getElementById('resultsSection').classList.add('visible');
+    setTimeout(()=>document.getElementById('resultsSection').scrollIntoView({behavior:'smooth',block:'start'}),100);
+  },1800);
+}
+
+function generateGenericRoute(origin,dest,container){
+  const oNames={shenzhen:'深圳鹽田',shanghai:'上海',ningbo:'寧波舟山',hongkong:'香港',xiamen:'廈門'};
+  const dNames={losangeles:'洛杉磯',newyork:'紐約',rotterdam:'鹿特丹',hamburg:'漢堡',london:'倫敦',dubai:'杜拜',tokyo:'東京',sydney:'雪梨'};
+  const isEurope=['rotterdam','hamburg','london'].includes(dest);
+  const isUS=['losangeles','newyork'].includes(dest);
+  const isME=['dubai'].includes(dest);
+
+  let transitBase=18,costBase=3000;
+  if(isEurope){transitBase=28;costBase=2500}
+  else if(isUS){transitBase=15;costBase=3200}
+  else if(isME){transitBase=19;costBase=1000}
+
+  return {
+    origin: oNames[origin]||origin, dest: dNames[dest]||dest, container: container,
+    cargo: container==='LCL'?'拼櫃貨物 ~5CBM':`${container} 標準貨物`,
+    routes:[
+      {line:'Maersk',transit:transitBase,baseFreight:costBase,bunkerSurcharge:Math.round(costBase*.25),thc:Math.round(costBase*.11),docFee:120,reliability:90,co2:Math.round(transitBase*.28*10)/10,bestFor:'最佳準點率',color:'#2563eb'},
+      {line:'COSCO',transit:transitBase-2,baseFreight:Math.round(costBase*.92),bunkerSurcharge:Math.round(costBase*.23),thc:Math.round(costBase*.10),docFee:100,reliability:87,co2:Math.round((transitBase-2)*.27*10)/10,bestFor:'最快航程',color:'#dc2626'},
+      {line:'ONE',transit:transitBase+2,baseFreight:Math.round(costBase*.85),bunkerSurcharge:Math.round(costBase*.22),thc:Math.round(costBase*.10),docFee:80,reliability:84,co2:Math.round((transitBase+2)*.29*10)/10,bestFor:'最優惠總價',color:'#7c3aed'}
+    ],
+    hiddenFees:{pss:Math.round(costBase*.1),congestion:180,isps:55,chassis:isUS?120:0,customs:180}
+  };
+}
+
+// ===== RENDER RESULTS =====
+function renderResults(data){
+  const routes=data.routes.map(r=>({
+    ...r,
+    total: r.baseFreight+r.bunkerSurcharge+r.thc+r.docFee
+  }));
+  // Best = lowest total cost (primary) + reliability (secondary)
+  routes.sort((a,b)=>a.total-b.total);
+  const best = routes[0];
+  routes.forEach(r=>r.isBest=(r===best));
+
+  renderRouteCards(routes,data);
+  renderComparisonTable(routes,data);
+  renderDonutChart(best);
+  renderBarChart(routes);
+  renderHiddenFees(data.hiddenFees);
+  renderTips(data);
+}
+
+// ===== ROUTE CARDS =====
+function renderRouteCards(routes,data){
+  const container=document.getElementById('routeCards');
+  container.innerHTML=routes.map((r,i)=>{
+    const total=r.total.toLocaleString();
+    return `
+    <div class="route-card ${r.isBest?'best':''}">
+      <div class="best-badge">🏆 最佳選擇</div>
+      <div class="rc-line">${getLineEmoji(r.line)} ${r.line}</div>
+      <div class="rc-route">${data.origin} → ${data.dest} · ${data.container}${data.note?'<br><span style="color:#f59e0b;font-size:11px">⚠️ '+data.note+'</span>':''}</div>
+      <div class="rc-metrics">
+        <div class="rc-metric"><div class="rc-val" style="color:var(--accent)">${r.transit} 天</div><div class="rc-label">航行時間</div></div>
+        <div class="rc-metric"><div class="rc-val" style="color:var(--accent2)">$${total}</div><div class="rc-label">總費用 USD</div></div>
+        <div class="rc-metric"><div class="rc-val" style="color:${r.reliability>=90?'#16a34a':r.reliability>=85?'#ca8a04':'#dc2626'}">${r.reliability}%</div><div class="rc-label">準點率</div></div>
+        <div class="rc-metric"><div class="rc-val" style="color:#64748b">${r.co2} 噸</div><div class="rc-label">CO₂ 排放</div></div>
+      </div>
+      <button class="rc-cta" onclick="openCostDetail('${r.line}',${i})">📋 查看費用明細</button>
+    </div>`;
+  }).join('');
+}
+
+function getLineEmoji(line){
+  const em={Maersk:'🔷',COSCO:'🔴',MSC:'🟡','Hapag-Lloyd':'🟠',ONE:'🟣','CMA CGM':'🔵'};
+  return em[line]||'⚪';
+}
+
+// ===== COMPARISON TABLE =====
+function renderComparisonTable(routes,data){
+  const tbody=document.querySelector('#comparisonTable tbody');
+  tbody.innerHTML=routes.map(r=>{
+    const total=r.total.toLocaleString();
+    const relClass=r.reliability>=90?'badge-green':r.reliability>=85?'badge-blue':r.reliability>=80?'badge-amber':'badge-red';
+    return `
+    <tr class="${r.isBest?'best-row':''}">
+      <td><strong>${getLineEmoji(r.line)} ${r.line}</strong></td>
+      <td>${r.transit} 天</td>
+      <td>$${r.baseFreight.toLocaleString()}</td>
+      <td>$${r.bunkerSurcharge.toLocaleString()}</td>
+      <td>$${r.thc.toLocaleString()}</td>
+      <td>$${r.docFee.toLocaleString()}</td>
+      <td><strong>$${total}</strong>${r.isBest?' 🏆':''}</td>
+      <td><span class="badge-cell ${relClass}">${r.reliability}%</span></td>
+      <td>${r.co2} 噸 CO₂</td>
+      <td style="font-size:12px;color:var(--text2)">${r.bestFor}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== DONUT CHART =====
+function renderDonutChart(bestRoute){
+  const total=bestRoute.total;
+  const segments=[
+    {name:'基本運費',val:bestRoute.baseFreight,color:'#0ea5e9',pct:Math.round(bestRoute.baseFreight/total*100)},
+    {name:'燃油附加費',val:bestRoute.bunkerSurcharge,color:'#f59e0b',pct:Math.round(bestRoute.bunkerSurcharge/total*100)},
+    {name:'碼頭處理費 (THC)',val:bestRoute.thc,color:'#10b981',pct:Math.round(bestRoute.thc/total*100)},
+    {name:'文件費',val:bestRoute.docFee,color:'#8b5cf6',pct:Math.round(bestRoute.docFee/total*100)}
+  ];
+  // Build conic gradient
+  const totalPct=segments.reduce((s,seg)=>s+seg.pct,0);
+  let cumulative=0;
+  const gradientParts=segments.map((seg,i)=>{
+    const start=cumulative;cumulative+=seg.pct;
+    if(i===segments.length-1&&cumulative<100)cumulative=100;
+    return `${seg.color} ${start}% ${cumulative}%`;
+  });
+  if(cumulative<100){gradientParts.push(`#e2e8f0 ${cumulative}% 100%`);}
+  document.getElementById('donutChart').style.background=
+    `conic-gradient(${gradientParts.join(',')})`;
+  document.getElementById('dcTotal').textContent=`$${total.toLocaleString()}`;
+  // Legend
+  document.getElementById('donutLegend').innerHTML=segments.map(s=>`
+    <div class="donut-legend-item">
+      <span class="dl-color" style="background:${s.color}"></span>
+      <span class="dl-name">${s.name}</span>
+      <span class="dl-val">$${s.val.toLocaleString()} (${s.pct}%)</span>
+    </div>
+  `).join('');
+}
+
+// ===== BAR CHART =====
+function renderBarChart(routes){
+  const maxTransit=Math.max(...routes.map(r=>r.transit));
+  const maxCost=Math.max(...routes.map(r=>r.total));
+  const maxReliability=100;
+
+  let html='<div class="bar-section"><div class="bar-label">⚡ 航行速度（天數越少越好）</div>';
+  routes.forEach(r=>{
+    const pct=Math.round((r.transit/maxTransit)*100);
+    html+=`<div class="bar-row">
+      <span class="bar-name">${r.line}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${pct<60?'#10b981':pct<80?'#f59e0b':'#ef4444'}">${r.transit}d</div></div>
+    </div>`;
+  });
+  html+='</div>';
+
+  html+='<div class="bar-section"><div class="bar-label">💰 總費用（越低越好）</div>';
+  routes.forEach(r=>{
+    const pct=Math.round((r.total/maxCost)*100);
+    html+=`<div class="bar-row">
+      <span class="bar-name">${r.line}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${pct<70?'#10b981':pct<85?'#f59e0b':'#ef4444'}">$${r.total.toLocaleString()}</div></div>
+    </div>`;
+  });
+  html+='</div>';
+
+  html+='<div class="bar-section"><div class="bar-label">🎯 準點率（越高越好）</div>';
+  routes.forEach(r=>{
+    const pct=r.reliability;
+    html+=`<div class="bar-row">
+      <span class="bar-name">${r.line}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${pct>=90?'#10b981':pct>=85?'#f59e0b':'#ef4444'}">${pct}%</div></div>
+    </div>`;
+  });
+  html+='</div>';
+
+  document.getElementById('barChart').innerHTML=html;
+}
+
+// ===== HIDDEN FEES =====
+function renderHiddenFees(fees){
+  document.getElementById('feePSS').textContent='$'+fees.pss.toLocaleString();
+  document.getElementById('feeCongestion').textContent='$'+fees.congestion.toLocaleString();
+  document.getElementById('feeISPS').textContent='$'+fees.isps.toLocaleString();
+  document.getElementById('feeChassis').textContent=fees.chassis>0?'$'+fees.chassis.toLocaleString():'不適用';
+  document.getElementById('feeCustoms').textContent='$'+fees.customs.toLocaleString();
+  const totalHidden=fees.pss+fees.congestion+fees.isps+fees.chassis+fees.customs;
+  document.getElementById('feeCount').textContent=fees.chassis>0?'5':'4';
+}
+
+function toggleFees(){
+  feesOpen=!feesOpen;
+  const header=document.getElementById('feesHeader');
+  const body=document.getElementById('feesBody');
+  if(feesOpen){header.classList.add('open');body.classList.add('open')}
+  else{header.classList.remove('open');body.classList.remove('open')}
+}
+
+// ===== PRO TIPS =====
+function renderTips(data){
+  const isEurope=['鹿特丹','漢堡','倫敦'].includes(data.dest);
+  const isUS=['洛杉磯','紐約'].includes(data.dest);
+  const isME=['杜拜'].includes(data.dest);
+
+  let tips=[];
+  if(isEurope){
+    tips=[
+      {icon:'🚨',title:'紅海危機影響',body:'亞洲-歐洲航線因紅海危機繞行好望角，航程增加 10-14 天。2025 年船期可靠性僅 6.7%（2024 年為 36%），建議預留充足緩衝時間。'},
+      {icon:'❄️',title:'北極航線契機',body:'夏季期間（7-10 月），北極北海航線可縮短歐洲-亞洲航程約 40%，但目前僅少數船公司提供此服務。'},
+      {icon:'📦',title:'艙位預訂建議',body:'集裝箱船隊運力 2024 年增長 9.7%，預計 2028 年前年均增長 8.7%。運力充足但有港口擁堵風險。'}
+    ];
+  } else if(isUS){
+    tips=[
+      {icon:'🚢',title:'巴拿馬運河限制',body:'乾旱限制使通過巴拿馬運河的船隻增加 7-15 天延誤。建議考慮美西港口+鐵路聯運方案。'},
+      {icon:'📊',title:'Q4 旺季溢價',body:'第四季度旺季費率通常較第一季度高 30-40%。若能調整出貨時間，建議避開 9-11 月高峰期。'},
+      {icon:'🏗️',title:'底盤費注意',body:'美國內陸拖運需額外支付底盤使用費（約 $120/櫃），此費用通常不在基本報價中顯示。'}
+    ];
+  } else if(isME){
+    tips=[
+      {icon:'🌊',title:'中東航線穩定',body:'亞洲-中東航線受地緣政治影響較小，船期可靠性相對較高。杜拜傑貝阿里港為中東最大轉運樞紐。'},
+      {icon:'📉',title:'貨櫃遺失風險',body:'2025 年全球共 1,478 個集裝箱落海遺失（2024 年為 576 個）。選擇可靠性高的船公司可降低風險。'},
+      {icon:'🏷️',title:'LCL 拼櫃建議',body:'拼櫃貨物建議預留 15-20% 的材積緩衝，實際裝櫃時可能因貨物形狀而需額外空間。'}
+    ];
+  } else {
+    tips=[
+      {icon:'🌐',title:'全球港口擁堵',body:'全球主要港口平均延誤 9-10 天。建議選擇轉運次數少的直航航線。'},
+      {icon:'📅',title:'提前預訂',body:'建議提前 4-6 週預訂艙位，尤其在旺季前。運力雖增長但需求也很強勁。'},
+      {icon:'♻️',title:'碳排放考量',body:'歐盟將航運納入碳排放交易體系 (EU ETS)，2025 年起大型船隻須購買碳排放配額。歐盟航線成本或將增加。'}
+    ];
+  }
+
+  document.getElementById('tipsGrid').innerHTML=tips.map(t=>`
+    <div class="tip-card">
+      <div class="tip-icon">${t.icon}</div>
+      <div class="tip-title">${t.title}</div>
+      <div class="tip-body">${t.body}</div>
+    </div>
+  `).join('');
+}
+
+// ===== MODAL =====
+function openCostDetail(line,idx){
+  if(!currentRouteData)return;
+  const routes=currentRouteData.routes.map(r=>({...r,total:r.baseFreight+r.bunkerSurcharge+r.thc+r.docFee}));
+  const r=routes[idx];
+  if(!r)return;
+  document.getElementById('modalTitle').textContent=`${r.line} 費用明細`;
+  document.getElementById('modalRoute').textContent=`${currentRouteData.origin} → ${currentRouteData.dest} · ${currentRouteData.container}`;
+  document.getElementById('modalBreakdown').innerHTML=`
+    <div class="cb-row"><span>基本運費</span><span>$${r.baseFreight.toLocaleString()}</span></div>
+    <div class="cb-row"><span>燃油附加費 (BAF)</span><span>$${r.bunkerSurcharge.toLocaleString()}</span></div>
+    <div class="cb-row"><span>碼頭處理費 (THC)</span><span>$${r.thc.toLocaleString()}</span></div>
+    <div class="cb-row"><span>文件費 (DOC)</span><span>$${r.docFee.toLocaleString()}</span></div>
+    <div class="cb-row"><span>旺季附加費 (PSS)*</span><span style="color:var(--danger)">$${currentRouteData.hiddenFees.pss.toLocaleString()}</span></div>
+    <div class="cb-row"><span>港口擁堵附加費*</span><span style="color:var(--danger)">$${currentRouteData.hiddenFees.congestion.toLocaleString()}</span></div>
+    <div class="cb-row"><span>安全附加費 (ISPS)*</span><span style="color:var(--danger)">$${currentRouteData.hiddenFees.isps.toLocaleString()}</span></div>
+    ${currentRouteData.hiddenFees.chassis>0?`<div class="cb-row"><span>底盤使用費*</span><span style="color:var(--danger)">$${currentRouteData.hiddenFees.chassis.toLocaleString()}</span></div>`:''}
+    <div class="cb-row"><span>海關查驗費（預估）*</span><span style="color:var(--danger)">$${currentRouteData.hiddenFees.customs.toLocaleString()}</span></div>
+    <div class="cb-row total"><span>預估總費用（含隱藏費用）</span><span>$${(r.total+currentRouteData.hiddenFees.pss+currentRouteData.hiddenFees.congestion+currentRouteData.hiddenFees.isps+currentRouteData.hiddenFees.chassis+currentRouteData.hiddenFees.customs).toLocaleString()}</span></div>
+  `;
+  document.getElementById('modalOverlay').classList.add('visible');
+}
+
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('visible');
+}
+document.getElementById('modalOverlay').addEventListener('click',(e)=>{
+  if(e.target===document.getElementById('modalOverlay'))closeModal();
+});
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='Escape')closeModal();
+});
+
+// ===== TOAST =====
+function showToast(msg,type='info'){
+  const container=document.getElementById('toastContainer');
+  const toast=document.createElement('div');
+  toast.className=`toast ${type}`;
+  const icons={success:'✅',info:'ℹ️',error:'❌'};
+  toast.innerHTML=`<span>${icons[type]||'ℹ️'}</span> ${msg}`;
+  container.appendChild(toast);
+  setTimeout(()=>{
+    toast.classList.add('removing');
+    setTimeout(()=>toast.remove(),250);
+  },3000);
+}
+
+// ===== INIT =====
+updateFileCounter();
+</script>
+</body>
+</html>
