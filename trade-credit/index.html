@@ -1,816 +1,1651 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-HK">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradeCredit — 賒數風險評估 | Quattro Dynamics</title>
+<title>TradeCredit — 賒數風險評估 | 智能貿易信用分析平台</title>
 <style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
-  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
-  --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-  --red: #ef4444; --warn: #f59e0b; --gold: #fbbf24;
-  --low: #10b981; --med: #f59e0b; --high: #ef4444; --vhigh: #dc2626;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --accent: #0ea5e9;
+  --accent-dark: #0284c7;
+  --accent-light: #e0f2fe;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --green: #10b981;
+  --green-bg: #d1fae5;
+  --yellow: #f59e0b;
+  --yellow-bg: #fef3c7;
+  --red: #ef4444;
+  --red-bg: #fee2e2;
+  --orange: #f97316;
+  --orange-bg: #ffedd5;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+  --transition: 0.2s ease;
 }
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
-
-/* ── GATE ── */
-.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px)}
-.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px;width:420px;max-width:90vw;text-align:center}
-.gate-box .icon{font-size:3rem;margin-bottom:16px}
-.gate-box h2{font-size:1.4rem;margin-bottom:8px}
-.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
-.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
-.gate-box input:focus{outline:none;border-color:var(--accent)}
-.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
-.gate-box .note{font-size:0.75rem;margin-top:16px;line-height:1.5;color:var(--muted)}
-.gate-box .note span{display:block;color:var(--red);font-weight:600}
-
-.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
-.btn-primary{background:var(--gradient);color:#fff;width:100%}
-.btn-primary:hover{opacity:0.9}
-.btn-sm{background:var(--gradient);color:#fff;padding:10px 22px;font-size:0.82rem;border-radius:8px;cursor:pointer;border:none;font-weight:600}
-.btn-sm:hover{opacity:0.9}
-.btn-outline-sm{border:1.5px solid var(--border);color:var(--text);background:transparent;padding:10px 22px;font-size:0.82rem;border-radius:8px;cursor:pointer;font-weight:500;transition:all .2s}
-.btn-outline-sm:hover{border-color:var(--accent);background:rgba(6,182,212,0.05)}
-
-.app{display:none}
-.app.active{display:block}
-
-/* ── TOPBAR ── */
-.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.topbar .logo{font-weight:800;font-size:1.1rem;color:var(--accent)}
-.topbar .timer{color:var(--warn);font-size:0.8rem}
-.topbar .timer span{font-weight:700}
-.topbar a{color:var(--muted);text-decoration:none;font-size:0.8rem}
-.topbar a:hover{color:var(--text)}
-
-.container{max-width:1150px;margin:0 auto;padding:28px 24px}
-
-/* ── HEADER ── */
-.page-header{text-align:center;margin-bottom:32px}
-.page-header h1{font-size:2rem;margin-bottom:8px;background:linear-gradient(135deg,#e2e8f0 0%,#06b6d4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.page-header p{color:var(--muted);font-size:1rem;max-width:600px;margin:0 auto}
-
-/* ── SEARCH BAR ── */
-.search-bar-wrap{max-width:600px;margin:0 auto 24px;position:relative}
-.search-bar-wrap input{width:100%;padding:14px 48px 14px 20px;background:#0d1117;border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-size:0.95rem;transition:all .25s}
-.search-bar-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(6,182,212,0.1)}
-.search-bar-wrap input::placeholder{color:var(--muted);font-size:0.85rem}
-.search-bar-wrap .search-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none}
-.search-hint{text-align:center;color:var(--muted);font-size:0.72rem;margin-bottom:4px}
-.no-results{display:none;text-align:center;color:var(--muted);font-size:0.85rem;padding:20px;border:1px dashed var(--border);border-radius:12px;margin-bottom:20px}
-.no-results.show{display:block}
-
-/* ── COMPANY CHIPS ── */
-.chips-section{margin-bottom:28px}
-.chips-label{font-size:0.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
-.chips-row{display:flex;flex-wrap:wrap;gap:8px}
-.chip{padding:10px 18px;border:1px solid var(--border);border-radius:24px;font-size:0.82rem;cursor:pointer;transition:all .2s;white-space:nowrap;background:var(--card);color:var(--muted);display:flex;align-items:center;gap:8px}
-.chip:hover,.chip.active{border-color:var(--accent);color:var(--text);background:rgba(6,182,212,0.08);transform:translateY(-1px)}
-.chip .chip-flag{font-size:1.1rem}
-.chip .chip-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.chip .chip-dot.low{background:var(--low);box-shadow:0 0 6px rgba(16,185,129,0.5)}
-.chip .chip-dot.medium{background:var(--med);box-shadow:0 0 6px rgba(245,158,11,0.5)}
-.chip .chip-dot.high{background:var(--high);box-shadow:0 0 6px rgba(239,68,68,0.5)}
-.chip .chip-dot.vhigh{background:var(--vhigh);box-shadow:0 0 6px rgba(220,38,38,0.5)}
-
-/* ── RISK CARD ── */
-.risk-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:0;overflow:hidden;margin-bottom:20px;display:none}
-.risk-card.active{display:block;animation:fadeUp 0.35s ease-out}
-
-.risk-card-header{padding:22px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
-.risk-card-header h2{font-size:1.3rem;display:flex;align-items:center;gap:10px}
-.risk-card-header .risk-badge{padding:6px 14px;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
-.risk-badge.low{background:rgba(16,185,129,0.15);color:var(--low);border:1px solid rgba(16,185,129,0.3)}
-.risk-badge.medium{background:rgba(245,158,11,0.15);color:var(--med);border:1px solid rgba(245,158,11,0.3)}
-.risk-badge.high{background:rgba(239,68,68,0.15);color:var(--high);border:1px solid rgba(239,68,68,0.3)}
-.risk-badge.vhigh{background:rgba(220,38,38,0.15);color:var(--vhigh);border:1px solid rgba(220,38,38,0.3)}
-
-.risk-card-body{padding:0 28px 28px}
-.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
-
-/* ── CREDIT SCORE GAUGE ── */
-.score-panel{background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.score-circle{width:130px;height:130px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;margin-bottom:12px}
-.score-circle .score-num{font-size:2.6rem;font-weight:800;z-index:1}
-.score-circle .score-label{font-size:0.7rem;color:var(--muted);margin-top:-6px;z-index:1;position:absolute;bottom:28px}
-.score-ring{position:absolute;inset:0;border-radius:50%;border:6px solid var(--border)}
-.score-ring.fill{clip:rect(0,130px,130px,65px)}
-.score-title{font-weight:700;font-size:0.9rem;margin-bottom:2px}
-.score-sub{color:var(--muted);font-size:0.78rem}
-.score-bar{width:100%;height:5px;border-radius:3px;margin-top:10px;overflow:hidden;background:var(--border)}
-.score-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
-
-/* ── FINANCIAL INDICATORS ── */
-.fin-panel{background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:20px}
-.fin-panel h4{font-size:0.85rem;margin-bottom:14px;color:var(--accent);display:flex;align-items:center;gap:6px}
-.fin-table{width:100%;font-size:0.8rem}
-.fin-table th{text-align:left;padding:6px 8px;color:var(--muted);font-weight:500;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px}
-.fin-table td{padding:6px 8px;border-bottom:1px solid rgba(30,45,69,0.5)}
-.fin-table tr:last-child td{border-bottom:none}
-.fin-table .trend-up{color:var(--low)}
-.fin-table .trend-down{color:var(--red)}
-.fin-table .trend-flat{color:var(--warn)}
-.fin-table .val-high{color:var(--low)}
-.fin-table .val-med{color:var(--warn)}
-.fin-table .val-low{color:var(--red)}
-
-/* ── PAYMENT HISTORY ── */
-.pay-panel{background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:20px}
-.pay-panel h4{font-size:0.85rem;margin-bottom:14px;color:var(--accent);display:flex;align-items:center;gap:6px}
-.pay-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
-.pay-bar-month{font-size:0.68rem;color:var(--muted);width:28px;text-align:right}
-.pay-bar-track{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
-.pay-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
-.pay-on-time{font-size:1.6rem;font-weight:800;margin:8px 0 2px}
-.pay-sub{color:var(--muted);font-size:0.75rem}
-
-/* ── RECOMMENDATION ── */
-.rec-panel{background:linear-gradient(135deg,rgba(6,182,212,0.08),rgba(6,182,212,0.02));border:1px solid rgba(6,182,212,0.25);border-radius:14px;padding:22px;grid-column:1/-1}
-.rec-panel h4{font-size:0.95rem;margin-bottom:14px;color:var(--accent)}
-.rec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
-.rec-item{background:rgba(0,0,0,0.3);border-radius:10px;padding:16px}
-.rec-item .rec-val{font-size:1.3rem;font-weight:800;margin-bottom:2px}
-.rec-item .rec-val.success{color:var(--low)}
-.rec-item .rec-val.warn{color:var(--warn)}
-.rec-item .rec-val.danger{color:var(--red)}
-.rec-item .rec-label{color:var(--muted);font-size:0.75rem}
-
-/* ── INSURANCE ── */
-.ins-panel{background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:20px}
-.ins-panel h4{font-size:0.85rem;margin-bottom:10px;color:var(--accent)}
-.ins-premium{font-size:2rem;font-weight:800;margin-bottom:4px}
-.ins-sub{color:var(--muted);font-size:0.78rem;margin-bottom:10px}
-.ins-range{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600}
-.ins-range.low{background:rgba(16,185,129,0.15);color:var(--low)}
-.ins-range.medium{background:rgba(245,158,11,0.15);color:var(--med)}
-.ins-range.high{background:rgba(239,68,68,0.15);color:var(--high)}
-
-/* ── DEFAULT IMPACT CALCULATOR ── */
-.calc-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
-.calc-section h3{font-size:1.15rem;margin-bottom:6px;display:flex;align-items:center;gap:8px}
-.calc-section .calc-sub{color:var(--muted);font-size:0.85rem;margin-bottom:20px}
-.calc-form{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;margin-bottom:20px}
-.calc-field{display:flex;flex-direction:column;gap:6px}
-.calc-field label{font-size:0.75rem;color:var(--muted);font-weight:500}
-.calc-field input,.calc-field select{background:#0d1117;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:0.9rem;width:180px}
-.calc-field input:focus,.calc-field select:focus{outline:none;border-color:var(--accent)}
-.calc-result{display:none;background:#0d1117;border:1px solid var(--border);border-radius:14px;padding:24px;margin-top:16px}
-.calc-result.show{display:block;animation:fadeUp 0.3s ease-out}
-.calc-result .cr-head{font-size:0.85rem;color:var(--muted);margin-bottom:4px}
-.calc-result .cr-val{font-size:2rem;font-weight:800;margin-bottom:8px}
-.calc-result .cr-val.danger{color:var(--red)}
-.calc-result .cr-val.warn{color:var(--warn)}
-.calc-result .cr-val.ok{color:var(--low)}
-.calc-result .cr-detail{font-size:0.85rem;color:var(--muted);line-height:1.6}
-.calc-result ul{margin:12px 0 0 18px;font-size:0.85rem;color:var(--muted)}
-.calc-result ul li{margin-bottom:4px}
-
-/* ── TIPS ── */
-.tips-section{margin-bottom:32px}
-.tips-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
-.tip-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;transition:all .2s}
-.tip-card:hover{border-color:var(--accent);transform:translateY(-2px)}
-.tip-card .tip-num{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--gradient);font-weight:800;font-size:0.85rem;margin-bottom:12px}
-.tip-card h4{font-size:1rem;margin-bottom:8px}
-.tip-card p{color:var(--muted);font-size:0.85rem;line-height:1.6}
-
-/* ── COMPARISON TABLE ── */
-.comp-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;margin-bottom:20px}
-.comp-section h3{font-size:1.15rem;margin-bottom:6px}
-.comp-section .comp-sub{color:var(--muted);font-size:0.85rem;margin-bottom:18px}
-.comp-wrap{overflow-x:auto}
-.comp-big-table{width:100%;border-collapse:collapse;font-size:0.78rem;min-width:800px}
-.comp-big-table thead th{padding:12px 10px;text-align:left;background:#0d1117;color:var(--muted);font-weight:600;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid var(--border);position:sticky;top:0}
-.comp-big-table thead th:first-child{border-radius:8px 0 0 0}
-.comp-big-table thead th:last-child{border-radius:0 8px 0 0}
-.comp-big-table tbody td{padding:10px;border-bottom:1px solid rgba(30,45,69,0.5);vertical-align:top}
-.comp-big-table tbody tr:last-child td{border-bottom:none}
-.comp-big-table tbody tr:hover{background:rgba(6,182,212,0.03)}
-.comp-big-table .c-score{padding:3px 8px;border-radius:10px;font-weight:700;font-size:0.78rem}
-.comp-big-table .c-score.low{background:rgba(16,185,129,0.15);color:var(--low)}
-.comp-big-table .c-score.medium{background:rgba(245,158,11,0.15);color:var(--med)}
-.comp-big-table .c-score.high{background:rgba(239,68,68,0.15);color:var(--high)}
-.comp-big-table .c-score.vhigh{background:rgba(220,38,38,0.15);color:var(--vhigh)}
-
-/* ── DESTRUCT ── */
-.destruct{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:14px 18px;margin-top:24px;display:flex;align-items:flex-start;gap:10px;font-size:0.82rem;color:var(--red)}
-
-/* ── TOAST ── */
-.toast{position:fixed;bottom:24px;right:24px;background:#1e293b;color:#fff;padding:14px 22px;border-radius:10px;font-size:0.9rem;z-index:9999;display:none;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid var(--border)}
-.toast.show{display:block;animation:fadeIn .3s}
-
-/* ── SECTION TITLES ── */
-.section-label{display:inline-block;color:var(--accent);font-size:0.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
-
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-
-@media(max-width:768px){
-  .risk-card-header{flex-direction:column;align-items:flex-start}
-  .calc-form{flex-direction:column}
-  .calc-field input,.calc-field select{width:100%}
-  .risk-grid{grid-template-columns:1fr}
-  .tips-grid{grid-template-columns:1fr}
-  .chips-row{gap:6px}
-  .chip{padding:8px 14px;font-size:0.75rem}
+html { scroll-behavior: smooth; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── FOOTER ── */
-footer{text-align:center;padding:32px 0;color:var(--muted);font-size:0.78rem;border-top:1px solid var(--border)}
-footer a{color:var(--accent);text-decoration:none}
+/* ===== EMAIL GATE ===== */
+#emailGate {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(15,23,42,0.7);
+  backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+.gate-card {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 48px 40px;
+  max-width: 440px; width: 90%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+  animation: slideUp 0.4s ease;
+}
+.gate-logo { font-size: 48px; margin-bottom: 8px; }
+.gate-card h2 { font-size: 24px; font-weight: 700; margin-bottom: 4px; color: var(--text); }
+.gate-card p { color: var(--text-secondary); font-size: 14px; margin-bottom: 24px; }
+.gate-input-group {
+  display: flex; gap: 8px;
+}
+.gate-input-group input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  outline: none;
+  transition: var(--transition);
+}
+.gate-input-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+.gate-input-group button {
+  padding: 12px 24px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px; font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.gate-input-group button:hover { background: var(--accent-dark); transform: translateY(-1px); }
+.gate-error { color: var(--red); font-size: 13px; margin-top: 8px; display: none; }
+.gate-benefits { display: flex; gap: 16px; margin-top: 24px; justify-content: center; }
+.gate-benefit {
+  font-size: 12px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 4px;
+}
+.gate-benefit span { font-size: 14px; }
+
+/* ===== TOPBAR ===== */
+#topbar {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  box-shadow: var(--shadow);
+}
+.topbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 18px; font-weight: 700;
+  color: var(--text);
+}
+.topbar-brand .icon { font-size: 24px; }
+.topbar-actions { display: flex; align-items: center; gap: 12px; }
+.countdown-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--accent-light);
+  color: var(--accent-dark);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+}
+.countdown-badge .clock { font-size: 15px; animation: pulse 2s infinite; }
+.countdown-badge.warning { background: var(--orange-bg); color: var(--orange); }
+.countdown-badge.critical { background: var(--red-bg); color: var(--red); animation: pulse 0.5s infinite; }
+.user-badge {
+  font-size: 13px; color: var(--text-secondary);
+  background: #f1f5f9; padding: 6px 12px; border-radius: 20px;
+}
+
+/* ===== MAIN CONTAINER ===== */
+.container { max-width: 1200px; margin: 0 auto; padding: 32px 24px 64px; }
+
+/* ===== SECTION HEADERS ===== */
+.section-header {
+  text-align: center; margin-bottom: 40px;
+}
+.section-header h1 {
+  font-size: 36px; font-weight: 800;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+.section-header p { color: var(--text-secondary); font-size: 16px; max-width: 600px; margin: 0 auto; }
+
+/* ===== UPLOAD ZONE ===== */
+.upload-section { margin-bottom: 48px; }
+.upload-zone {
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent-light);
+  padding: 48px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  background: #bae6fd;
+  border-color: var(--accent-dark);
+  transform: scale(1.01);
+}
+.upload-zone.dragover { box-shadow: 0 0 0 4px var(--accent-light); }
+.upload-zone .upload-icon { font-size: 56px; margin-bottom: 12px; }
+.upload-zone .upload-label { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.upload-zone .upload-sublabel { font-size: 14px; color: var(--text-muted); }
+.upload-zone input[type="file"] { display: none; }
+
+/* ===== FILE TYPE CARDS ===== */
+.file-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+.file-card {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  display: flex; align-items: center; gap: 12px;
+  transition: all 0.25s ease;
+  cursor: default;
+}
+.file-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); }
+.file-card.highlight {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  transform: scale(1.03);
+  box-shadow: var(--shadow-lg);
+}
+.file-card .fc-icon { font-size: 32px; flex-shrink: 0; }
+.file-card .fc-info { flex: 1; }
+.file-card .fc-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.file-card .fc-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.file-card .fc-ext {
+  font-size: 10px;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  align-self: flex-start; margin-top: 4px;
+}
+.file-card.uploaded {
+  border-color: var(--green);
+  background: var(--green-bg);
+  position: relative;
+}
+.file-card.uploaded::after {
+  content: '✅';
+  position: absolute; top: -8px; right: -8px;
+  font-size: 16px;
+}
+
+/* Upload actions bar */
+.upload-actions {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.file-counter {
+  font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  display: flex; align-items: center; gap: 8px;
+}
+.file-counter .count { color: var(--accent); font-size: 20px; }
+.upload-actions .btn-group { display: flex; gap: 8px; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-dark); }
+.btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { background: #f8fafc; }
+.btn-demo { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; }
+.btn-demo:hover { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-lg { padding: 14px 32px; font-size: 16px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* ===== RESULTS SECTION ===== */
+#resultsSection { display: none; }
+#resultsSection.visible { display: block; animation: fadeIn 0.5s ease; }
+
+/* Quick summary bar */
+.summary-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.summary-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.summary-card .sc-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.summary-card .sc-value { font-size: 28px; font-weight: 800; }
+.summary-card .sc-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+/* Dashboard grid */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.dash-grid.col2 { grid-template-columns: repeat(2, 1fr); }
+.dash-grid.col4 { grid-template-columns: repeat(4, 1fr); }
+.dash-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+}
+.dash-card:hover { box-shadow: var(--shadow-md); }
+.dash-card.full-width { grid-column: 1 / -1; }
+.dash-card .card-title {
+  font-size: 13px; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.dash-card .card-title .icon { font-size: 18px; }
+
+/* Credit Score Gauge */
+.gauge-container {
+  display: flex; flex-direction: column; align-items: center;
+}
+.gauge-ring {
+  position: relative; width: 160px; height: 160px;
+}
+.gauge-ring svg { transform: rotate(-90deg); }
+.gauge-ring .bg-ring { fill: none; stroke: #f1f5f9; stroke-width: 12; }
+.gauge-ring .fg-ring { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.gauge-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.gauge-score { font-size: 42px; font-weight: 800; line-height: 1; }
+.gauge-label { font-size: 11px; color: var(--text-muted); }
+.gauge-grade {
+  margin-top: 8px;
+  padding: 4px 16px;
+  border-radius: 20px;
+  font-size: 13px; font-weight: 700;
+}
+.grade-low { background: var(--green-bg); color: #065f46; }
+.grade-medium { background: var(--yellow-bg); color: #92400e; }
+.grade-high { background: var(--orange-bg); color: #9a3412; }
+.grade-very-high { background: var(--red-bg); color: #991b1b; }
+
+/* Risk badge */
+.risk-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 15px; font-weight: 700;
+}
+.risk-low, .risk-Medium { background: var(--green-bg); color: #065f46; }
+.risk-medium, .risk-Medium-CNR { background: var(--yellow-bg); color: #92400e; }
+.risk-high, .risk-High { background: var(--orange-bg); color: #9a3412; }
+.risk-very-high, .risk-Very-High { background: var(--red-bg); color: #991b1b; }
+
+/* 5C Analysis */
+.c5-grid { display: flex; flex-direction: column; gap: 10px; }
+.c5-row { display: flex; align-items: center; gap: 12px; }
+.c5-label {
+  width: 90px; font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  text-align: right; flex-shrink: 0;
+}
+.c5-bar-bg {
+  flex: 1; height: 8px; background: #f1f5f9;
+  border-radius: 4px; overflow: hidden;
+}
+.c5-bar-fill {
+  height: 100%; border-radius: 4px;
+  transition: width 1s ease;
+}
+.c5-score { font-size: 14px; font-weight: 700; width: 36px; text-align: right; color: var(--text); }
+
+/* Payment history chart */
+.chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 140px; padding-top: 20px; }
+.chart-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.chart-bar {
+  width: 100%; max-width: 40px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.6s ease;
+  position: relative;
+  min-height: 4px;
+}
+.chart-bar.good { background: var(--green); }
+.chart-bar.warn { background: var(--yellow); }
+.chart-bar.bad { background: var(--red); }
+.chart-bar-label { font-size: 10px; color: var(--text-muted); text-align: center; }
+.chart-bar-value { font-size: 10px; font-weight: 700; color: var(--text-secondary); }
+
+/* Comparison table */
+.cmp-table-wrap { overflow-x: auto; }
+.cmp-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px;
+}
+.cmp-table th {
+  background: #f8fafc; padding: 10px 12px;
+  text-align: left; font-weight: 700; color: var(--text-secondary);
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+  position: sticky; top: 0;
+}
+.cmp-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.cmp-table tr:hover td { background: #f8fafc; }
+.cmp-table .cmp-name { font-weight: 700; color: var(--text); }
+.cmp-table .cmp-country { font-size: 11px; color: var(--text-muted); }
+
+/* Default impact calculator */
+.calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.calc-input-group { margin-bottom: 12px; }
+.calc-input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+.calc-input-group input, .calc-input-group select {
+  width: 100%; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 14px; outline: none;
+  transition: var(--transition);
+}
+.calc-input-group input:focus, .calc-input-group select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light);
+}
+.calc-result {
+  background: var(--red-bg);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+}
+.calc-result .cr-label { font-size: 12px; color: #991b1b; font-weight: 600; margin-bottom: 4px; }
+.calc-result .cr-amount { font-size: 32px; font-weight: 800; color: var(--red); }
+.calc-scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+.calc-scenario {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px; text-align: center;
+}
+.calc-scenario .cs-icon { font-size: 20px; margin-bottom: 4px; }
+.calc-scenario .cs-label { font-size: 11px; color: var(--text-muted); }
+.calc-scenario .cs-value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+
+/* Tips section */
+.tips-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.tip-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 24px;
+  box-shadow: var(--shadow);
+  transition: all 0.2s ease;
+}
+.tip-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.tip-num {
+  width: 36px; height: 36px;
+  background: var(--accent); color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 16px;
+  margin-bottom: 12px;
+}
+.tip-card h4 { font-size: 15px; margin-bottom: 6px; color: var(--text); }
+.tip-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+/* Toast */
+#toast-container {
+  position: fixed; top: 80px; right: 20px; z-index: 9998;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 18px;
+  box-shadow: var(--shadow-lg);
+  font-size: 14px; font-weight: 600;
+  animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.success { border-left: 4px solid var(--green); }
+.toast.error { border-left: 4px solid var(--red); }
+.toast.info { border-left: 4px solid var(--accent); }
+
+/* Footer */
+.site-footer {
+  text-align: center; padding: 32px;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted); font-size: 13px;
+  margin-top: 64px;
+}
+
+/* Company selector */
+.company-tabs {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;
+}
+.company-tab {
+  padding: 8px 18px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+}
+.company-tab:hover { border-color: var(--accent); color: var(--accent); }
+.company-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Progress bar */
+.progress-bar {
+  height: 4px; background: #f1f5f9;
+  border-radius: 2px; overflow: hidden; margin-top: 12px;
+}
+.progress-bar-fill {
+  height: 100%; background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+/* Section Divider */
+.section-divider {
+  border: none; border-top: 2px solid var(--border);
+  margin: 48px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container { padding: 20px 16px 40px; }
+  .file-cards { grid-template-columns: repeat(2, 1fr); }
+  .dash-grid, .dash-grid.col2, .dash-grid.col4 { grid-template-columns: 1fr; }
+  .tips-grid { grid-template-columns: repeat(2, 1fr); }
+  .summary-bar { grid-template-columns: repeat(2, 1fr); }
+  .calc-grid { grid-template-columns: 1fr; }
+  .calc-scenarios { grid-template-columns: repeat(3, 1fr); }
+  .upload-zone { padding: 28px 16px; }
+  .company-tabs { gap: 4px; }
+  .company-tab { padding: 6px 12px; font-size: 11px; }
+  .gate-card { padding: 32px 24px; }
+  .section-header h1 { font-size: 26px; }
+  .upload-actions { flex-direction: column; align-items: stretch; }
+}
+
+@media (max-width: 480px) {
+  .file-cards { grid-template-columns: 1fr; }
+  .tips-grid { grid-template-columns: 1fr; }
+  .summary-bar { grid-template-columns: 1fr; }
+  .calc-scenarios { grid-template-columns: 1fr; }
+}
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════ GATE ═══════════════════════════════════════ -->
-<div class="gate-overlay" id="gateOverlay">
-  <div class="gate-box">
-    <div class="icon">🛡️</div>
-    <h2>TradeCredit</h2>
-    <p>賒數風險評估 · Trade Credit Risk Assessment</p>
-    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:20px">Enter your email to access the demo</p>
-    <input type="email" id="gateEmail" placeholder="Company email address" autocomplete="email">
-    <p class="err" id="gateErr">Please enter a valid email address</p>
-    <button class="btn btn-primary" onclick="enterApp()">✅ Access TradeCredit</button>
-    <div class="note">⚠️ <span>All data auto-destructs in 24 hours</span><br>No account created. Demo only.</div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════ APP ═══════════════════════════════════════ -->
-<div class="app" id="mainApp">
-  <div class="topbar">
-    <div class="logo">🛡️ TradeCredit <span style="font-size:0.68rem;color:var(--warn);margin-left:4px">v1.0 · Demo</span></div>
-    <div style="display:flex;align-items:center;gap:18px">
-      <div class="timer">⏳ <span id="countdown">23:59:59</span></div>
-      <a href="../index.html">🏠 Main Site</a>
+<!-- EMAIL GATE OVERLAY -->
+<div id="emailGate">
+  <div class="gate-card">
+    <div class="gate-logo">🛡️</div>
+    <h2>TradeCredit 賒數風險評估</h2>
+    <p>請輸入您的企業電郵地址，以獲取完整信用分析工具</p>
+    <div class="gate-input-group">
+      <input type="email" id="gateEmail" placeholder="your@company.com" autocomplete="email">
+      <button onclick="submitGate()">進入 →</button>
     </div>
-  </div>
-
-  <div class="container">
-    <div class="page-header">
-      <h1>🛡️ Trade Credit Risk Assessment</h1>
-      <p>Assess customer creditworthiness before you ship. Simulated demo data — 5 trade scenarios across global markets.</p>
-    </div>
-
-    <!-- ── SEARCH BAR ── -->
-    <div class="search-bar-wrap">
-      <input type="text" id="companySearch" placeholder="Search by company name, country, risk level, or industry..." oninput="filterCompanies()" autocomplete="off">
-      <span class="search-icon">🔍</span>
-    </div>
-    <p class="search-hint" id="searchHint">Try typing "Brazil" or "retail" — search across all fields</p>
-    <div class="no-results" id="noResults">🚫 No companies match your search. Try different keywords.</div>
-
-    <!-- ── COMPANY CHIPS ── -->
-    <div class="chips-section" id="chipsSection">
-      <div class="chips-label" id="chipsLabel">Select a Company to Assess</div>
-      <div class="chips-row" id="chipsRow">
-        <div class="chip active" onclick="selectCompany(0)" id="chip0">
-          <span class="chip-flag">🇺🇸</span> MetroMart
-          <span class="chip-dot low"></span>
-        </div>
-        <div class="chip" onclick="selectCompany(1)" id="chip1">
-          <span class="chip-flag">🇧🇷</span> ElectroPlus
-          <span class="chip-dot medium"></span>
-        </div>
-        <div class="chip" onclick="selectCompany(2)" id="chip2">
-          <span class="chip-flag">🇦🇪</span> GulfTraders
-          <span class="chip-dot high"></span>
-        </div>
-        <div class="chip" onclick="selectCompany(3)" id="chip3">
-          <span class="chip-flag">🇬🇧</span> HomeStyle Ltd
-          <span class="chip-dot low"></span>
-        </div>
-        <div class="chip" onclick="selectCompany(4)" id="chip4">
-          <span class="chip-flag">🇳🇬</span> QuickDeal Imports
-          <span class="chip-dot vhigh"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── RISK CARDS (dynamically rendered) ── -->
-    <div id="riskCardContainer"></div>
-
-    <!-- ── DEFAULT IMPACT CALCULATOR ── -->
-    <div class="calc-section">
-      <h3>📉 Default Impact Calculator</h3>
-      <p class="calc-sub">Enter your order value to see how many orders you'd need to place to recover from a customer default.</p>
-      <div class="calc-form">
-        <div class="calc-field">
-          <label>Order Value (USD)</label>
-          <input type="number" id="calcOrderValue" placeholder="e.g. 50000" min="0" value="50000">
-        </div>
-        <div class="calc-field">
-          <label>Profit Margin (%)</label>
-          <input type="number" id="calcMargin" placeholder="e.g. 15" min="0" max="100" value="15">
-        </div>
-        <div class="calc-field">
-          <label>Scenario</label>
-          <select id="calcScenario">
-            <option value="default">Full Default — lose entire order value</option>
-            <option value="partial">Partial Default — lose 60%</option>
-            <option value="recovery">Legal Recovery — recover 30%</option>
-          </select>
-        </div>
-        <button class="btn-sm" onclick="runImpactCalc()">Calculate Impact</button>
-        <button class="btn-outline-sm" onclick="resetCalc()">Reset</button>
-      </div>
-      <div class="calc-result" id="calcResult"></div>
-    </div>
-
-    <!-- ── TIPS ── -->
-    <div class="tips-section">
-      <div class="section-label">Trade Credit Wisdom</div>
-      <h3 style="font-size:1.15rem;margin-bottom:16px">💡 6 Rules for Safer Trade Credit</h3>
-      <div class="tips-grid">
-
-        <div class="tip-card">
-          <div class="tip-num">1</div>
-          <h4>Know Your Customer (KYC) Isn't Optional</h4>
-          <p>Request audited financials, trade references, and bank letters. A company that won't share basic financials is a company you shouldn't extend credit to. Check corporate registries in their jurisdiction — it takes 5 minutes and costs nothing.</p>
-        </div>
-
-        <div class="tip-card">
-          <div class="tip-num">2</div>
-          <h4>Start Small, Scale Credit</h4>
-          <p>Begin with T/T advance or L/C for the first 3 orders. Once they've proven payment reliability, gradually increase credit terms. A customer who demands open account from Day 1 is a red flag — established buyers understand staged trust.</p>
-        </div>
-
-        <div class="tip-card">
-          <div class="tip-num">3</div>
-          <h4>DSO Is Your Early Warning System</h4>
-          <p>Days Sales Outstanding above 60 is a danger zone. If a customer's DSO creeps up month-over-month, freeze shipments until the trend reverses. Late payment isn't just annoying — it's often the first sign of cash flow distress.</p>
-        </div>
-
-        <div class="tip-card">
-          <div class="tip-num">4</div>
-          <h4>Country Risk Compounds Everything</h4>
-          <p>A perfect credit score in a high-risk country is still high-risk. Currency controls, political instability, and weak legal systems can turn a "good" customer into a write-off overnight. Always factor country risk separately from company risk.</p>
-        </div>
-
-        <div class="tip-card">
-          <div class="tip-num">5</div>
-          <h4>Get Trade Credit Insurance</h4>
-          <p>For anything above $50K exposure, TCI is a no-brainer. Premiums are typically 0.2-1.5% of insured turnover. Compare that to losing an entire $80K shipment. The math is simple. Most insurers also provide credit limit recommendations — use them.</p>
-        </div>
-
-        <div class="tip-card">
-          <div class="tip-num">6</div>
-          <h4>Diversify Your Receivables</h4>
-          <p>No single customer should represent more than 20% of your accounts receivable. Concentration risk kills more trading companies than bad products ever do. If one customer going under would sink your business, you're already in trouble.</p>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- ── COMPARISON TABLE ── -->
-    <div class="comp-section">
-      <h3>📊 Side-by-Side Comparison</h3>
-      <p class="comp-sub">All 5 companies compared across key credit metrics.</p>
-      <div class="comp-wrap">
-        <table class="comp-big-table" id="compTable"></table>
-      </div>
-    </div>
-
-    <div class="destruct"><span>⚠️</span><div><b>All data auto-destructs in 24 hours.</b> Save your analysis. No data is stored on any server.</div></div>
-    <div style="text-align:center;margin:20px 0 40px">
-      <button class="btn-sm" onclick="location.reload()">🔄 Restart Demo</button>
+    <p class="gate-error" id="gateError">請輸入有效的電郵地址（需包含 @ 符號）</p>
+    <div class="gate-benefits">
+      <div class="gate-benefit"><span>🔒</span> 企業級安全</div>
+      <div class="gate-benefit"><span>⚡</span> 即時分析</div>
+      <div class="gate-benefit"><span>📊</span> 5C 信用框架</div>
     </div>
   </div>
 </div>
 
-<!-- ── TOAST ── -->
-<div class="toast" id="toast"></div>
+<!-- TOPBAR -->
+<header id="topbar">
+  <div class="topbar-brand">
+    <span class="icon">🛡️</span> TradeCredit
+  </div>
+  <div class="topbar-actions">
+    <div class="countdown-badge" id="countdownBadge">
+      <span class="clock">⏱</span>
+      <span id="countdownText">23:59:59</span>
+    </div>
+    <div class="user-badge" id="userBadge">👤 訪客</div>
+  </div>
+</header>
 
-<footer>
-  <p>© 2026 <a href="#">Quattro Dynamics</a> — Trade Credit Risk Assessment · Demo Only — No Real Data</p>
-</footer>
+<!-- TOAST CONTAINER -->
+<div id="toast-container"></div>
+
+<!-- MAIN CONTENT -->
+<main class="container">
+
+  <!-- HERO -->
+  <section class="section-header" style="margin-top: 20px;">
+    <h1>📊 賒數風險評估平台</h1>
+    <p>上傳買方財務文件，即時獲取 AI 驅動的信用評分、5C 分析及貿易信用保險建議</p>
+  </section>
+
+  <!-- UPLOAD SECTION -->
+  <section class="upload-section" id="uploadSection">
+    <!-- Drag & Drop Zone -->
+    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" multiple accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png,.gif,.bmp,.webp" onchange="handleFileSelect(event)">
+      <div class="upload-icon">📁</div>
+      <div class="upload-label">拖放檔案到此處 · 或點擊上傳</div>
+      <div class="upload-sublabel">支援 PDF、Excel、CSV、圖片格式（最多 10 個檔案）</div>
+    </div>
+
+    <!-- File Type Cards -->
+    <div class="file-cards" id="fileCards">
+      <div class="file-card" data-type="financial">
+        <div class="fc-icon">📄</div>
+        <div class="fc-info"><div class="fc-name">財務報表</div><div class="fc-desc">審計報告、損益表、資產負債表</div></div>
+        <div class="fc-ext">.pdf</div>
+      </div>
+      <div class="file-card" data-type="transaction">
+        <div class="fc-icon">📊</div>
+        <div class="fc-info"><div class="fc-name">交易記錄</div><div class="fc-desc">過往訂單歷史、付款週期數據</div></div>
+        <div class="fc-ext">.xlsx .xls</div>
+      </div>
+      <div class="file-card" data-type="payment">
+        <div class="fc-icon">📋</div>
+        <div class="fc-info"><div class="fc-name">付款記錄</div><div class="fc-desc">應收帳款明細、逾期記錄</div></div>
+        <div class="fc-ext">.csv</div>
+      </div>
+      <div class="file-card" data-type="bank">
+        <div class="fc-icon">🏦</div>
+        <div class="fc-info"><div class="fc-name">銀行推薦信</div><div class="fc-desc">銀行信用證明、資信調查</div></div>
+        <div class="fc-ext">.pdf</div>
+      </div>
+      <div class="file-card" data-type="credit">
+        <div class="fc-icon">📈</div>
+        <div class="fc-info"><div class="fc-name">信用報告</div><div class="fc-desc">D&B / 環聯徵信報告</div></div>
+        <div class="fc-ext">.pdf</div>
+      </div>
+      <div class="file-card" data-type="business">
+        <div class="fc-icon">🆔</div>
+        <div class="fc-info"><div class="fc-name">商業登記</div><div class="fc-desc">商業登記證、公司註冊證明</div></div>
+        <div class="fc-ext">.jpg .png</div>
+      </div>
+    </div>
+
+    <!-- Upload actions -->
+    <div class="upload-actions">
+      <div class="file-counter">
+        已上傳 <span class="count" id="fileCount">0</span>/6 類檔案
+        <div class="progress-bar" style="width:100px;">
+          <div class="progress-bar-fill" id="uploadProgress" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-demo" onclick="loadDemo()">🧪 載入範例數據示範</button>
+        <button class="btn btn-primary" id="analyzeBtn" disabled onclick="runAnalysis()">🔍 開始分析</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPANY TABS (shown after analysis) -->
+  <div class="company-tabs" id="companyTabs" style="display:none;"></div>
+
+  <!-- RESULTS SECTION -->
+  <section id="resultsSection">
+    <!-- Quick Summary -->
+    <div class="summary-bar" id="summaryBar"></div>
+
+    <div class="dash-grid" style="margin-bottom:20px;">
+      <!-- Credit Score Gauge -->
+      <div class="dash-card" id="gaugeCard">
+        <div class="card-title"><span class="icon">🎯</span> 信用評分</div>
+        <div class="gauge-container" id="gaugeContainer"></div>
+      </div>
+
+      <!-- Risk Level + Credit Limit -->
+      <div class="dash-card">
+        <div class="card-title"><span class="icon">⚠️</span> 風險評估</div>
+        <div id="riskPanel"></div>
+      </div>
+
+      <!-- 5C Analysis -->
+      <div class="dash-card">
+        <div class="card-title"><span class="icon">🔍</span> 5C 信用分析</div>
+        <div class="c5-grid" id="c5Panel"></div>
+      </div>
+    </div>
+
+    <div class="dash-grid col2" style="margin-bottom:20px;">
+      <!-- Country Risk -->
+      <div class="dash-card">
+        <div class="card-title"><span class="icon">🌍</span> 國家風險指數</div>
+        <div id="countryRiskPanel"></div>
+      </div>
+      <!-- Industry Risk -->
+      <div class="dash-card">
+        <div class="card-title"><span class="icon">🏭</span> 行業風險評估</div>
+        <div id="industryPanel"></div>
+      </div>
+    </div>
+
+    <div class="dash-grid col2" style="margin-bottom:20px;">
+      <!-- Payment History Chart -->
+      <div class="dash-card">
+        <div class="card-title"><span class="icon">📆</span> 付款歷史圖表（近12個月）</div>
+        <div class="chart-bars" id="paymentChart"></div>
+        <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--text-muted);flex-wrap:wrap;">
+          <div><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;"></span> 準時付款</div>
+          <div><span style="display:inline-block;width:10px;height:10px;background:var(--yellow);border-radius:2px;"></span> 延遲 ≤30天</div>
+          <div><span style="display:inline-block;width:10px;height:10px;background:var(--red);border-radius:2px;"></span> 嚴重逾期 >30天</div>
+        </div>
+        <div style="margin-top:10px;padding:8px 12px;background:#fef2f2;border-radius:6px;font-size:11px;color:#991b1b;line-height:1.5;">
+          ⚠️ <strong>2025 行業數據：</strong>貨櫃航運業準時付款率暴跌至僅 <strong>6.7%</strong>，創歷史新低。全球供應鏈壓力持續影響買方付款能力，貿易信用風險處於歷史高位。
+        </div>
+      </div>
+      <!-- Trade Credit Insurance -->
+      <div class="dash-card">
+        <div class="card-title"><span class="icon">🛡️</span> 貿易信用保險評估</div>
+        <div id="insurancePanel"></div>
+      </div>
+    </div>
+
+    <!-- Actionable Recommendations -->
+    <div class="dash-card full-width" style="margin-bottom:20px;">
+      <div class="card-title"><span class="icon">💡</span> 建議行動</div>
+      <div id="recommendationsPanel"></div>
+    </div>
+
+    <!-- Comparison Table -->
+    <hr class="section-divider">
+    <div class="section-header" style="margin-bottom:24px;">
+      <h2 style="font-size:28px;">📋 五間公司對比分析</h2>
+      <p>一站式比較所有示範公司的信用指標</p>
+    </div>
+    <div class="dash-card full-width" style="margin-bottom:20px;">
+      <div class="cmp-table-wrap">
+        <table class="cmp-table" id="cmpTable"></table>
+      </div>
+    </div>
+
+    <!-- 6 Rules -->
+    <hr class="section-divider">
+    <div class="section-header" style="margin-bottom:24px;">
+      <h2 style="font-size:28px;">📖 6 大賒數安全法則</h2>
+      <p>國際貿易信用管理的黃金準則</p>
+    </div>
+    <div class="tips-grid" id="tipsGrid"></div>
+
+    <!-- Default Impact Calculator -->
+    <hr class="section-divider">
+    <div class="section-header" style="margin-bottom:24px;">
+      <h2 style="font-size:28px;">🧮 違約影響計算器</h2>
+      <p>估算買方違約對您業務的財務衝擊</p>
+    </div>
+    <div class="dash-card full-width">
+      <div class="calc-grid">
+        <div>
+          <div class="calc-input-group">
+            <label>賒銷金額 (USD)</label>
+            <input type="number" id="calcAmount" value="100000" min="1000" step="1000" oninput="calcDefaultImpact()">
+          </div>
+          <div class="calc-input-group">
+            <label>毛利率 (%)</label>
+            <input type="number" id="calcMargin" value="35" min="0" max="100" step="1" oninput="calcDefaultImpact()">
+          </div>
+          <div class="calc-input-group">
+            <label>還款回收情境</label>
+            <select id="calcRecovery" onchange="calcDefaultImpact()">
+              <option value="full">完全違約（回收率 0%）</option>
+              <option value="legal">法律追討（回收率 ~30%）</option>
+              <option value="insurance">保險理賠（回收率 ~85%）</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <div class="calc-result" id="calcResultDisplay"></div>
+          <div class="calc-scenarios" id="calcScenarios"></div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <p>© 2026 TradeCredit · 賒數風險評估平台 · 所有數據僅供示範參考，非真實信用評級</p>
+    <p style="margin-top:4px;">本工具基於公開研究數據，不構成專業財務建議</p>
+  </footer>
+</main>
 
 <script>
-// ═══════════════════════════════════════
-// DATA: 5 Companies
-// ═══════════════════════════════════════
-const COMPANIES = [
+// ===== STATE =====
+let uploadedFiles = new Set(); // tracks which file types have been uploaded
+let currentCompany = null;
+let analysisResults = null;
+let demoLoaded = false;
+let countdownTimer = null;
+const SESSION_DURATION = 24 * 60 * 60; // 24 hours in seconds
+
+// ===== DEMO DATA: 5 Companies =====
+const companies = [
   {
-    id: 0,
-    name: "MetroMart",
-    country: "USA",
-    flag: "🇺🇸",
-    description: "Large publicly traded retailer — NYSE listed, $12B market cap, 800+ stores across North America. Public financials audited by Deloitte.",
-    riskLevel: "low",
-    riskLabel: "Low Risk",
+    id: 'metromart',
+    name: 'MetroMart Inc.',
+    country: '美國',
+    countryCode: 'USA',
+    countryRiskIndex: 85,
+    countryTier: 'Low',
+    industry: '零售業',
+    industryRiskLow: 70,
+    industryRiskHigh: 75,
     creditScore: 88,
-    creditLimit: "$500,000",
-    paymentTerms: "Net 60 · Open Account",
-    countryRisk: { level: "Low", score: 85, note: "AAA-rated sovereign, strong rule of law, USD-denominated" },
-    industryRisk: { level: "Low-Medium", score: 72, note: "Retail — competitive but stable; e-commerce pressure offset by omnichannel strength" },
-    financials: [
-      { metric: "Annual Revenue", value: "$12.4B", trend: "↑ 8.2% YoY", cls: "trend-up" },
-      { metric: "Profit Margin", value: "6.8%", trend: "↑ 0.4pp", cls: "trend-up" },
-      { metric: "Debt-to-Equity", value: "0.42", trend: "↓ 0.05", cls: "trend-up" },
-      { metric: "Current Ratio", value: "1.85", trend: "Stable", cls: "trend-flat" },
-      { metric: "DSO (Days)", value: "28", trend: "↓ 3 days", cls: "trend-up" },
-      { metric: "Free Cash Flow", value: "$1.8B", trend: "↑ 14% YoY", cls: "trend-up" },
-    ],
-    paymentHistory: [98, 100, 97, 99, 100, 98, 99, 100, 97, 100, 99, 100],
-    paymentOnTime: 98.9,
-    insurance: { premium: "0.25%", range: "low", note: "Highly insurable — top-tier credit rating" }
+    creditLimit: 500000,
+    paymentTerms: 'Net 60',
+    currency: 'USD',
+    listed: 'NYSE',
+    yearsActive: 22,
+    employees: 45000,
+    annualRevenue: 'USD 8.2B',
+    dso: 32,
+    debtToEquity: 0.38,
+    currentRatio: 2.1,
+    paymentHistory: [92,90,95,88,91,94,89,93,90,92,95,91],
+    delayDays: [2,3,1,4,2,1,3,2,3,2,1,2],
+    riskLevel: '低風險',
+    character: 90,
+    capacity: 88,
+    capital: 85,
+    collateral: 82,
+    conditions: 86,
+    insurancePremium: '0.25%',
+    insurability: '高度可保',
+    recommendation: '✅ <strong>建議批准：</strong>MetroMart 為 NYSE 上市零售商，財務穩健。建議給予 USD 500,000 信用額度，Net 60 付款條件。DSO 僅 32 天，遠低於危險線。可考慮不投保以節省成本。',
+    dnbRating: '5A2',
+    fxRisk: '無'
   },
   {
-    id: 1,
-    name: "ElectroPlus",
-    country: "Brazil",
-    flag: "🇧🇷",
-    description: "Mid-size electronics distributor based in São Paulo. 8 years in business, 120 employees, $45M annual revenue. Family-owned but professionally managed. BRL-denominated finances introduce FX risk.",
-    riskLevel: "medium",
-    riskLabel: "Medium Risk",
+    id: 'electroplus',
+    name: 'ElectroPlus Ltda.',
+    country: '巴西',
+    countryCode: 'BRA',
+    countryRiskIndex: 48,
+    countryTier: 'Medium',
+    industry: '電子產品',
+    industryRiskLow: 60,
+    industryRiskHigh: 65,
     creditScore: 62,
-    creditLimit: "$80,000",
-    paymentTerms: "Net 30 · T/T with 30% advance on first orders",
-    countryRisk: { level: "Medium-High", score: 48, note: "BRICS economy, BRL volatility, moderate corruption risk, slow court system" },
-    industryRisk: { level: "Medium", score: 65, note: "Consumer electronics — cyclical demand, FX exposure on imports" },
-    financials: [
-      { metric: "Annual Revenue", value: "$45M", trend: "↑ 3.1% YoY", cls: "trend-up" },
-      { metric: "Profit Margin", value: "4.2%", trend: "↓ 0.8pp", cls: "trend-down" },
-      { metric: "Debt-to-Equity", value: "0.88", trend: "↑ 0.12", cls: "trend-down" },
-      { metric: "Current Ratio", value: "1.35", trend: "↓ 0.15", cls: "trend-down" },
-      { metric: "DSO (Days)", value: "52", trend: "↑ 7 days", cls: "trend-down" },
-      { metric: "Free Cash Flow", value: "$1.2M", trend: "↓ 22% YoY", cls: "trend-down" },
-    ],
-    paymentHistory: [92, 88, 94, 90, 85, 91, 89, 93, 87, 92, 90, 88],
-    paymentOnTime: 89.9,
-    insurance: { premium: "0.85%", range: "medium", note: "Insurable with moderate premium — FX risk surcharge applies" }
+    creditLimit: 120000,
+    paymentTerms: 'Net 30 · LC 建議',
+    currency: 'BRL',
+    listed: 'B3',
+    yearsActive: 9,
+    employees: 3200,
+    annualRevenue: 'BRL 1.4B (~USD 280M)',
+    dso: 55,
+    debtToEquity: 0.72,
+    currentRatio: 1.4,
+    paymentHistory: [75,80,72,70,78,68,65,73,71,76,69,74],
+    delayDays: [8,5,10,12,7,15,18,10,11,8,14,9],
+    riskLevel: '中等風險',
+    character: 72,
+    capacity: 65,
+    capital: 55,
+    collateral: 60,
+    conditions: 50,
+    insurancePremium: '0.65%',
+    insurability: '有條件可保',
+    recommendation: '⚠️ <strong>有條件批准：</strong>ElectroPlus 面臨巴西國家風險及 BRL 匯率波動。建議信用額度上限 USD 120,000，要求信用證 (LC)。強烈建議購買貿易信用保險。DSO 55 天接近警戒線，需密切監控。',
+    dnbRating: '3A4',
+    fxRisk: 'BRL 貶值風險 · 建議對沖'
   },
   {
-    id: 2,
-    name: "GulfTraders",
-    country: "UAE",
-    flag: "🇦🇪",
-    description: "Recently established trading company in Dubai Free Zone. 18 months in operation, 12 employees, $8M estimated revenue. No audited financials available. Owners have prior business experience but new entity has no track record.",
-    riskLevel: "high",
-    riskLabel: "High Risk",
+    id: 'gulftraders',
+    name: 'GulfTraders FZE',
+    country: '阿聯酋',
+    countryCode: 'UAE',
+    countryRiskIndex: 72,
+    countryTier: 'Medium',
+    industry: '大宗商品',
+    industryRiskLow: 50,
+    industryRiskHigh: 55,
     creditScore: 38,
-    creditLimit: "T/T Advance Recommended",
-    paymentTerms: "100% T/T in advance · No open account",
-    countryRisk: { level: "Medium", score: 72, note: "UAE stable jurisdiction, strong banking, but free-zone entities have limited legal recourse" },
-    industryRisk: { level: "Medium-High", score: 50, note: "General trading — diverse but opaque; commodity exposure" },
-    financials: [
-      { metric: "Annual Revenue", value: "~$8M", trend: "New entity", cls: "trend-flat" },
-      { metric: "Profit Margin", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-      { metric: "Debt-to-Equity", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-      { metric: "Current Ratio", value: "Unverified", trend: "N/A", cls: "trend-flat" },
-      { metric: "DSO (Days)", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-      { metric: "Free Cash Flow", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-    ],
-    paymentHistory: [75, 80, 70, 78, 72, 76],
-    paymentOnTime: 75.2,
-    insurance: { premium: "1.40%", range: "high", note: "Limited insurability — new entity, no track record, higher premium or declinature possible" }
+    creditLimit: 50000,
+    paymentTerms: 'Net 15 · 預付 30%',
+    currency: 'AED',
+    listed: '無',
+    yearsActive: 2,
+    employees: 45,
+    annualRevenue: 'AED 85M (~USD 23M)',
+    dso: 78,
+    debtToEquity: 2.1,
+    currentRatio: 0.9,
+    paymentHistory: [40,35,45,30,50,25,38,42,28,33,48,36],
+    delayDays: [35,42,28,50,22,60,38,32,45,40,25,38],
+    riskLevel: '高風險',
+    character: 35,
+    capacity: 40,
+    capital: 30,
+    collateral: 45,
+    conditions: 35,
+    insurancePremium: '1.20%',
+    insurability: '限制性承保',
+    recommendation: '🛑 <strong>高風險警告：</strong>GulfTraders 僅成立 2 年，缺乏可靠交易記錄。DSO 高達 78 天，債務權益比 2.1 屬危險水平。建議最大信用額度 USD 50,000，要求 30% 預付款，必須投保貿易信用保險。密切監控每筆交易付款情況。',
+    dnbRating: '無評級',
+    fxRisk: 'AED 與 USD 掛鉤 · 風險較低'
   },
   {
-    id: 3,
-    name: "HomeStyle Ltd",
-    country: "UK",
-    flag: "🇬🇧",
-    description: "Established home goods retailer — 15 years operating history, 45 stores across UK & Ireland, £180M annual turnover. Privately held but provides audited financials. Long-standing relationships with Chinese & European suppliers.",
-    riskLevel: "low",
-    riskLabel: "Low Risk",
+    id: 'homestyle',
+    name: 'HomeStyle Ltd.',
+    country: '英國',
+    countryCode: 'UK',
+    countryRiskIndex: 88,
+    countryTier: 'Low',
+    industry: '零售業',
+    industryRiskLow: 70,
+    industryRiskHigh: 75,
     creditScore: 84,
-    creditLimit: "$300,000",
-    paymentTerms: "Net 45 · Open Account with annual review",
-    countryRisk: { level: "Low", score: 88, note: "AAA-rated jurisdiction, strong contract enforcement, GBP stability" },
-    industryRisk: { level: "Low-Medium", score: 70, note: "Home goods — steady demand, recession-resilient, but discretionary spending sensitive" },
-    financials: [
-      { metric: "Annual Revenue", value: "£180M", trend: "↑ 5.5% YoY", cls: "trend-up" },
-      { metric: "Profit Margin", value: "7.5%", trend: "↑ 0.3pp", cls: "trend-up" },
-      { metric: "Debt-to-Equity", value: "0.35", trend: "Stable", cls: "trend-flat" },
-      { metric: "Current Ratio", value: "2.10", trend: "↑ 0.10", cls: "trend-up" },
-      { metric: "DSO (Days)", value: "32", trend: "↓ 2 days", cls: "trend-up" },
-      { metric: "Free Cash Flow", value: "£14M", trend: "↑ 9% YoY", cls: "trend-up" },
-    ],
-    paymentHistory: [99, 100, 98, 100, 99, 100, 100, 97, 100, 99, 100, 99],
-    paymentOnTime: 99.2,
-    insurance: { premium: "0.30%", range: "low", note: "Excellent insurability — preferred rates available" }
+    creditLimit: 350000,
+    paymentTerms: 'Net 60',
+    currency: 'GBP',
+    listed: 'LSE',
+    yearsActive: 15,
+    employees: 12000,
+    annualRevenue: 'GBP 2.1B (~USD 2.7B)',
+    dso: 38,
+    debtToEquity: 0.45,
+    currentRatio: 1.9,
+    paymentHistory: [88,90,87,91,89,86,92,88,90,87,91,89],
+    delayDays: [4,3,5,2,3,6,2,4,3,5,2,3],
+    riskLevel: '低風險',
+    character: 88,
+    capacity: 86,
+    capital: 82,
+    collateral: 80,
+    conditions: 84,
+    insurancePremium: '0.22%',
+    insurability: '高度可保',
+    recommendation: '✅ <strong>建議批准：</strong>HomeStyle 為英國 LSE 上市公司，15 年穩定經營歷史。財務指標健康，DSO 38 天。建議給予 USD 350,000 信用額度，Net 60 付款條件。保險費率低廉，可視需要選擇性投保。',
+    dnbRating: '4A1',
+    fxRisk: 'GBP/USD 匯率波動 · 適度關注'
   },
   {
-    id: 4,
-    name: "QuickDeal Imports",
-    country: "Nigeria",
-    flag: "🇳🇬",
-    description: "Unknown importer operating from Lagos. No verifiable business registration, no audited financials, no trade references. Claims to be a 'major distributor' but has no online presence or industry footprint. Contact is a Gmail address.",
-    riskLevel: "vhigh",
-    riskLabel: "Very High Risk",
+    id: 'quickdeal',
+    name: 'QuickDeal Imports Ltd.',
+    country: '尼日利亞',
+    countryCode: 'NGA',
+    countryRiskIndex: 28,
+    countryTier: 'High',
+    industry: '大宗商品',
+    industryRiskLow: 50,
+    industryRiskHigh: 55,
     creditScore: 15,
-    creditLimit: "No Credit — T/T Only",
-    paymentTerms: "100% T/T in advance · Irrevocable L/C at sight if order > $10K",
-    countryRisk: { level: "High", score: 28, note: "Currency controls (NGN), FX shortages, weak contract enforcement, corruption risk" },
-    industryRisk: { level: "Unknown", score: 15, note: "Unverifiable — no industry footprint, no references, no track record" },
-    financials: [
-      { metric: "Annual Revenue", value: "Unverifiable", trend: "N/A", cls: "trend-flat" },
-      { metric: "Profit Margin", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-      { metric: "Debt-to-Equity", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-      { metric: "Current Ratio", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-      { metric: "DSO (Days)", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-      { metric: "Free Cash Flow", value: "Unknown", trend: "N/A", cls: "trend-flat" },
-    ],
-    paymentHistory: [40, 55, 30, 45, 50, 35],
-    paymentOnTime: 42.5,
-    insurance: { premium: "N/A", range: "high", note: "Uninsurable — no insurer will underwrite this counterparty" }
+    creditLimit: 10000,
+    paymentTerms: '100% 預付 · LC at sight',
+    currency: 'NGN',
+    listed: '無',
+    yearsActive: 1.5,
+    employees: 12,
+    annualRevenue: 'NGN 450M (~USD 300K)',
+    dso: 105,
+    debtToEquity: 4.5,
+    currentRatio: 0.5,
+    paymentHistory: [20,15,25,10,5,18,12,8,22,15,20,10],
+    delayDays: [65,80,55,90,120,70,85,110,60,78,55,95],
+    riskLevel: '極高風險',
+    character: 15,
+    capacity: 20,
+    capital: 10,
+    collateral: 12,
+    conditions: 10,
+    insurancePremium: '不適用',
+    insurability: '不可保',
+    recommendation: '🔴 <strong>拒絕建議：</strong>QuickDeal 成立不足 2 年，無法驗證商業記錄。尼日利亞國家風險指數僅 28/100，DSO 高達 105 天屬極度危險。債務權益比 4.5 表明嚴重資不抵債。強烈建議拒絕賒銷，僅接受 100% 預付或不可撤銷信用證。',
+    dnbRating: '無評級',
+    fxRisk: 'NGN 劇烈波動 · 外匯管制風險'
   }
 ];
 
-let selectedIdx = 0;
+// ===== COUNTRY & INDUSTRY REFERENCE DATA =====
+const countryRiskData = {
+  'USA': { index: 85, tier: 'Low', name: '美國' },
+  'UK': { index: 88, tier: 'Low', name: '英國' },
+  'DEU': { index: 90, tier: 'Low', name: '德國' },
+  'UAE': { index: 72, tier: 'Medium', name: '阿聯酋' },
+  'BRA': { index: 48, tier: 'Medium', name: '巴西' },
+  'IND': { index: 45, tier: 'Medium', name: '印度' },
+  'NGA': { index: 28, tier: 'High', name: '尼日利亞' },
+  'VEN': { index: 15, tier: 'High', name: '委內瑞拉' }
+};
 
-// ═══════════════════════════════════════
-// GATE
-// ═══════════════════════════════════════
-function enterApp(){
-  const e=document.getElementById('gateEmail').value.trim();
-  if(!e||!e.includes('@')){document.getElementById('gateErr').style.display='block';return;}
-  document.getElementById('gateOverlay').style.display='none';
-  document.getElementById('mainApp').classList.add('active');
-  startCountdown();
-  selectCompany(0);
-  buildCompTable();
-  toast('✅ TradeCredit 已就緒 — 5 company profiles loaded');
+const industryRiskData = {
+  '零售業': { low: 70, high: 75, color: 'var(--green)' },
+  '電子產品': { low: 60, high: 65, color: 'var(--yellow)' },
+  '大宗商品': { low: 50, high: 55, color: 'var(--orange)' },
+  '建築業': { low: 55, high: 60, color: 'var(--orange)' }
+};
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', () => {
+  setupDragDrop();
+  setupCountdown();
+});
+
+// ===== EMAIL GATE =====
+function submitGate() {
+  const email = document.getElementById('gateEmail').value.trim();
+  const errEl = document.getElementById('gateError');
+  if (!email || !email.includes('@')) {
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  document.getElementById('emailGate').style.display = 'none';
+  document.getElementById('userBadge').innerHTML = '👤 ' + email.split('@')[0];
+  showToast('歡迎使用 TradeCredit！已為您解鎖完整功能 ✨', 'success');
 }
 
-function startCountdown(){
-  let r=24*60*60;
-  const el=document.getElementById('countdown');
-  setInterval(()=>{r--;if(r<=0)return;el.textContent=`${String(Math.floor(r/3600)).padStart(2,'0')}:${String(Math.floor((r%3600)/60)).padStart(2,'0')}:${String(r%60).padStart(2,'0')}`;},1000);
+document.getElementById('gateEmail').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitGate();
+});
+
+// ===== COUNTDOWN =====
+function setupCountdown() {
+  let remaining = SESSION_DURATION;
+  updateCountdownDisplay(remaining);
+  countdownTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(countdownTimer);
+      document.getElementById('emailGate').style.display = 'flex';
+      document.getElementById('gateEmail').value = '';
+      remaining = SESSION_DURATION;
+      showToast('試用時間已結束，請重新輸入電郵以繼續', 'info');
+      setupCountdown();
+      return;
+    }
+    updateCountdownDisplay(remaining);
+  }, 1000);
 }
 
-function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function updateCountdownDisplay(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const text = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  document.getElementById('countdownText').textContent = text;
+  const badge = document.getElementById('countdownBadge');
+  badge.classList.remove('warning', 'critical');
+  if (seconds < 600) badge.classList.add('critical');
+  else if (seconds < 3600) badge.classList.add('warning');
+}
 
-// ═══════════════════════════════════════
-// SEARCH & FILTER
-// ═══════════════════════════════════════
-function filterCompanies(){
-  const query = document.getElementById('companySearch').value.trim().toLowerCase();
-  const chips = document.querySelectorAll('#chipsRow .chip');
-  const hint = document.getElementById('searchHint');
-  const noRes = document.getElementById('noResults');
-  const label = document.getElementById('chipsLabel');
-  let visibleCount = 0;
+// ===== DRAG & DROP =====
+function setupDragDrop() {
+  const zone = document.getElementById('dropZone');
+  const cards = document.querySelectorAll('.file-card');
 
-  chips.forEach(chip=>{
-    const idx = parseInt(chip.onclick?.toString().match(/selectCompany\((\d)\)/)?.[1]);
-    const c = COMPANIES[idx];
-    if(!c){chip.style.display='';return;}
-
-    const searchText = `${c.name} ${c.country} ${c.riskLevel} ${c.riskLabel} ${c.description} ${c.industryRisk?.note||''}`.toLowerCase();
-    const match = !query || searchText.includes(query);
-    chip.style.display = match ? '' : 'none';
-    if(match) visibleCount++;
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+    zone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
+    document.body.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); });
   });
 
-  hint.style.display = query ? 'none' : '';
-  noRes.classList.toggle('show', query && visibleCount===0);
-  label.textContent = query ? `Results for "${query}" (${visibleCount})` : 'Select a Company to Assess';
+  ['dragenter', 'dragover'].forEach(evt => {
+    zone.addEventListener(evt, () => zone.classList.add('dragover'));
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    zone.addEventListener(evt, () => zone.classList.remove('dragover'));
+  });
 
-  // Also update comparison table filter indication if search is active
-  const compRows = document.querySelectorAll('#compTable tbody tr');
-  if(compRows.length){
-    compRows.forEach(row=>{
-      const name = row.querySelector('td:first-child')?.textContent?.toLowerCase()||'';
-      const match = !query || name.includes(query);
-      row.style.opacity = match ? '1' : '0.3';
-      row.style.transition = 'opacity 0.2s';
-    });
-  }
+  zone.addEventListener('drop', e => {
+    handleFiles(e.dataTransfer.files);
+  });
+
+  // Highlight cards on dragover
+  zone.addEventListener('dragover', e => {
+    const dt = e.dataTransfer;
+    if (dt.types && dt.types.indexOf) {
+      // basic extension detection isn't possible in dragover easily
+      // so we highlight all cards subtly
+    }
+  });
 }
 
-// ═══════════════════════════════════════
-// SELECT COMPANY & RENDER CARD
-// ═══════════════════════════════════════
-function selectCompany(idx){
-  selectedIdx=idx;
-  document.querySelectorAll('.chip').forEach((c,i)=>c.classList.toggle('active',i===idx));
-  renderRiskCard(idx);
+function handleFileSelect(event) {
+  handleFiles(event.target.files);
+  event.target.value = '';
 }
 
-function renderRiskCard(idx){
-  const c = COMPANIES[idx];
-  const container = document.getElementById('riskCardContainer');
+function handleFiles(fileList) {
+  const typeMap = {
+    'financial': ['pdf'],
+    'transaction': ['xlsx', 'xls'],
+    'payment': ['csv'],
+    'bank': ['pdf'],
+    'credit': ['pdf'],
+    'business': ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp']
+  };
 
-  function scoreColor(s){
-    if(s>=70) return 'val-high';
-    if(s>=45) return 'val-med';
-    return 'val-low';
+  let newUploads = 0;
+  for (const file of fileList) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    for (const [type, exts] of Object.entries(typeMap)) {
+      if (exts.includes(ext)) {
+        if (!uploadedFiles.has(type)) {
+          uploadedFiles.add(type);
+          newUploads++;
+          // Mark card as uploaded
+          const card = document.querySelector(`.file-card[data-type="${type}"]`);
+          if (card) card.classList.add('uploaded');
+        }
+        break;
+      }
+    }
   }
 
-  function scoreBarColor(s){
-    if(s>=70) return 'var(--low)';
-    if(s>=45) return 'var(--med)';
-    if(s>=25) return 'var(--high)';
-    return 'var(--vhigh)';
+  if (newUploads > 0) {
+    showToast(`成功識別 ${newUploads} 類檔案！`, 'success');
+  } else if (fileList.length > 0) {
+    showToast('未識別到新的檔案類型，或檔案已上傳', 'info');
   }
-
-  // Payment bars (last 12 months)
-  let payBarsHTML = '';
-  const months = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
-  const payData = c.paymentHistory.slice(-12);
-  for(let i=0;i<12;i++){
-    const p = payData[i]||0;
-    const pColor = p>=95?'var(--low)':p>=80?'var(--med)':p>=60?'var(--high)':'var(--vhigh)';
-    payBarsHTML += `<div class="pay-bar-row"><span class="pay-bar-month">${months[i]}</span><div class="pay-bar-track"><div class="pay-bar-fill" style="width:${p}%;background:${pColor}"></div></div><span style="font-size:0.68rem;color:var(--muted);width:32px;text-align:right">${p}%</span></div>`;
-  }
-
-  const recLimitCls = c.riskLevel==='low'?'success':c.riskLevel==='medium'?'warn':'danger';
-  const insCls = c.insurance.range;
-  const insVal = c.insurance.premium;
-
-  const html = `
-    <div class="risk-card active" id="riskCard${idx}">
-      <div class="risk-card-header">
-        <h2>${c.flag} ${c.name} <span style="font-size:0.78rem;color:var(--muted);font-weight:400">${c.country}</span></h2>
-        <span class="risk-badge ${c.riskLevel}">${c.riskLabel}</span>
-      </div>
-      <div class="risk-card-body">
-        <p style="color:var(--muted);font-size:0.85rem;margin-bottom:20px;line-height:1.6">${c.description}</p>
-        <div class="risk-grid">
-
-          <!-- Credit Score -->
-          <div class="score-panel">
-            <div class="score-title">Credit Score</div>
-            <div class="score-circle" style="background:conic-gradient(${scoreBarColor(c.creditScore)} ${c.creditScore*3.6}deg, var(--border) ${c.creditScore*3.6}deg);padding:6px;border-radius:50%">
-              <div style="width:100%;height:100%;border-radius:50%;background:#0d1117;display:flex;flex-direction:column;align-items:center;justify-content:center">
-                <span class="score-num" style="color:${scoreBarColor(c.creditScore)}">${c.creditScore}</span>
-                <span style="font-size:0.65rem;color:var(--muted)">/ 100</span>
-              </div>
-            </div>
-            <div class="score-sub" style="margin-top:6px">${c.creditScore>=70?'Strong':c.creditScore>=45?'Moderate':c.creditScore>=25?'Weak':'Critical'}</div>
-            <div class="score-bar"><div class="score-bar-fill" style="width:${c.creditScore}%;background:${scoreBarColor(c.creditScore)}"></div></div>
-          </div>
-
-          <!-- Financial Indicators -->
-          <div class="fin-panel">
-            <h4>📈 Financial Indicators</h4>
-            <table class="fin-table">
-              <thead><tr><th>Metric</th><th>Value</th><th>Trend</th></tr></thead>
-              <tbody>
-                ${c.financials.map(f=>`<tr><td>${f.metric}</td><td style="font-weight:600">${f.value}</td><td class="${f.cls}">${f.trend}</td></tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Payment History -->
-          <div class="pay-panel">
-            <h4>💳 Payment History (12-Month)</h4>
-            ${payBarsHTML}
-            <div style="margin-top:12px;text-align:center">
-              <div class="pay-on-time" style="color:${c.paymentOnTime>=95?'var(--low)':c.paymentOnTime>=80?'var(--med)':'var(--red)'}">${c.paymentOnTime.toFixed(1)}%</div>
-              <div class="pay-sub">On-Time Payments</div>
-            </div>
-          </div>
-
-          <!-- Country + Industry Risk -->
-          <div class="fin-panel">
-            <h4>🌍 Country Risk</h4>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-              <span style="font-size:1.5rem;font-weight:800;color:${scoreBarColor(c.countryRisk.score)}">${c.countryRisk.score}</span>
-              <span style="font-size:0.78rem;color:var(--muted)">/ 100</span>
-              <span style="padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;background:rgba(${c.countryRisk.score>=70?'16,185,129':c.countryRisk.score>=45?'245,158,11':'239,68,68'},0.15);color:${scoreBarColor(c.countryRisk.score)}">${c.countryRisk.level}</span>
-            </div>
-            <p style="color:var(--muted);font-size:0.75rem;line-height:1.5;margin-bottom:14px">${c.countryRisk.note}</p>
-            <h4 style="margin-top:4px">🏭 Industry Risk</h4>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-              <span style="font-size:1.5rem;font-weight:800;color:${scoreBarColor(c.industryRisk.score)}">${c.industryRisk.score}</span>
-              <span style="font-size:0.78rem;color:var(--muted)">/ 100</span>
-              <span style="padding:2px 8px;border-radius:8px;font-size:0.7rem;font-weight:600;background:rgba(${c.industryRisk.score>=70?'16,185,129':c.industryRisk.score>=45?'245,158,11':'239,68,68'},0.15);color:${scoreBarColor(c.industryRisk.score)}">${c.industryRisk.level}</span>
-            </div>
-            <p style="color:var(--muted);font-size:0.75rem;line-height:1.5">${c.industryRisk.note}</p>
-          </div>
-
-          <!-- Trade Credit Insurance -->
-          <div class="ins-panel">
-            <h4>🛡️ Trade Credit Insurance</h4>
-            <div class="ins-premium" style="color:${insCls==='low'?'var(--low)':insCls==='medium'?'var(--med)':'var(--red)'}">${insVal}</div>
-            <div class="ins-sub">Estimated Premium (% of insured turnover)</div>
-            <span class="ins-range ${insCls}">${insCls==='low'?'Preferred Rate':insCls==='medium'?'Standard Rate':'High Risk / Declined'}</span>
-            <p style="color:var(--muted);font-size:0.78rem;margin-top:10px;line-height:1.5">${c.insurance.note}</p>
-          </div>
-
-          <!-- Recommendation -->
-          <div class="rec-panel">
-            <h4>📋 Recommendation</h4>
-            <div class="rec-grid">
-              <div class="rec-item">
-                <div class="rec-val ${recLimitCls}">${c.creditLimit}</div>
-                <div class="rec-label">Recommended Credit Limit</div>
-              </div>
-              <div class="rec-item">
-                <div class="rec-val" style="font-size:0.95rem;color:var(--text)">${c.paymentTerms}</div>
-                <div class="rec-label">Payment Terms</div>
-              </div>
-              <div class="rec-item">
-                <div class="rec-val" style="color:${scoreBarColor(c.creditScore)}">${c.creditScore}/100</div>
-                <div class="rec-label">Composite Risk Score</div>
-              </div>
-              <div class="rec-item">
-                <div class="rec-val" style="font-size:0.9rem;color:var(--text)">${c.riskLevel==='low'||c.riskLevel==='vhigh'?(c.riskLevel==='low'?'✅ Approve':'🚫 Avoid'):'⚠️ Conditional'}</div>
-                <div class="rec-label">Overall Verdict</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  `;
-
-  container.innerHTML = html;
+  updateUploadState();
 }
 
-// ═══════════════════════════════════════
-// DEFAULT IMPACT CALCULATOR
-// ═══════════════════════════════════════
-function runImpactCalc(){
-  const orderVal = parseFloat(document.getElementById('calcOrderValue').value)||0;
-  const margin = parseFloat(document.getElementById('calcMargin').value)||0;
-  const scenario = document.getElementById('calcScenario').value;
-  const resultEl = document.getElementById('calcResult');
+function updateUploadState() {
+  const count = uploadedFiles.size;
+  document.getElementById('fileCount').textContent = count;
+  document.getElementById('uploadProgress').style.width = `${(count / 6) * 100}%`;
+  document.getElementById('analyzeBtn').disabled = (count === 0 && !demoLoaded);
+}
 
-  if(orderVal<=0||margin<=0){
-    resultEl.classList.add('show');
-    resultEl.innerHTML = '<div class="cr-val danger">⚠️</div><div class="cr-detail">Please enter valid order value and margin.</div>';
+// ===== DEMO MODE =====
+function loadDemo() {
+  demoLoaded = true;
+  // Mark all file types as "uploaded"
+  const allTypes = ['financial', 'transaction', 'payment', 'bank', 'credit', 'business'];
+  allTypes.forEach(t => {
+    uploadedFiles.add(t);
+    const card = document.querySelector(`.file-card[data-type="${t}"]`);
+    if (card) card.classList.add('uploaded');
+  });
+  updateUploadState();
+  document.getElementById('analyzeBtn').disabled = false;
+  showToast('🧪 已載入 5 間示範公司數據！點擊「開始分析」查看結果', 'success');
+
+  // Auto-analyze after short delay
+  setTimeout(() => runAnalysis(), 600);
+}
+
+// ===== RUN ANALYSIS =====
+function runAnalysis() {
+  if (uploadedFiles.size === 0 && !demoLoaded) {
+    showToast('請先上傳檔案或載入範例數據', 'error');
     return;
   }
 
-  let lossAmount;
-  if(scenario==='default') lossAmount = orderVal;
-  else if(scenario==='partial') lossAmount = orderVal*0.6;
-  else lossAmount = orderVal*0.7;
+  analysisResults = companies;
+  currentCompany = companies[0];
 
-  const profitPerOrder = orderVal*(margin/100);
-  const ordersNeeded = profitPerOrder>0 ? Math.ceil(lossAmount/profitPerOrder) : Infinity;
+  // Show results section
+  document.getElementById('resultsSection').classList.add('visible');
 
-  const isOk = ordersNeeded<=3;
-  const isWarn = ordersNeeded>3 && ordersNeeded<=10;
-  const cls = isOk?'ok':isWarn?'warn':'danger';
+  // Show company tabs
+  renderCompanyTabs();
 
-  const scenarioLabel = scenario==='default'?'Full Default':'Partial Default (60% loss)':'Legal Recovery (30% recovered)';
-  const lossLabel = scenario==='default'?'Full order value lost':scenario==='partial'?'60% of order value lost':'70% of order value lost after recovery';
+  // Show first company
+  selectCompany('metromart');
 
-  resultEl.classList.add('show');
-  resultEl.innerHTML = `
-    <div class="cr-head">${scenarioLabel}</div>
-    <div class="cr-val ${cls}">${ordersNeeded===Infinity?'∞':ordersNeeded} orders</div>
-    <div class="cr-detail">needed to recover from a <strong>$${lossAmount.toLocaleString()}</strong> loss (${lossLabel})</div>
-    <ul>
-      <li>Loss amount: <strong>$${lossAmount.toLocaleString()}</strong> (${scenarioLabel})</li>
-      <li>Profit per order at ${margin}% margin: <strong>$${profitPerOrder.toLocaleString()}</strong></li>
-      <li>Orders needed to break even: <strong>${ordersNeeded===Infinity?'Infinite — you never recover at zero margin':ordersNeeded}</strong></li>
-      ${ordersNeeded>5?`<li style="color:var(--red)">⚠️ This exposure is dangerously high relative to your margin. Consider reducing credit or requiring advance payment.</li>`:''}
-      ${ordersNeeded<=3?`<li style="color:var(--low)">✅ Manageable risk — credit exposure is well within your margin capacity.</li>`:''}
-    </ul>
+  // Build comparison table and tips
+  buildComparisonTable();
+  buildTips();
+  calcDefaultImpact();
+
+  // Smooth scroll to results
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  showToast('✅ 分析完成！已生成 5 間公司信用報告', 'success');
+}
+
+// ===== COMPANY TABS =====
+function renderCompanyTabs() {
+  const container = document.getElementById('companyTabs');
+  container.style.display = 'flex';
+  container.innerHTML = companies.map(c => `
+    <button class="company-tab ${c.id === 'metromart' ? 'active' : ''}" onclick="selectCompany('${c.id}')">
+      ${c.name.split(' ')[0]}
+    </button>
+  `).join('');
+}
+
+function selectCompany(id) {
+  const company = companies.find(c => c.id === id);
+  if (!company) return;
+  currentCompany = company;
+
+  // Update tabs
+  document.querySelectorAll('.company-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.textContent.trim() === company.name.split(' ')[0]);
+  });
+
+  // Update all panels
+  renderSummaryBar(company);
+  renderGauge(company);
+  renderRiskPanel(company);
+  render5C(company);
+  renderCountryRisk(company);
+  renderIndustry(company);
+  renderPaymentChart(company);
+  renderInsurance(company);
+  renderRecommendations(company);
+}
+
+// ===== SUMMARY BAR =====
+function renderSummaryBar(c) {
+  document.getElementById('summaryBar').innerHTML = `
+    <div class="summary-card">
+      <div class="sc-label">公司名稱</div>
+      <div class="sc-value" style="font-size:16px;color:var(--text);">${c.name}</div>
+      <div class="sc-sub">${c.country} · ${c.industry}</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">信用評分</div>
+      <div class="sc-value" style="color:${getScoreColor(c.creditScore)}">${c.creditScore}</div>
+      <div class="sc-sub">/ 100</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">建議信用額度</div>
+      <div class="sc-value" style="font-size:20px;color:var(--text);">$${c.creditLimit.toLocaleString()}</div>
+      <div class="sc-sub">${c.paymentTerms}</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">風險等級</div>
+      <div class="sc-value" style="font-size:18px;">${getRiskBadgeHtml(c.riskLevel)}</div>
+      <div class="sc-sub">D&B: ${c.dnbRating}</div>
+    </div>
   `;
 }
 
-function resetCalc(){
-  document.getElementById('calcOrderValue').value=50000;
-  document.getElementById('calcMargin').value=15;
-  document.getElementById('calcScenario').value='default';
-  document.getElementById('calcResult').classList.remove('show');
+// ===== GAUGE =====
+function renderGauge(c) {
+  const score = c.creditScore;
+  const color = getScoreColor(score);
+  const circumference = 2 * Math.PI * 54;
+  const offset = circumference - (score / 100) * circumference;
+  const grade = getGrade(score);
+  const gradeClass = getGradeClass(score);
+
+  document.getElementById('gaugeContainer').innerHTML = `
+    <div class="gauge-ring">
+      <svg width="160" height="160" viewBox="0 0 120 120">
+        <circle class="bg-ring" cx="60" cy="60" r="54"/>
+        <circle class="fg-ring" cx="60" cy="60" r="54" stroke="${color}" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"/>
+      </svg>
+      <div class="gauge-center">
+        <div class="gauge-score" style="color:${color}">${score}</div>
+        <div class="gauge-label">/ 100</div>
+      </div>
+    </div>
+    <div class="gauge-grade ${gradeClass}">${grade}</div>
+  `;
 }
 
-// ═══════════════════════════════════════
-// COMPARISON TABLE
-// ═══════════════════════════════════════
-function buildCompTable(){
-  const tbody = COMPANIES.map(c=>{
-    const scCls = c.riskLevel;
-    const insCls = c.insurance.range;
-    const dsoVal = c.financials.find(f=>f.metric==='DSO (Days)')?.value||'N/A';
-    const marginVal = c.financials.find(f=>f.metric==='Profit Margin')?.value||'N/A';
-    const revVal = c.financials.find(f=>f.metric==='Annual Revenue')?.value||'N/A';
-    return `<tr>
-      <td><strong>${c.flag} ${c.name}</strong><br><span style="font-size:0.7rem;color:var(--muted)">${c.country}</span></td>
-      <td><span class="c-score ${scCls}">${c.creditScore}/100</span></td>
-      <td style="font-weight:600">${c.creditLimit}</td>
-      <td>${c.paymentTerms}</td>
-      <td>${c.paymentOnTime.toFixed(1)}%</td>
-      <td>${dsoVal}</td>
-      <td>${marginVal}</td>
-      <td>${revVal}</td>
-      <td style="color:${insCls==='low'?'var(--low)':insCls==='medium'?'var(--med)':'var(--red)'};font-weight:600">${c.insurance.premium}</td>
-      <td>⭐ ${c.countryRisk.score}/100</td>
-      <td>${c.riskLevel==='low'?'✅ Approve':c.riskLevel==='vhigh'?'🚫 Avoid':'⚠️ Conditional'}</td>
-    </tr>`;
+function getScoreColor(score) {
+  if (score >= 75) return 'var(--green)';
+  if (score >= 50) return 'var(--yellow)';
+  if (score >= 30) return 'var(--orange)';
+  return 'var(--red)';
+}
+
+function getGrade(score) {
+  if (score >= 80) return 'A 級 · 優良';
+  if (score >= 65) return 'B 級 · 良好';
+  if (score >= 50) return 'C 級 · 一般';
+  if (score >= 35) return 'D 級 · 關注';
+  return 'E 級 · 高風險';
+}
+
+function getGradeClass(score) {
+  if (score >= 75) return 'grade-low';
+  if (score >= 50) return 'grade-medium';
+  if (score >= 30) return 'grade-high';
+  return 'grade-very-high';
+}
+
+// ===== RISK PANEL =====
+function renderRiskPanel(c) {
+  const riskClass = c.riskLevel === '低風險' ? 'risk-low' :
+    c.riskLevel === '中等風險' ? 'risk-medium' :
+    c.riskLevel === '高風險' ? 'risk-high' : 'risk-very-high';
+  const riskEmoji = c.riskLevel === '低風險' ? '✅' :
+    c.riskLevel === '中等風險' ? '⚠️' :
+    c.riskLevel === '高風險' ? '🔶' : '🔴';
+
+  document.getElementById('riskPanel').innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">風險等級</div>
+      <span class="risk-badge ${riskClass}">${riskEmoji} ${c.riskLevel}</span>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">建議信用額度</div>
+      <div style="font-size:24px;font-weight:800;color:var(--text);">USD ${c.creditLimit.toLocaleString()}</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">建議付款條件</div>
+      <div style="font-size:16px;font-weight:700;color:var(--accent);">${c.paymentTerms}</div>
+    </div>
+    <div style="margin-bottom:8px;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">貨幣 / 匯率風險</div>
+      <div style="font-size:13px;color:var(--text-secondary);">${c.currency} · ${c.fxRisk}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+      <div><span style="color:var(--text-muted);">成立年數：</span>${c.yearsActive} 年</div>
+      <div><span style="color:var(--text-muted);">員工數：</span>${c.employees.toLocaleString()}</div>
+      <div><span style="color:var(--text-muted);">上市：</span>${c.listed}</div>
+      <div><span style="color:var(--text-muted);">DSO：</span><span style="color:${c.dso > 60 ? 'var(--red)' : c.dso > 45 ? 'var(--yellow)' : 'var(--green)'};font-weight:700;">${c.dso} 天</span></div>
+    </div>
+  `;
+}
+
+// ===== 5C ANALYSIS =====
+function render5C(c) {
+  const items = [
+    { label: '品格 Character', score: c.character, color: 'var(--accent)' },
+    { label: '能力 Capacity', score: c.capacity, color: 'var(--green)' },
+    { label: '資本 Capital', score: c.capital, color: '#8b5cf6' },
+    { label: '擔保 Collateral', score: c.collateral, color: 'var(--yellow)' },
+    { label: '環境 Conditions', score: c.conditions, color: 'var(--orange)' }
+  ];
+
+  document.getElementById('c5Panel').innerHTML = items.map(item => `
+    <div class="c5-row">
+      <div class="c5-label">${item.label}</div>
+      <div class="c5-bar-bg">
+        <div class="c5-bar-fill" style="width:${item.score}%;background:${item.color};"></div>
+      </div>
+      <div class="c5-score">${item.score}</div>
+    </div>
+  `).join('') + `
+    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:var(--text-muted);border-top:1px solid var(--border);padding-top:12px;">
+      <div>債權比：<span style="color:${c.debtToEquity < 0.5 ? 'var(--green)' : c.debtToEquity < 1 ? 'var(--yellow)' : 'var(--red)'};font-weight:700;">${c.debtToEquity}</span></div>
+      <div>流動比：<span style="color:${c.currentRatio > 1.5 ? 'var(--green)' : c.currentRatio > 1 ? 'var(--yellow)' : 'var(--red)'};font-weight:700;">${c.currentRatio}</span></div>
+    </div>
+  `;
+}
+
+// ===== COUNTRY RISK =====
+function renderCountryRisk(c) {
+  const cr = countryRiskData[c.countryCode] || { index: c.countryRiskIndex, tier: c.countryTier, name: c.country };
+  const color = cr.tier === 'Low' ? 'var(--green)' : cr.tier === 'Medium' ? 'var(--yellow)' : cr.tier === 'High' ? 'var(--red)' : 'var(--orange)';
+  const tierEmoji = cr.tier === 'Low' ? '🟢' : cr.tier === 'Medium' ? '🟡' : '🔴';
+
+  document.getElementById('countryRiskPanel').innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+      <div style="font-size:48px;">${c.country === '美國' ? '🇺🇸' : c.country === '巴西' ? '🇧🇷' : c.country === '阿聯酋' ? '🇦🇪' : c.country === '英國' ? '🇬🇧' : '🇳🇬'}</div>
+      <div>
+        <div style="font-size:18px;font-weight:700;">${c.country}</div>
+        <div style="font-size:13px;color:var(--text-muted);">風險等級：${tierEmoji} ${cr.tier === 'Low' ? '低風險' : cr.tier === 'Medium' ? '中等風險' : '高風險'}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+        <span>國家風險指數</span><span>${cr.index}/100</span>
+      </div>
+      <div class="c5-bar-bg" style="height:10px;">
+        <div class="c5-bar-fill" style="width:${cr.index}%;background:${color};height:10px;"></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+      ${getCountryNote(c.countryCode)}
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-muted);">
+      <strong>參考對比：</strong>美國 85 · 英國 88 · 德國 90 · UAE 72 · 巴西 48 · 印度 45 · 尼日利亞 28 · 委內瑞拉 15
+    </div>
+  `;
+}
+
+function getCountryNote(code) {
+  const notes = {
+    'USA': '全球最大消費市場，法律制度完善，信用體系成熟。政治穩定，外匯自由。',
+    'UK': '成熟市場經濟體，公司法規嚴格，信用報告制度完善。脫歐後貿易政策略有調整。',
+    'BRA': '新興市場，面臨政治不確定性及匯率波動風險。司法系統效率較低，合約執行時間長。',
+    'UAE': '中東金融中心，政治相對穩定。自由貿易區制度完善，但企業透明度因地區而異。',
+    'NGA': '高風險市場。外匯管制嚴格，匯率波動劇烈。合約執行困難，腐敗指數偏高。建議要求不可撤銷信用證。'
+  };
+  return notes[code] || '資料不足';
+}
+
+// ===== INDUSTRY RISK =====
+function renderIndustry(c) {
+  const ir = industryRiskData[c.industry] || { low: 50, high: 60, color: 'var(--yellow)' };
+  const avgRisk = Math.round((ir.low + ir.high) / 2);
+
+  document.getElementById('industryPanel').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="font-size:32px;">${c.industry === '零售業' ? '🏬' : c.industry === '電子產品' ? '💻' : '⛽'}</div>
+      <div>
+        <div style="font-size:16px;font-weight:700;">${c.industry}</div>
+        <div style="font-size:12px;color:var(--text-muted);">行業風險區間：${ir.low}–${ir.high}/100</div>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+        <span>行業平均風險</span><span>${avgRisk}/100</span>
+      </div>
+      <div class="c5-bar-bg" style="height:10px;">
+        <div class="c5-bar-fill" style="width:${avgRisk}%;background:${ir.color};height:10px;"></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+      ${getIndustryNote(c.industry)}
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-muted);">
+      <strong>行業對比：</strong>零售業 70-75 · 電子產品 60-65 · 大宗商品 50-55 · 建築業 55-60
+    </div>
+  `;
+}
+
+function getIndustryNote(industry) {
+  const notes = {
+    '零售業': '零售業整體風險中等偏低，主要風險來自消費信心波動及庫存管理。大型連鎖零售商信用狀況普遍較好。',
+    '電子產品': '行業周期波動較大，產品生命週期短，價格競爭激烈。供應鏈中斷風險需關注。',
+    '大宗商品': '價格波動劇烈，受全球宏觀經濟影響大。利潤率較低，對營運資金管理要求高。'
+  };
+  return notes[industry] || '行業數據有限，建議進一步盡職調查。';
+}
+
+// ===== PAYMENT CHART =====
+function renderPaymentChart(c) {
+  const months = ['7月','8月','9月','10月','11月','12月','1月','2月','3月','4月','5月','6月'];
+  const maxVal = 100;
+
+  document.getElementById('paymentChart').innerHTML = c.paymentHistory.map((val, i) => {
+    const h = (val / maxVal) * 100;
+    const cls = val >= 80 ? 'good' : val >= 50 ? 'warn' : 'bad';
+    return `
+      <div class="chart-bar-wrap">
+        <div style="font-size:10px;font-weight:600;color:${val >= 80 ? 'var(--green)' : val >= 50 ? 'var(--yellow)' : 'var(--red)'}">${val}%</div>
+        <div class="chart-bar ${cls}" style="height:${h}px;"></div>
+        <div class="chart-bar-label">${months[i]}</div>
+      </div>
+    `;
   }).join('');
+}
 
-  document.getElementById('compTable').innerHTML = `
-    <thead><tr>
-      <th>Company</th><th>Credit Score</th><th>Credit Limit</th><th>Payment Terms</th>
-      <th>On-Time %</th><th>DSO</th><th>Margin</th><th>Revenue</th>
-      <th>Insurance</th><th>Country Risk</th><th>Verdict</th>
-    </tr></thead>
-    <tbody>${tbody}</tbody>
+// ===== INSURANCE =====
+function renderInsurance(c) {
+  const insColor = c.insurability.includes('高度') ? 'var(--green)' :
+    c.insurability.includes('有條件') ? 'var(--yellow)' : 'var(--red)';
+  const insEmoji = c.insurability.includes('高度') ? '✅' :
+    c.insurability.includes('有條件') ? '⚠️' : '❌';
+
+  document.getElementById('insurancePanel').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;">保費率</div>
+        <div style="font-size:28px;font-weight:800;color:var(--text);">${c.insurancePremium}</div>
+        <div style="font-size:11px;color:var(--text-muted);">佔投保營業額</div>
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;">可保性評估</div>
+        <div style="font-size:18px;font-weight:700;color:${insColor};">${insEmoji} ${c.insurability}</div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">
+      ${getInsuranceNote(c)}
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-muted);">
+      <strong>市場參考：</strong>貿易信用保險費率一般範圍 0.2%–1.5% · 優質買方最低可至 0.1%
+    </div>
   `;
 }
-</script>
 
+function getInsuranceNote(c) {
+  if (c.creditScore >= 75) {
+    return `保險費率約 ${c.insurancePremium}，屬最低風險級別。建議可考慮自留風險以節省保費支出。如投保，年度保費約 USD ${Math.round(c.creditLimit * parseFloat(c.insurancePremium) / 100).toLocaleString()}。`;
+  } else if (c.creditScore >= 50) {
+    return `保險費率約 ${c.insurancePremium}，屬中等風險級別。建議投保以降低壞帳風險。年度保費約 USD ${Math.round(c.creditLimit * parseFloat(c.insurancePremium) / 100).toLocaleString()}。`;
+  } else {
+    return '由於風險等級過高，多數保險公司拒絕承保。如需交易，建議要求 100% 預付或不可撤銷信用證。';
+  }
+}
+
+// ===== RECOMMENDATIONS =====
+function renderRecommendations(c) {
+  document.getElementById('recommendationsPanel').innerHTML = `
+    <div style="padding:16px;background:#f8fafc;border-radius:var(--radius-sm);border-left:4px solid ${getScoreColor(c.creditScore)};">
+      <p style="font-size:14px;line-height:1.7;">${c.recommendation}</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:16px;">
+      <div style="padding:12px;background:var(--green-bg);border-radius:var(--radius-sm);font-size:12px;">
+        <strong>✅ 正面因素</strong><br>
+        ${getPositiveFactors(c)}
+      </div>
+      <div style="padding:12px;background:var(--red-bg);border-radius:var(--radius-sm);font-size:12px;">
+        <strong>⚠️ 風險因素</strong><br>
+        ${getRiskFactors(c)}
+      </div>
+      <div style="padding:12px;background:var(--accent-light);border-radius:var(--radius-sm);font-size:12px;">
+        <strong>📋 監控建議</strong><br>
+        ${getMonitoringAdvice(c)}
+      </div>
+    </div>
+  `;
+}
+
+function getPositiveFactors(c) {
+  const factors = [];
+  if (c.creditScore >= 75) factors.push('信用評分優良');
+  if (c.dso < 45) factors.push(`DSO ${c.dso} 天，遠低於警戒線`);
+  if (c.debtToEquity < 0.5) factors.push('債務權益比健康');
+  if (c.currentRatio > 1.5) factors.push('流動性充足');
+  if (c.listed !== '無') factors.push(`${c.listed} 上市公司，資訊透明`);
+  if (c.yearsActive > 10) factors.push(`${c.yearsActive} 年經營歷史穩定`);
+  return factors.length > 0 ? factors.join('<br>') : '無明顯正面因素';
+}
+
+function getRiskFactors(c) {
+  const factors = [];
+  if (c.dso > 60) factors.push(`DSO ${c.dso} 天，超過 60 天警戒線`);
+  if (c.dso > 90) factors.push(`DSO ${c.dso} 天，超過 90 天危險線`);
+  if (c.debtToEquity > 1) factors.push('債務權益比過高');
+  if (c.currentRatio < 1) factors.push('流動性不足');
+  if (c.listed === '無') factors.push('非上市公司，資訊不透明');
+  if (c.yearsActive < 3) factors.push(`僅 ${c.yearsActive} 年歷史，缺乏紀錄`);
+  if (['BRA', 'NGA'].includes(c.countryCode)) factors.push('新興市場政治及匯率風險');
+  if (c.fxRisk.includes('劇烈')) factors.push('貨幣劇烈波動風險');
+  return factors.length > 0 ? factors.join('<br>') : '無明顯風險因素';
+}
+
+function getMonitoringAdvice(c) {
+  const advice = [];
+  advice.push('每季審查信用額度');
+  if (c.dso > 45) advice.push('每月監控 DSO 變化趨勢');
+  if (c.creditScore < 75) advice.push('要求定期提交財務報表');
+  if (['BRA', 'NGA'].includes(c.countryCode)) advice.push('關注當地政治經濟動態');
+  advice.push('設定逾期警報觸發條件');
+  return advice.join('<br>');
+}
+
+function getRiskBadgeHtml(level) {
+  const cls = level === '低風險' ? 'risk-low' :
+    level === '中等風險' ? 'risk-medium' :
+    level === '高風險' ? 'risk-high' : 'risk-very-high';
+  return `<span class="risk-badge ${cls}" style="font-size:13px;">${level}</span>`;
+}
+
+// ===== COMPARISON TABLE =====
+function buildComparisonTable() {
+  const headers = ['公司', '國家', '行業', '信用評分', '風險等級', '信用額度', 'DSO', '債權比', '流動比', 'D&B', '保費率', '可保性'];
+  let html = '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+
+  companies.forEach(c => {
+    const scoreColor = getScoreColor(c.creditScore);
+    html += `<tr>
+      <td><div class="cmp-name">${c.name}</div><div class="cmp-country">${c.listed}</div></td>
+      <td>${c.country}</td>
+      <td>${c.industry}</td>
+      <td style="color:${scoreColor};font-weight:700;">${c.creditScore}</td>
+      <td>${getRiskBadgeHtml(c.riskLevel)}</td>
+      <td style="font-weight:600;">$${c.creditLimit.toLocaleString()}</td>
+      <td style="color:${c.dso>60?'var(--red)':c.dso>45?'var(--yellow)':'var(--green)'};font-weight:700;">${c.dso}d</td>
+      <td style="color:${c.debtToEquity>1?'var(--red)':c.debtToEquity>0.5?'var(--yellow)':'var(--green)'};">${c.debtToEquity}</td>
+      <td style="color:${c.currentRatio<1?'var(--red)':c.currentRatio<1.5?'var(--yellow)':'var(--green)'};">${c.currentRatio}</td>
+      <td>${c.dnbRating}</td>
+      <td>${c.insurancePremium}</td>
+      <td>${c.insurability}</td>
+    </tr>`;
+  });
+
+  html += '</tbody>';
+  document.getElementById('cmpTable').innerHTML = html;
+}
+
+// ===== 6 TIPS =====
+function buildTips() {
+  const tips = [
+    {
+      title: '了解你的客戶 (KYC)',
+      body: '徹底進行盡職調查，核實公司註冊、管理層背景及實際控制人。使用 D&B、環聯等第三方徵信報告交叉驗證。'
+    },
+    {
+      title: '設定合理信用額度',
+      body: '根據買方財務狀況、付款歷史及國家風險設定額度上限。定期審查並根據最新數據動態調整。DSO 超過 60 天應立即檢討。'
+    },
+    {
+      title: '分散風險',
+      body: '避免對單一買方或地區過度集中風險。單一買方不超過總應收帳款的 15-20%。分散市場可降低系統性風險。'
+    },
+    {
+      title: '使用信用保險',
+      body: '貿易信用保險可覆蓋高達 85% 的壞帳損失。對於新興市場或高風險買方，保險是必不可少的風險管理工具。'
+    },
+    {
+      title: '監控預警信號',
+      body: '密切注意付款延遲趨勢、訂單異常波動及管理層變動。建立自動化預警系統，DSO 惡化 10% 以上應觸發審查。'
+    },
+    {
+      title: '善用貿易融資工具',
+      body: '信用證 (LC)、備用信用證 (SBLC) 及銀行保函可大幅降低違約風險。對於高風險市場，堅持使用不可撤銷信用證。'
+    }
+  ];
+
+  document.getElementById('tipsGrid').innerHTML = tips.map((tip, i) => `
+    <div class="tip-card">
+      <div class="tip-num">${i + 1}</div>
+      <h4>${tip.title}</h4>
+      <p>${tip.body}</p>
+    </div>
+  `).join('');
+}
+
+// ===== DEFAULT IMPACT CALCULATOR =====
+function calcDefaultImpact() {
+  const amount = parseFloat(document.getElementById('calcAmount').value) || 100000;
+  const margin = parseFloat(document.getElementById('calcMargin').value) || 35;
+  const recovery = document.getElementById('calcRecovery').value;
+
+  let recoveryRate, scenarioLabel;
+  if (recovery === 'full') { recoveryRate = 0; scenarioLabel = '完全違約'; }
+  else if (recovery === 'legal') { recoveryRate = 0.30; scenarioLabel = '法律追討'; }
+  else { recoveryRate = 0.85; scenarioLabel = '保險理賠'; }
+
+  const costOfGoods = amount * (1 - margin / 100);
+  const totalLoss = costOfGoods + amount; // lost revenue + COGS
+  const recovered = totalLoss * recoveryRate;
+  const netLoss = totalLoss - recovered;
+
+  document.getElementById('calcResultDisplay').innerHTML = `
+    <div class="cr-label">${scenarioLabel} — 預估淨損失</div>
+    <div class="cr-amount">USD ${Math.round(netLoss).toLocaleString()}</div>
+    <div style="font-size:12px;color:#991b1b;margin-top:4px;">總風險敞口 USD ${Math.round(totalLoss).toLocaleString()} · 回收率 ${Math.round(recoveryRate*100)}%</div>
+  `;
+
+  // Three scenarios
+  const scenarios = [
+    { label: '完全違約', rate: 0, icon: '💀' },
+    { label: '法律追討', rate: 0.30, icon: '⚖️' },
+    { label: '保險理賠', rate: 0.85, icon: '🛡️' }
+  ];
+
+  document.getElementById('calcScenarios').innerHTML = scenarios.map(s => {
+    const loss = totalLoss - (totalLoss * s.rate);
+    const isCurrent = recovery === (s.label === '完全違約' ? 'full' : s.label === '法律追討' ? 'legal' : 'insurance');
+    return `
+      <div class="calc-scenario" style="${isCurrent ? 'border:2px solid var(--accent);' : ''}">
+        <div class="cs-icon">${s.icon}</div>
+        <div class="cs-label">${s.label} (${Math.round(s.rate*100)}%)</div>
+        <div class="cs-value" style="color:var(--red);">-$${Math.round(loss).toLocaleString()}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ===== TOAST =====
+function showToast(msg, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ===== KEYBOARD SHORTCUT FOR DEMO =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'd' && e.ctrlKey && e.shiftKey) {
+    e.preventDefault();
+    loadDemo();
+  }
+});
+</script>
 </body>
 </html>
