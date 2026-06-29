@@ -3,676 +3,274 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CEO Dashboard — Quattro Dynamics | ManuTrade AI</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<title>CEO Dashboard — 全公司即時數據 | ManuTrade AI</title>
 <style>
 :root {
-  --bg: #0b0f19; --card: #131a2b; --border: #1e2d45;
-  --accent: #06b6d4; --accent2: #10b981; --text: #e2e8f0; --muted: #94a3b8;
+  --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0;
+  --accent: #0891b2; --accent2: #059669; --text: #1e293b;
+  --muted: #64748b; --red: #ef4444; --warn: #f59e0b;
+  --green: #10b981; --purple: #8b5cf6;
   --gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-  --red: #ef4444; --warn: #f59e0b;
-  --accent3: #8b5cf6;
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+a{color:var(--accent);text-decoration:none}
 
-/* ═══════════════════════════════════════════
-   GATE OVERLAY
-   ═══════════════════════════════════════════ */
-.gate-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
-.gate-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:44px;width:440px;max-width:90vw;text-align:center}
-.gate-box .icon{font-size:3.5rem;margin-bottom:16px}
-.gate-box h2{font-size:1.4rem;margin-bottom:8px}
-.gate-box p{color:var(--muted);font-size:0.9rem;margin-bottom:24px}
-.gate-box input{width:100%;padding:12px 16px;background:#0d1117;border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:0.95rem;margin-bottom:12px}
-.gate-box input:focus{outline:none;border-color:var(--accent)}
-.gate-box .err{color:var(--red);font-size:0.8rem;margin-bottom:8px;display:none}
-.gate-box .note{color:var(--warn);font-size:0.75rem;margin-top:16px;line-height:1.5}
-.gate-box .note span{display:block;margin-top:4px;color:var(--red);font-weight:600}
-.btn{display:inline-block;padding:14px 32px;border-radius:10px;font-weight:600;font-size:0.95rem;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
-.btn-primary{background:var(--gradient);color:#fff;width:100%}
-.btn-primary:hover{opacity:0.9;transform:translateY(-1px)}
-.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
-.btn-sm{padding:8px 18px;font-size:0.8rem;border-radius:8px}
-.btn-outline{border:1.5px solid var(--border);color:var(--text);background:transparent}
-.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+/* Topbar */
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar .logo{font-weight:800;font-size:1.1rem;background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar .meta{font-size:0.8rem;color:var(--muted)}
+.topbar .back{font-size:0.85rem;color:var(--accent)}
 
-/* ═══════════════════════════════════════════
-   MAIN APP
-   ═══════════════════════════════════════════ */
-.app{display:none}
-.app.active{display:block}
+.container{max-width:1280px;margin:0 auto;padding:24px}
 
-/* ── Top Bar ── */
-.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;gap:10px}
-.topbar-left{display:flex;align-items:center;gap:14px}
-.topbar-logo{font-weight:800;font-size:1.05rem;color:var(--accent)}
-.topbar-logo span{color:var(--muted);font-weight:400;font-size:0.82rem;margin-left:6px}
-.topbar-right{display:flex;align-items:center;gap:16px}
-.topbar .back-link{color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color .2s;display:flex;align-items:center;gap:4px}
-.topbar .back-link:hover{color:var(--accent)}
-.topbar .timer{color:var(--warn);font-size:0.78rem;display:flex;align-items:center;gap:6px}
-.topbar .timer span{font-weight:700;color:var(--accent2)}
-.topbar .user-badge{display:flex;align-items:center;gap:8px;background:rgba(6,182,212,0.08);padding:6px 14px;border-radius:20px;font-size:0.8rem;color:var(--accent)}
+/* Section titles */
+.section-title{font-size:1.1rem;font-weight:700;margin:28px 0 16px;display:flex;align-items:center;gap:8px}
+.section-title .icon{font-size:1.3rem}
 
-/* ── Content ── */
-.content{max-width:1340px;margin:0 auto;padding:28px}
+/* KPI Row */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:8px}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.kpi-card .kpi-label{font-size:0.78rem;color:var(--muted);margin-bottom:4px}
+.kpi-card .kpi-value{font-size:1.7rem;font-weight:800}
+.kpi-card .kpi-delta{font-size:0.78rem;margin-top:4px}
+.kpi-card .kpi-delta.up{color:var(--green)}
+.kpi-card .kpi-delta.down{color:var(--red)}
+.kpi-card .kpi-delta.warn{color:var(--warn)}
 
-/* ── Page Header ── */
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
-.page-header h1{font-size:1.8rem;font-weight:800;display:flex;align-items:center;gap:12px}
-.page-header h1 .dot{width:10px;height:10px;background:var(--accent2);border-radius:50%;animation:pulse-dot 2s ease infinite}
-@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4)}50%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
-.page-header .update-info{color:var(--muted);font-size:0.8rem}
-.page-header .refresh-btn{display:flex;align-items:center;gap:6px}
+/* Charts row */
+.charts-row{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:768px){.charts-row{grid-template-columns:1fr}}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-card h3{font-size:0.95rem;margin-bottom:16px;color:var(--text)}
 
-/* ── KPI Cards ── */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-bottom:28px}
-.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden;transition:all .25s}
-.kpi-card:hover{border-color:rgba(6,182,212,0.3);transform:translateY(-2px)}
-.kpi-card .kpi-icon{font-size:2rem;margin-bottom:10px}
-.kpi-card .kpi-label{color:var(--muted);font-size:0.82rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
-.kpi-card .kpi-value{font-size:2rem;font-weight:800}
-.kpi-card .kpi-value.accent{color:var(--accent)}
-.kpi-card .kpi-value.accent2{color:var(--accent2)}
-.kpi-card .kpi-value.accent3{color:var(--accent3)}
-.kpi-card .kpi-change{display:inline-flex;align-items:center;gap:4px;font-size:0.82rem;margin-top:6px;padding:4px 10px;border-radius:6px}
-.kpi-card .kpi-change.up{background:rgba(16,185,129,0.1);color:var(--accent2)}
-.kpi-card .kpi-change.down{background:rgba(239,68,68,0.1);color:var(--red)}
-.kpi-card .kpi-sub{color:var(--muted);font-size:0.75rem;margin-top:4px}
-.kpi-card::after{content:'';position:absolute;top:0;left:0;width:4px;height:100%}
-.kpi-card:nth-child(1)::after{background:var(--accent)}
-.kpi-card:nth-child(2)::after{background:var(--accent3)}
-.kpi-card:nth-child(3)::after{background:var(--accent2)}
-.kpi-card:nth-child(4)::after{background:linear-gradient(135deg,#f59e0b,#f97316)}
+/* Bar Chart */
+.bar-chart{display:flex;align-items:flex-end;gap:24px;height:180px;padding:0 8px}
+.bar-group{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;justify-content:flex-end}
+.bar{width:44px;border-radius:6px 6px 0 0;transition:height .3s;position:relative;min-height:4px}
+.bar-label{font-size:0.7rem;color:var(--muted);margin-top:6px;text-align:center;max-width:70px;word-break:break-word}
+.bar-value{font-size:0.7rem;font-weight:700;margin-bottom:4px}
 
-/* ── Chart Grid ── */
-.chart-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:28px}
-@media(max-width:900px){.chart-grid{grid-template-columns:1fr}}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px}
-.chart-card h3{font-size:1rem;margin-bottom:6px;display:flex;align-items:center;gap:8px}
-.chart-card .subtitle{color:var(--muted);font-size:0.78rem;margin-bottom:20px}
-.chart-wrap{position:relative;width:100%}
-.chart-wrap canvas{width:100%!important}
+/* Donut Chart */
+.donut-wrap{display:flex;align-items:center;gap:20px;justify-content:center}
+.legend{list-style:none;font-size:0.78rem}
+.legend li{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block}
 
-/* ── Three-Column Grid (Products + Orders + Inventory) ── */
-.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:28px}
-@media(max-width:1100px){.info-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:700px){.info-grid{grid-template-columns:1fr}}
-.info-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;overflow:hidden}
-.info-card h3{font-size:1rem;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+/* Alerts */
+.alerts-list{list-style:none}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:12px;border-radius:8px;margin-bottom:6px;font-size:0.85rem}
+.alert-item.danger{background:#fef2f2;border-left:3px solid var(--red)}
+.alert-item.warning{background:#fffbeb;border-left:3px solid var(--warn)}
+.alert-item.info{background:#eff6ff;border-left:3px solid #3b82f6}
+.alert-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
 
-/* ── Table ── */
-table{width:100%;border-collapse:collapse;font-size:0.82rem}
-th{text-align:left;padding:10px 12px;font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap}
-td{padding:10px 12px;border-bottom:1px solid rgba(30,45,69,0.5);white-space:nowrap}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(6,182,212,0.03)}
-.text-right{text-align:right}
-.text-muted{color:var(--muted)}
-.text-accent{color:var(--accent);font-weight:600}
-.text-green{color:var(--accent2)}
-.text-red{color:var(--red)}
-.text-warn{color:var(--warn)}
-.text-sm{font-size:0.75rem}
+/* Tables */
+.data-table{width:100%;border-collapse:collapse;font-size:0.83rem}
+.data-table th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--border);color:var(--muted);font-weight:600;font-size:0.75rem;text-transform:uppercase}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border)}
+.data-table tr:hover td{background:#f1f5f9}
+.badge{padding:3px 10px;border-radius:10px;font-size:0.7rem;font-weight:600}
+.badge.green{background:#d1fae5;color:#065f46}
+.badge.yellow{background:#fef3c7;color:#92400e}
+.badge.red{background:#fee2e2;color:#991b1b}
+.badge.blue{background:#dbeafe;color:#1e40af}
 
-/* ── Badge ── */
-.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.7rem;font-weight:700;text-transform:uppercase}
-.badge-success{background:rgba(16,185,129,0.12);color:var(--accent2)}
-.badge-warn{background:rgba(245,158,11,0.12);color:var(--warn)}
-.badge-danger{background:rgba(239,68,68,0.12);color:var(--red)}
-.badge-info{background:rgba(6,182,212,0.12);color:var(--accent)}
+/* Quick-nav grid */
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:20px}
+.quick-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text)}
+.quick-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+.quick-card .qc-icon{font-size:1.6rem}
+.quick-card .qc-info{font-size:0.85rem}
+.quick-card .qc-info strong{display:block;margin-bottom:2px}
+.quick-card .qc-info span{color:var(--muted);font-size:0.75rem}
 
-/* ── Trend indicator ── */
-.trend-up{color:var(--accent2);font-weight:700}
-.trend-down{color:var(--red);font-weight:700}
-.trend-flat{color:var(--warn);font-weight:700}
-
-/* ── Inventory donut compact ── */
-.inv-wrap{display:flex;align-items:center;gap:20px;padding:8px 0}
-.inv-wrap canvas{max-width:130px!important;max-height:130px!important}
-.inv-legend{display:flex;flex-direction:column;gap:10px;font-size:0.8rem}
-.inv-legend-item{display:flex;align-items:center;gap:8px}
-.inv-legend-item .dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-
-/* ── Quick Stats Row ── */
-.quick-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
-.quick-stat{text-align:center}
-.quick-stat .val{font-size:1.15rem;font-weight:700;color:var(--accent)}
-.quick-stat .lbl{font-size:0.7rem;color:var(--muted);margin-top:2px}
-
-/* ═══════════════════════════════════════════
-   TOAST
-   ═══════════════════════════════════════════ */
-.toast{position:fixed;bottom:28px;right:28px;background:#1a2332;color:var(--text);padding:14px 24px;border-radius:12px;font-size:0.9rem;z-index:9999;display:none;animation:fadeSlideIn .35s ease;border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,0.4)}
-.toast.show{display:block}
-@keyframes fadeSlideIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-
-/* ═══════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════ */
-@media(max-width:768px){
-  .gate-box{padding:28px 20px}
-  .content{padding:16px}
-  .page-header h1{font-size:1.4rem}
-  .kpi-card .kpi-value{font-size:1.5rem}
-  .quick-stats{grid-template-columns:1fr 1fr;gap:8px}
-  .topbar{padding:10px 16px;font-size:0.85rem}
-}
+/* Footer */
+.footer{text-align:center;padding:32px;color:var(--muted);font-size:0.75rem;border-top:1px solid var(--border);margin-top:30px}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════
-     GATE OVERLAY
-     ═══════════════════════════════════════════ -->
-<div class="gate-overlay" id="gateOverlay">
-  <div class="gate-box">
-    <div class="icon">📊</div>
-    <h2>CEO Dashboard 管理層儀表板</h2>
-    <p>Quattro Dynamics · ManuTrade AI</p>
-    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:20px">請輸入電郵以進入儀表板</p>
+<!-- Topbar -->
+<div class="topbar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <a href="index.html" class="back">← 返回首頁</a>
+    <span class="logo">📊 CEO Dashboard</span>
+  </div>
+  <div class="meta">數據更新：<span id="updateTime"></span> · 時區 HKT</div>
+</div>
 
-    <input type="email" id="gateEmail" placeholder="公司電郵地址" autocomplete="email">
-    <p class="err" id="gateErr"></p>
-    <button class="btn btn-primary" onclick="enterApp()">🔓 進入儀表板</button>
+<div class="container">
 
-    <div class="note">
-      ⚠️ <span>所有數據僅在 24 小時內保留 · 資料自動銷毀</span>
+  <!-- ═══ KPI Cards ═══ -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">📦 本月營業額 (MTD)</div>
+      <div class="kpi-value">USD $2.84M</div>
+      <div class="kpi-delta up">▲ +8.3% vs 上月同期</div>
     </div>
+    <div class="kpi-card">
+      <div class="kpi-label">💰 毛利率</div>
+      <div class="kpi-value">32.7%</div>
+      <div class="kpi-delta up">▲ +2.1pp vs 上月</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">📋 待出貨訂單</div>
+      <div class="kpi-value">47</div>
+      <div class="kpi-delta warn">● 總值 USD $1.62M</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🏗️ 庫存總值</div>
+      <div class="kpi-value">USD $4.15M</div>
+      <div class="kpi-delta down">▼ -5.1% vs 上月 (清庫效果)</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">💵 現金水位</div>
+      <div class="kpi-value">USD $1.88M</div>
+      <div class="kpi-delta up">▲ +12% vs 月初</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🧾 應收帳款 (AR)</div>
+      <div class="kpi-value">USD $2.31M</div>
+      <div class="kpi-delta warn">⚠ 其中 $0.47M 已逾期 30+ 天</div>
+    </div>
+  </div>
+
+  <!-- ═══ Charts Row ═══ -->
+  <div class="charts-row">
+    <!-- Revenue by Brand -->
+    <div class="chart-card">
+      <h3>📊 本月營業額 by Brand（MTD）</h3>
+      <div class="bar-chart" style="height:200px">
+        <div class="bar-group"><div class="bar-value">$1.24M</div><div class="bar" style="height:156px;background:var(--accent)"></div><div class="bar-label">Westinghouse</div></div>
+        <div class="bar-group"><div class="bar-value">$0.62M</div><div class="bar" style="height:78px;background:#6366f1"></div><div class="bar-label">OEM</div></div>
+        <div class="bar-group"><div class="bar-value">$0.41M</div><div class="bar" style="height:52px;background:var(--accent2)"></div><div class="bar-label">he-she-it</div></div>
+        <div class="bar-group"><div class="bar-value">$0.31M</div><div class="bar" style="height:39px;background:var(--warn)"></div><div class="bar-label">KYOP</div></div>
+        <div class="bar-group"><div class="bar-value">$0.18M</div><div class="bar" style="height:23px;background:var(--purple)"></div><div class="bar-label">AnimaSphere</div></div>
+        <div class="bar-group"><div class="bar-value">$0.08M</div><div class="bar" style="height:10px;background:var(--red)"></div><div class="bar-label">ELLE</div></div>
+      </div>
+    </div>
+
+    <!-- Inventory Aging Donut -->
+    <div class="chart-card">
+      <h3>📦 庫存健康度</h3>
+      <div class="donut-wrap">
+        <svg width="160" height="160" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r="64" fill="none" stroke="#e2e8f0" stroke-width="24"/>
+          <!-- 0-90 days: 52% → 188° -->
+          <circle cx="80" cy="80" r="64" fill="none" stroke="var(--green)" stroke-width="24"
+            stroke-dasharray="208.8 401.9" stroke-dashoffset="0" transform="rotate(-90 80 80)" stroke-linecap="butt"/>
+          <!-- 91-180 days: 28% → 101° -->
+          <circle cx="80" cy="80" r="64" fill="none" stroke="var(--warn)" stroke-width="24"
+            stroke-dasharray="112.6 401.9" stroke-dashoffset="-209" transform="rotate(-90 80 80)" stroke-linecap="butt"/>
+          <!-- 180+ days: 20% → 72° -->
+          <circle cx="80" cy="80" r="64" fill="none" stroke="var(--red)" stroke-width="24"
+            stroke-dasharray="80.4 401.9" stroke-dashoffset="-322" transform="rotate(-90 80 80)" stroke-linecap="butt"/>
+          <text x="80" y="74" text-anchor="middle" font-size="22" font-weight="800" fill="#1e293b">$4.15M</text>
+          <text x="80" y="94" text-anchor="middle" font-size="11" fill="#64748b">庫存總值</text>
+        </svg>
+        <ul class="legend">
+          <li><span class="dot" style="background:var(--green)"></span> 0-90 天 · 52% · $2.16M</li>
+          <li><span class="dot" style="background:var(--warn)"></span> 91-180 天 · 28% · $1.16M</li>
+          <li><span class="dot" style="background:var(--red)"></span> 180+ 天 · 20% · $0.83M ⚠</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Alerts ═══ -->
+  <div class="section-title"><span class="icon">🚨</span> 關鍵警報</div>
+  <ul class="alerts-list">
+    <li class="alert-item danger">
+      <span class="alert-icon">🔴</span>
+      <div><strong>庫存積壓警報：</strong>ELLE Air Fryer 庫存 2,840 台（180+ 天），建議立即啟動清庫方案。預計資金凍結 USD $312K。<br><span style="font-size:0.75rem;color:var(--muted)">→ 前往 <a href="stock-clearance.html">Stock Clearance AI</a> 生成清貨方案</span></div>
+    </li>
+    <li class="alert-item warning">
+      <span class="alert-icon">🟡</span>
+      <div><strong>應收帳款逾期：</strong>3 個客戶共 USD $0.47M 已逾期 30+ 天。最大單筆：Walmart (USD $218K, 逾期 42 天)。<br><span style="font-size:0.75rem;color:var(--muted)">→ 前往 <a href="trade-credit.html">TradeCredit</a> 評估還款風險</span></div>
+    </li>
+    <li class="alert-item warning">
+      <span class="alert-icon">🟡</span>
+      <div><strong>原材料價格異動：</strong>不鏽鋼 304 過去 30 天上漲 +6.2%，影響 he-she-it 全線產品成本。建議提前鎖價。<br><span style="font-size:0.75rem;color:var(--muted)">→ 前往 <a href="price-pulse.html">PricePulse</a> 查看詳細趨勢</span></div>
+    </li>
+    <li class="alert-item info">
+      <span class="alert-icon">🔵</span>
+      <div><strong>出貨延誤：</strong>2 票貨櫃延誤超過 5 天（COSCO Glory / Maersk Serangoon），預計影響本月收入 USD $180K。</div>
+    </li>
+  </ul>
+
+  <!-- ═══ Top Customers ═══ -->
+  <div class="section-title"><span class="icon">👥</span> 本月 Top 客戶</div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <table class="data-table">
+      <thead><tr><th>客戶</th><th>Brand</th><th>本月營收</th><th>YTD 營收</th><th>AR 未收</th><th>狀態</th></tr></thead>
+      <tbody>
+        <tr><td>Walmart</td><td>Westinghouse</td><td>USD $612K</td><td>USD $3.84M</td><td>$218K</td><td><span class="badge yellow">逾期 42 天</span></td></tr>
+        <tr><td>JC Penney</td><td>Westinghouse</td><td>USD $288K</td><td>USD $1.62M</td><td>$0</td><td><span class="badge green">已結清</span></td></tr>
+        <tr><td>Kohl's</td><td>Westinghouse</td><td>USD $201K</td><td>USD $1.15M</td><td>$94K</td><td><span class="badge green">正常</span></td></tr>
+        <tr><td>Whirlpool</td><td>OEM</td><td>USD $185K</td><td>USD $1.02M</td><td>$52K</td><td><span class="badge green">正常</span></td></tr>
+        <tr><td>Costco Canada</td><td>he-she-it</td><td>USD $156K</td><td>USD $0.41M</td><td>$0</td><td><span class="badge green">已結清</span></td></tr>
+        <tr><td>Tefal</td><td>OEM</td><td>USD $134K</td><td>USD $0.78M</td><td>$38K</td><td><span class="badge green">正常</span></td></tr>
+        <tr><td>Vitamix</td><td>OEM</td><td>USD $98K</td><td>USD $0.56M</td><td>$22K</td><td><span class="badge green">正常</span></td></tr>
+        <tr><td>Amazon 3P</td><td>ELLE / he-she-it</td><td>USD $72K</td><td>USD $0.33M</td><td>$0</td><td><span class="badge green">已結清</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ P&L Snapshot ═══ -->
+  <div class="section-title"><span class="icon">📈</span> 簡易損益表 (P&amp;L) — 本月累計</div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <table class="data-table">
+      <thead><tr><th>項目</th><th style="text-align:right">金額 (USD)</th><th style="text-align:right">佔營收%</th></tr></thead>
+      <tbody>
+        <tr><td>📦 總營業額</td><td style="text-align:right;font-weight:700">$2,840,000</td><td style="text-align:right">100%</td></tr>
+        <tr><td style="color:var(--red)">➖ 銷貨成本 (COGS)</td><td style="text-align:right;color:var(--red)">$1,911,320</td><td style="text-align:right;color:var(--red)">67.3%</td></tr>
+        <tr style="background:#f0fdf4"><td>✅ 毛利</td><td style="text-align:right;font-weight:700;color:var(--green)">$928,680</td><td style="text-align:right;font-weight:700">32.7%</td></tr>
+        <tr><td style="color:var(--muted)">➖ 營運費用</td><td style="text-align:right;color:var(--muted)">$482,800</td><td style="text-align:right">17.0%</td></tr>
+        <tr><td style="color:var(--muted)">➖ 物流 + 運費</td><td style="text-align:right;color:var(--muted)">$156,200</td><td style="text-align:right">5.5%</td></tr>
+        <tr><td style="color:var(--muted)">➖ 市場推廣</td><td style="text-align:right;color:var(--muted)">$68,160</td><td style="text-align:right">2.4%</td></tr>
+        <tr style="background:#f0fdf4"><td>✅ 營業利潤 (EBIT)</td><td style="text-align:right;font-weight:700;color:var(--green)">$221,520</td><td style="text-align:right;font-weight:700">7.8%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ═══ Quick Access to Other Portals ═══ -->
+  <div class="section-title"><span class="icon">🔗</span> 快速前往其他 Portal</div>
+  <div class="quick-grid">
+    <a href="business-forecast.html" class="quick-card">
+      <span class="qc-icon">📈</span>
+      <div class="qc-info"><strong>Business Forecast</strong><span>AI 預測未來 12 個月走勢</span></div>
+    </a>
+    <a href="stock-clearance.html" class="quick-card">
+      <span class="qc-icon">🏷️</span>
+      <div class="qc-info"><strong>Stock Clearance AI</strong><span>清庫存方案 + ROI 追蹤</span></div>
+    </a>
+    <a href="container-optimizer.html" class="quick-card">
+      <span class="qc-icon">📦</span>
+      <div class="qc-info"><strong>Container Optimizer</strong><span>3D 裝櫃優化節省運費</span></div>
+    </a>
+    <a href="npds.html" class="quick-card">
+      <span class="qc-icon">🔍</span>
+      <div class="qc-info"><strong>NPDS 產品開發</strong><span>新產品開發進度追蹤</span></div>
+    </a>
+    <a href="trade-credit.html" class="quick-card">
+      <span class="qc-icon">🏦</span>
+      <div class="qc-info"><strong>TradeCredit</strong><span>客戶信用評估 + 風險監控</span></div>
+    </a>
+    <a href="price-pulse.html" class="quick-card">
+      <span class="qc-icon">📈</span>
+      <div class="qc-info"><strong>PricePulse</strong><span>原材料價格預警系統</span></div>
+    </a>
+  </div>
+
+  <div class="footer">
+    © 2026 ManuTrade AI · CEO Dashboard v1.0 · 所有數據為 Demo 示範用途
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════
-     MAIN APP
-     ═══════════════════════════════════════════ -->
-<div class="app" id="mainApp">
-
-  <!-- Top Bar -->
-  <div class="topbar">
-    <div class="topbar-left">
-      <a href="../index.html" class="back-link">← 返回主頁</a>
-      <div class="topbar-logo">📊 CEO Dashboard <span>| Quattro Dynamics</span></div>
-    </div>
-    <div class="topbar-right">
-      <div class="timer">🕒 資料保留: <span id="countdown">23:59:59</span></div>
-      <div class="user-badge" id="userBadge">👤 Guest</div>
-    </div>
-  </div>
-
-  <!-- Content -->
-  <div class="content">
-
-    <!-- Page Header -->
-    <div class="page-header">
-      <div>
-        <h1>📊 管理層數據儀表板 <span class="dot"></span></h1>
-        <p style="color:var(--muted);font-size:0.85rem">Q2 2026 · 即時業務概覽 — 製造及貿易板塊</p>
-      </div>
-      <div>
-        <span class="update-info" id="lastUpdated">最後更新: 剛剛</span>
-        <button class="btn btn-sm btn-outline refresh-btn" onclick="refreshData()" style="margin-left:10px">🔄 刷新數據</button>
-      </div>
-    </div>
-
-    <!-- ═════ KPI CARDS ═════ -->
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-icon">💰</div>
-        <div class="kpi-label">總營業收入</div>
-        <div class="kpi-value accent">US$12.4M</div>
-        <div class="kpi-change up">▲ +12.3%</div>
-        <div class="kpi-sub">相比去年同期 US$11.04M</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-icon">📦</div>
-        <div class="kpi-label">總訂單數</div>
-        <div class="kpi-value accent3">847</div>
-        <div class="kpi-change up">▲ +8.7%</div>
-        <div class="kpi-sub">已完成: 612 · 進行中: 235</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-icon">📈</div>
-        <div class="kpi-label">平均毛利率</div>
-        <div class="kpi-value accent2">28.3%</div>
-        <div class="kpi-change up">▲ +2.1pp</div>
-        <div class="kpi-sub">最高產品線: 工業設備 34.7%</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-icon">🏢</div>
-        <div class="kpi-label">活躍客戶</div>
-        <div class="kpi-value" style="color:#f59e0b">42</div>
-        <div class="kpi-change up">▲ +5</div>
-        <div class="kpi-sub">本季度新增: 6 · 流失: 1</div>
-      </div>
-    </div>
-
-    <!-- ═════ CHARTS ROW ═════ -->
-    <div class="chart-grid">
-      <!-- Revenue Trend -->
-      <div class="chart-card">
-        <h3>📈 每月營業收入趨勢</h3>
-        <p class="subtitle">過去 12 個月 · 單位: 百萬美元 (USD)</p>
-        <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
-      </div>
-      <!-- Sales by Region -->
-      <div class="chart-card">
-        <h3>🌍 銷售區域分佈</h3>
-        <p class="subtitle">Q2 2026 累計</p>
-        <div class="chart-wrap" style="max-width:280px;margin:0 auto"><canvas id="regionChart"></canvas></div>
-        <div class="quick-stats" style="margin-top:12px">
-          <div class="quick-stat"><div class="val" style="color:var(--accent)">45%</div><div class="lbl">北美</div></div>
-          <div class="quick-stat"><div class="val" style="color:var(--accent3)">28%</div><div class="lbl">歐洲</div></div>
-          <div class="quick-stat"><div class="val" style="color:var(--accent2)">15%</div><div class="lbl">亞洲</div></div>
-          <div class="quick-stat"><div class="val" style="color:var(--warn)">12%</div><div class="lbl">其他</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═════ TABLES ROW ═════ -->
-    <div class="info-grid">
-
-      <!-- Top Products -->
-      <div class="info-card">
-        <h3>🏆 暢銷產品排行</h3>
-        <table>
-          <thead>
-            <tr><th>產品名稱</th><th class="text-right">營收</th><th class="text-right">毛利率</th><th>趨勢</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="text-accent">工業用熱交換器 HP-500</td>
-              <td class="text-right">$3.24M</td>
-              <td class="text-right text-green">34.7%</td>
-              <td><span class="trend-up">▲ 15.2%</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">CNC 精密加工零件</td>
-              <td class="text-right">$2.18M</td>
-              <td class="text-right text-green">31.2%</td>
-              <td><span class="trend-up">▲ 8.9%</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">電動機驅動組件 EM-300</td>
-              <td class="text-right">$1.87M</td>
-              <td class="text-right text-green">29.5%</td>
-              <td><span class="trend-up">▲ 11.4%</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">不鏽鋼管材及配件</td>
-              <td class="text-right">$1.52M</td>
-              <td class="text-right text-warn">26.8%</td>
-              <td><span class="trend-flat">→ 2.1%</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">智能家居溫控器 IoT-12</td>
-              <td class="text-right">$1.36M</td>
-              <td class="text-right text-green">32.9%</td>
-              <td><span class="trend-up">▲ 22.7%</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">液壓泵總成 HP-80</td>
-              <td class="text-right">$0.98M</td>
-              <td class="text-right text-warn">24.1%</td>
-              <td><span class="trend-down">▼ 3.5%</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">包裝自動化設備</td>
-              <td class="text-right">$0.84M</td>
-              <td class="text-right text-green">30.0%</td>
-              <td><span class="trend-up">▲ 5.8%</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">電子連接器系列</td>
-              <td class="text-right">$0.41M</td>
-              <td class="text-right text-red">18.2%</td>
-              <td><span class="trend-down">▼ 6.3%</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Recent Orders -->
-      <div class="info-card">
-        <h3>📋 最新訂單動態</h3>
-        <table>
-          <thead>
-            <tr><th>訂單號</th><th>客戶</th><th class="text-right">金額</th><th>狀態</th></tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="text-accent">#PO-0847</td>
-              <td>Techtronics Inc.</td>
-              <td class="text-right">$326,400</td>
-              <td><span class="badge badge-success">已發貨</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0846</td>
-              <td>Nordic Components AB</td>
-              <td class="text-right">$218,000</td>
-              <td><span class="badge badge-success">已發貨</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0845</td>
-              <td>京華實業有限公司</td>
-              <td class="text-right">$587,200</td>
-              <td><span class="badge badge-warn">生產中</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0844</td>
-              <td>Maple Leaf Trading</td>
-              <td class="text-right">$142,800</td>
-              <td><span class="badge badge-info">待確認</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0843</td>
-              <td>EuroGear GmbH</td>
-              <td class="text-right">$893,500</td>
-              <td><span class="badge badge-warn">生產中</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0842</td>
-              <td>Sunrise Holdings</td>
-              <td class="text-right">$74,600</td>
-              <td><span class="badge badge-success">已發貨</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0841</td>
-              <td>Pacific Machinery Co.</td>
-              <td class="text-right">$452,000</td>
-              <td><span class="badge badge-danger">延遲</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0840</td>
-              <td>Atlantis Marine Ltd.</td>
-              <td class="text-right">$165,300</td>
-              <td><span class="badge badge-info">待確認</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0839</td>
-              <td>GreenVolt Energy</td>
-              <td class="text-right">$298,000</td>
-              <td><span class="badge badge-warn">生產中</span></td>
-            </tr>
-            <tr>
-              <td class="text-accent">#PO-0838</td>
-              <td>AsiaBridge Corp.</td>
-              <td class="text-right">$1,042,000</td>
-              <td><span class="badge badge-success">已發貨</span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Inventory Health -->
-      <div class="info-card">
-        <h3>📦 庫存健康狀況</h3>
-        <div class="inv-wrap">
-          <canvas id="inventoryChart"></canvas>
-          <div class="inv-legend">
-            <div class="inv-legend-item"><span class="dot" style="background:var(--accent2)"></span> 健康庫存 <strong>68%</strong></div>
-            <div class="inv-legend-item"><span class="dot" style="background:var(--warn)"></span> 預警 <strong>22%</strong></div>
-            <div class="inv-legend-item"><span class="dot" style="background:var(--red)"></span> 嚴重 <strong>10%</strong></div>
-          </div>
-        </div>
-        <div class="quick-stats">
-          <div class="quick-stat"><div class="val">1,247</div><div class="lbl">SKU 總數</div></div>
-          <div class="quick-stat"><div class="val" style="color:var(--red)">38</div><div class="lbl">缺貨預警</div></div>
-          <div class="quick-stat"><div class="val" style="color:var(--warn)">$2.8M</div><div class="lbl">過剩庫存</div></div>
-          <div class="quick-stat"><div class="val" style="color:var(--accent2)">94%</div><div class="lbl">訂單滿足率</div></div>
-        </div>
-      </div>
-
-    </div><!-- /info-grid -->
-
-  </div><!-- /content -->
-</div><!-- /mainApp -->
-
-<!-- ═══════════════════════════════════════════
-     TOAST
-     ═══════════════════════════════════════════ -->
-<div class="toast" id="toast"></div>
-
-<!-- ═══════════════════════════════════════════
-     SCRIPTS
-     ═══════════════════════════════════════════ -->
 <script>
-// ═══════════════════════════════════════
-// GATE LOGIC
-// ═══════════════════════════════════════
-function enterApp() {
-  const email = document.getElementById('gateEmail').value.trim();
-  const err = document.getElementById('gateErr');
-  if (!email || !email.includes('@')) {
-    err.textContent = '請輸入有效電郵地址';
-    err.style.display = 'block';
-    return;
-  }
-  err.style.display = 'none';
-  document.getElementById('gateOverlay').style.display = 'none';
-  document.getElementById('mainApp').classList.add('active');
-  document.getElementById('userBadge').textContent = '👤 ' + email.split('@')[0];
-
-  const now = Date.now();
-  localStorage.setItem('ceodash_gate_passed', 'true');
-  localStorage.setItem('ceodash_email', email);
-  localStorage.setItem('ceodash_expiry', now + 24*60*60*1000);
-  startCountdown();
-  initCharts();
-  toast('✅ CEO Dashboard 已就緒 — 顯示 Q2 2026 實時數據');
-}
-
-// ── Countdown Timer ──
-function startCountdown() {
-  const expiry = parseInt(localStorage.getItem('ceodash_expiry') || 0);
-  const el = document.getElementById('countdown');
-
-  function tick() {
-    const remaining = Math.max(0, Math.floor((expiry - Date.now()) / 1000));
-    if (remaining <= 0) {
-      el.textContent = '已過期';
-      toast('⚠️ 資料已過期 · 請重新驗證');
-      return;
-    }
-    const h = Math.floor(remaining / 3600);
-    const m = Math.floor((remaining % 3600) / 60);
-    const s = remaining % 60;
-    el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  }
-
-  tick();
-  setInterval(tick, 1000);
-}
-
-// ── Toast ──
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3200);
-}
-
-// ═══════════════════════════════════════
-// CHARTS
-// ═══════════════════════════════════════
-let revenueChart, regionChart, inventoryChart;
-
-function initCharts() {
-  Chart.defaults.color = '#94a3b8';
-  Chart.defaults.borderColor = 'rgba(30,45,69,0.6)';
-
-  // ── Revenue Trend (Line) ──
-  const months = ['7月','8月','9月','10月','11月','12月','1月','2月','3月','4月','5月','6月'];
-  const revenueData = [0.92, 0.88, 0.95, 1.02, 1.08, 1.15, 0.98, 0.91, 1.05, 1.12, 1.18, 1.24];
-
-  const ctx1 = document.getElementById('revenueChart').getContext('2d');
-  revenueChart = new Chart(ctx1, {
-    type: 'line',
-    data: {
-      labels: months,
-      datasets: [{
-        label: '營業收入 (USD M)',
-        data: revenueData,
-        borderColor: '#06b6d4',
-        backgroundColor: (ctx) => {
-          const gradient = ctx.chart.ctx.createLinearGradient(0, 0, 0, 400);
-          gradient.addColorStop(0, 'rgba(6,182,212,0.25)');
-          gradient.addColorStop(1, 'rgba(6,182,212,0)');
-          return gradient;
-        },
-        fill: true,
-        tension: 0.4,
-        pointRadius: 4,
-        pointBackgroundColor: '#06b6d4',
-        pointBorderColor: '#0b0f19',
-        pointBorderWidth: 2,
-        pointHoverRadius: 7,
-        borderWidth: 2.5
-      }, {
-        label: '去年同期',
-        data: [0.78, 0.75, 0.82, 0.88, 0.85, 0.94, 0.82, 0.76, 0.89, 0.95, 0.99, 1.04],
-        borderColor: 'rgba(148,163,184,0.4)',
-        borderDash: [6, 4],
-        fill: false,
-        tension: 0.4,
-        pointRadius: 2,
-        pointBackgroundColor: '#94a3b8',
-        borderWidth: 1.5
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: {
-        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { size: 11 } } },
-        tooltip: {
-          backgroundColor: '#131a2b',
-          titleColor: '#e2e8f0',
-          bodyColor: '#94a3b8',
-          borderColor: '#1e2d45',
-          borderWidth: 1,
-          cornerRadius: 8,
-          padding: 12
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: false,
-          min: 0.6,
-          grid: { color: 'rgba(30,45,69,0.4)' },
-          ticks: { callback: (v) => '$' + v.toFixed(1) + 'M' }
-        },
-        x: {
-          grid: { display: false }
-        }
-      }
-    }
-  });
-
-  // ── Sales by Region (Doughnut) ──
-  const ctx2 = document.getElementById('regionChart').getContext('2d');
-  regionChart = new Chart(ctx2, {
-    type: 'doughnut',
-    data: {
-      labels: ['北美 North America', '歐洲 Europe', '亞洲 Asia', '其他 Others'],
-      datasets: [{
-        data: [45, 28, 15, 12],
-        backgroundColor: ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b'],
-        borderColor: '#0b0f19',
-        borderWidth: 3,
-        hoverBorderColor: '#131a2b'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: '62%',
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#131a2b',
-          titleColor: '#e2e8f0',
-          bodyColor: '#94a3b8',
-          borderColor: '#1e2d45',
-          borderWidth: 1,
-          cornerRadius: 8,
-          callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + ctx.raw + '%' }
-        }
-      }
-    }
-  });
-
-  // ── Inventory Health (Donut) ──
-  const ctx3 = document.getElementById('inventoryChart').getContext('2d');
-  inventoryChart = new Chart(ctx3, {
-    type: 'doughnut',
-    data: {
-      labels: ['健康 Healthy', '預警 Warning', '嚴重 Critical'],
-      datasets: [{
-        data: [68, 22, 10],
-        backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
-        borderColor: '#0b0f19',
-        borderWidth: 3,
-        hoverBorderColor: '#131a2b'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      cutout: '55%',
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#131a2b',
-          titleColor: '#e2e8f0',
-          bodyColor: '#94a3b8',
-          borderColor: '#1e2d45',
-          borderWidth: 1,
-          cornerRadius: 8,
-          callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + ctx.raw + '%' }
-        }
-      }
-    }
-  });
-
-  // Trigger resize to fix any canvas sizing
-  setTimeout(() => {
-    [revenueChart, regionChart, inventoryChart].forEach(c => c && c.resize());
-  }, 100);
-}
-
-// ═══════════════════════════════════════
-// REFRESH
-// ═══════════════════════════════════════
-function refreshData() {
-  const now = new Date();
-  document.getElementById('lastUpdated').textContent =
-    '最後更新: ' + now.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  toast('🔄 數據已刷新 — ' + now.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit' }));
-}
-
-// ═══════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════
-(function init() {
-  const passed = localStorage.getItem('ceodash_gate_passed');
-  const expiry = parseInt(localStorage.getItem('ceodash_expiry') || 0);
-
-  if (passed && expiry > Date.now()) {
-    document.getElementById('gateOverlay').style.display = 'none';
-    document.getElementById('mainApp').classList.add('active');
-    const email = localStorage.getItem('ceodash_email') || 'Guest';
-    document.getElementById('userBadge').textContent = '👤 ' + email.split('@')[0];
-    startCountdown();
-    // Wait a tick for canvas to be available
-    setTimeout(initCharts, 50);
-  } else {
-    // Clear stale
-    localStorage.removeItem('ceodash_gate_passed');
-    localStorage.removeItem('ceodash_expiry');
-  }
-})();
+// Set update time
+document.getElementById('updateTime').textContent = new Date().toLocaleString('zh-HK',{timeZone:'Asia/Hong_Kong',hour12:false});
 </script>
 </body>
 </html>
